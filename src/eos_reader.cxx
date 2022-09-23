@@ -111,6 +111,75 @@ std::vector<double> eos_reader::predefined::apr4(const std::vector<double> &inpu
 	return output;
 }
 
+std::vector<double> eos_reader::predefined::apr4(std::vector<std::vector<double>> &cache, const std::vector<double> &input, std::ifstream &fstr)
+{
+	if (cache.empty())
+	{
+		std::string nextline;
+		for (int i = 0; std::getline(fstr, nextline) && i < 6; ++i)
+			; // skip 6 lines
+		while (std::getline(fstr >> std::ws, nextline))
+		{
+			nextline = auxiliaries::retrieve_cleared_line(nextline); // clear line
+			std::stringstream strstr(nextline);
+			std::string word;
+			std::vector<double> data;
+			for (int i = 0; std::getline(strstr, word, ' '); ++i)
+				data.push_back(std::stod(word));
+			cache.push_back(data);
+		}
+	}
+	using namespace constants::apr4;
+	std::vector<double> output;
+	double nbar = input[0];					// barionic density (input[0])
+	if (nbar > nbar_upp || nbar < nbar_low) // we do not have data beyond these values
+		throw std::runtime_error("Data request out of range; Encountered in eos_reader::apr4");
+	output.reserve(cache.front().size()); // output size estimate
+	std::vector<double> x_interp(cache.size()), y_interp(cache.size());
+	for (int j = 0; j < cache.size(); ++j)
+		x_interp[j] = cache[j][2]; // array of baryonic densities
+	if (nbar > nbar_core_limit)
+	{
+		for (int i = 0; i < 7; ++i) // 7 variables to extract
+		{
+			for (int j = 0; j < cache.size(); ++j)
+				y_interp[j] = cache[j][i]; // array of data
+			output.push_back(auxiliaries::interpolate(x_interp, y_interp, auxiliaries::InterpolationMode::kLinear, nbar, true));
+		}
+	}
+	else if (nbar < nbar_crust_limit)
+	{
+		for (int i = 0; i < 6; ++i) // 6 variables to extract
+		{
+			for (int j = 0; j < cache.size(); ++j)
+				y_interp[j] = cache[j][i]; // array of data
+			output.push_back(auxiliaries::interpolate(x_interp, y_interp, auxiliaries::InterpolationMode::kLinear, nbar, true));
+		}
+	}
+	else
+	{
+		// extract data between i.e. at phase transition;
+		// for densities, pressure and baryonic density, we introduce slight slope for monotony; other entries get copypasted depending on nbar
+		if (nbar > (nbar_core_limit + nbar_crust_limit) / 2.0)
+		{
+			output = std::vector<double>({1.5197E+14, 9.2819E+32, 9.0000E-02, 3.1606E-02, 0.0000E+00, 9.6839E-01, 3.1606E-02});
+			// I choose slopes by hand : split 10%/80%/10%
+			output[0] -= 2.0 * (nbar_core_limit - nbar) / (nbar_core_limit - nbar_crust_limit) * (1.5197E+14 - 3.493E+13) / 10.0;
+			output[1] -= 2.0 * (nbar_core_limit - nbar) / (nbar_core_limit - nbar_crust_limit) * (9.2819E+32 - 7.311E+31) / 10.0;
+			output[2] -= 2.0 * (nbar_core_limit - nbar) / (nbar_core_limit - nbar_crust_limit) * (9.0000E-02 - 2.096E-02) / 10.0;
+		}
+		else
+		{
+			output = std::vector<double>({3.493E+13, 7.311E+31, 2.096E-02, 1127., 124., 26.});
+			// I choose slopes by hand : split 10%/80%/10%
+			output[0] += 2.0 * (nbar - nbar_crust_limit) / (nbar_core_limit - nbar_crust_limit) * (1.5197E+14 - 3.493E+13) / 10.0;
+			output[1] += 2.0 * (nbar - nbar_crust_limit) / (nbar_core_limit - nbar_crust_limit) * (9.2819E+32 - 7.311E+31) / 10.0;
+			output[2] += 2.0 * (nbar - nbar_crust_limit) / (nbar_core_limit - nbar_crust_limit) * (9.0000E-02 - 2.096E-02) / 10.0;
+		}
+	}
+	return output;
+}
+
 std::vector<double> eos_reader::predefined::ist_for_ns(const std::vector<double> &input, std::ifstream &fstr)
 {
 	using namespace constants::ist_ns;

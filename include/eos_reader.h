@@ -30,6 +30,14 @@ namespace eos_reader
 		/// 		(barionic density &lt; 0.055 fm-3) -> (energy density g/cm3, pressure dyne/cm2, barionic density fm-3, Acell, Aion, Z)
 		std::vector<double> apr4(const std::vector<double> &input, std::ifstream &fstr);
 
+		/// @brief APR4 EoS reader; Gets invoked when EOS::APR4 is passed to eos_data
+		/// @param cache Cache support. Wrap this function with auxiliaries::CachedFunc for usage
+		/// @param input input[0] - barionic density in fm-3
+		/// @param fstr File to read from
+		/// @return (barionic density &gt; 0.055 fm-3) -> (energy density g/cm3, pressure dyne/cm2, barionic density fm-3, electron fraction, muon -//-, neutron -//-, proton -//-)
+		/// 		(barionic density &lt; 0.055 fm-3) -> (energy density g/cm3, pressure dyne/cm2, barionic density fm-3, Acell, Aion, Z)
+		std::vector<double> apr4(std::vector<std::vector<double>> &cache, const std::vector<double> &input, std::ifstream &fstr);
+
 		/// @brief IST for NS EoS reader; Gets invoked when EOS::IST is passed to eos_data
 		/// @param input input[0] - barionic density in fm-3
 		/// @param fstr File to read from
@@ -43,6 +51,7 @@ namespace eos_reader
 	/// @param eos EoS from the eos_reader::predefined::EOS
 	/// @param fstr EoS datafile
 	/// @return EoS output
+	/// @deprecated use explicit EoS functions instead
 	std::vector<double> eos_data(const std::vector<double> &input, eos_reader::predefined::EOS eos, std::ifstream &fstr);
 
 	/// @brief General purpose EoS reader; bases on known EoS filestyle and input stream with such file allows to extract various data
