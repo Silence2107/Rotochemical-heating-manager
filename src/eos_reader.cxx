@@ -6,10 +6,14 @@
 #include <exception>
 #include <string>
 #include <sstream>
+#include <functional>
+#include <fstream>
+#include <vector>
 
-void eos_reader::apr4(const std::vector<double> &input, std::vector<double> &output, std::ifstream &fstr)
+std::vector<double> eos_reader::predefined::apr4(const std::vector<double> &input, std::ifstream &fstr)
 {
 	using namespace constants::apr4;
+	std::vector<double> output;
 	double nbar = input[0];					// barionic density (input[0])
 	if (nbar > nbar_upp || nbar < nbar_low) // we do not have data beyond these values
 		throw std::runtime_error("Data request out of range; Encountered in eos_reader::apr4");
@@ -104,11 +108,13 @@ void eos_reader::apr4(const std::vector<double> &input, std::vector<double> &out
 			output[2] += 2.0 * (nbar - nbar_crust_limit) / (nbar_core_limit - nbar_crust_limit) * (9.0000E-02 - 2.096E-02) / 10.0;
 		}
 	}
+	return output;
 }
 
-void eos_reader::ist_for_ns(const std::vector<double> &input, std::vector<double> &output, std::ifstream &fstr)
+std::vector<double> eos_reader::predefined::ist_for_ns(const std::vector<double> &input, std::ifstream &fstr)
 {
 	using namespace constants::ist_ns;
+	std::vector<double> output;
 	double nbar = input[0];					// barionic density (input[0])
 	if (nbar > nbar_upp || nbar < nbar_low) // we do not have data beyond these values
 		throw std::runtime_error("Data request out of range; Encountered in eos_reader::ist_for_ns");
@@ -203,23 +209,36 @@ void eos_reader::ist_for_ns(const std::vector<double> &input, std::vector<double
 			output[3] -= 2.0 * (nbar - nbar_crust_limit) / (nbar_core_limit - nbar_crust_limit) * (9.9999913289570197E-2 - 9.9798029952044190E-2) / 10.0;
 		}
 	}
+	return output;
 }
 
-std::vector<double> eos_reader::eos_data(const std::vector<double> &input, eos_reader::EOS eos, std::ifstream &fstr)
+std::vector<double> eos_reader::eos_data(const std::vector<double> &input, eos_reader::predefined::EOS eos, std::ifstream &fstr)
 {
 	std::vector<double> result; // empty placeholder for output array
 
+	using namespace eos_reader::predefined;
 	switch (eos) // choose EoS
 	{
 	case EOS::APR4:
-		apr4(input, result, fstr);
+		result = apr4(input, fstr);
 		break;
 	case EOS::IST:
-		ist_for_ns(input, result, fstr);
+		result = ist_for_ns(input, fstr);
 		break;
 	default:
 		throw std::runtime_error("Unknown eos; Encountered in eos_reader::eos_data");
 	}
+
+	fstr.clear();
+	fstr.seekg(0, std::ios::beg); // reset fstream to initial state for further usage
+	return result;				  // output
+}
+
+std::vector<double> eos_reader::eos_data(const std::vector<double> &input, const std::function<std::vector<double>(const std::vector<double> &, std::ifstream &)> &eos, std::ifstream &fstr)
+{
+	std::vector<double> result; // empty placeholder for output array
+
+	result = eos(input, fstr);
 
 	fstr.clear();
 	fstr.seekg(0, std::ios::beg); // reset fstream to initial state for further usage
