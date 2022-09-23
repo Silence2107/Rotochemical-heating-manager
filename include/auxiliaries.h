@@ -40,6 +40,12 @@ namespace auxiliaries
         {
             return func(cache, args...);
         }
+        /// @brief Returns wrapped function as std::function, with cache running under the hood
+        /// @return std::function<Foutput(Args...)>
+        operator std::function<Foutput(Args...)>()
+        {
+            return [this](Args... args) { return func(this->cache, args...); };
+        }
         /// @brief Erases cache
         /// @param defaultval Value that is substituted inside the cache; equals 'Cache()' by default, pass your version if needed/required
         void erase(Cache defaultval = Cache())
