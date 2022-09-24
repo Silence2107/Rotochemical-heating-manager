@@ -59,7 +59,7 @@ namespace auxiliaries
     {
         /// @brief Linear interpolation; requires at least two points to interpolate
         kLinear,
-        /// @brief Cubic interpolation (spline); requires at least four points to interpolate
+        /// @brief Cubic interpolation (spline); requires at least five points to interpolate
         kCubic
     };
 
@@ -74,6 +74,19 @@ namespace auxiliaries
     /// @param disable_checks false by default. If true, no checks are performed. For performance reasons.
     /// @return interpolated value
     double interpolate(const std::vector<double> &input, const std::vector<double> &output, InterpolationMode mode, double x, bool disable_checks = false);
+
+    /// @brief function that interpolates array based on mode provided;
+    /// Make sure to have sufficient amount of points when choosing mode;
+    /// Also make sure to have arrays sorted beforehand. Sorting will not be done here;
+    /// Note : both increasing and decreasing input arrays are supported
+    /// @param cache Cache support. Wrap it with CachedFunc to use it. 
+    /// @param input input array to interpolate
+    /// @param output output array to interpolate
+    /// @param mode interpolation mode
+    /// @param x x-coordinate of point to interpolate
+    /// @param disable_checks false by default. If true, no checks are performed. For performance reasons.
+    /// @return interpolated value
+    double interpolate_cached(std::function<double(double)> &cache, const std::vector<double> &input, const std::vector<double> &output, InterpolationMode mode, double x, bool disable_checks = false);
 }
 
 #endif
