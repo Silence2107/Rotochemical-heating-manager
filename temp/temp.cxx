@@ -13,6 +13,8 @@
 #include <fstream>
 #include <iostream>
 #include <cmath>
+#include <chrono>
+
 
 int main()
 {
@@ -95,7 +97,27 @@ int main()
             return auxiliaries::interpolate(cache[0], cache[1], auxiliaries::InterpolationMode::kLinear, rho);
         });
 
-    
+    //compare timings of both EoSs with std::chrono
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < 40000; ++i)
+    {
+        using namespace constants::ist_ns;
+        eos1(constants::conversion::mev_over_fm3_gev4 * (edensity_low + i * (edensity_upp - edensity_low) / 40000), 2000);
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "Time for eos1: " << elapsed.count() << '\n';
+    auto start2 = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < 40000; ++i)
+    {
+        using namespace constants::ist_ns;
+        eos2(constants::conversion::mev_over_fm3_gev4 * (edensity_low + i * (edensity_upp - edensity_low) / 40000), 2000);
+    }
+    auto end2 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed2 = end2 - start2;
+    std::cout << "Time for eos2: " << elapsed2.count() << '\n';
+
+
     // plot both EoSs side by side on TGraph
     TCanvas *c1 = new TCanvas("c1", "c1", 800, 600);
     c1->SetLogy();
