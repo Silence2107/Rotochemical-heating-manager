@@ -59,7 +59,7 @@ namespace auxiliaries
     {
         /// @brief Linear interpolation; requires at least two points to interpolate
         kLinear,
-        /// @brief Cubic interpolation (spline); requires at least four points to interpolate
+        /// @brief Cubic interpolation (spline); requires at least five points to interpolate
         kCubic
     };
 
