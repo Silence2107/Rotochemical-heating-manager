@@ -109,7 +109,7 @@ std::vector<double> eos_reader::predefined::apr4(const std::vector<double> &inpu
 	return output;
 }
 
-std::vector<double> eos_reader::predefined::apr4_cached(std::vector<std::vector<double>> &cache, const std::vector<double> &input, std::ifstream &fstr)
+std::vector<double> eos_reader::predefined::apr4_cached(std::vector<std::vector<double>> &cache, const std::vector<double> &input, std::ifstream &fstr, const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &interpolator)
 {
 	if (cache.empty())
 	{
@@ -144,7 +144,7 @@ std::vector<double> eos_reader::predefined::apr4_cached(std::vector<std::vector<
 		{
 			for (int j = 0; j < cache.size(); ++j)
 				y_interp[j] = cache[j][i]; // array of data
-			output.push_back(auxiliaries::interpolate(x_interp, y_interp, auxiliaries::InterpolationMode::kLinear, nbar, true));
+			output.push_back(interpolator(x_interp, y_interp, nbar));
 		}
 	}
 	else if (nbar < nbar_crust_limit)
@@ -153,7 +153,7 @@ std::vector<double> eos_reader::predefined::apr4_cached(std::vector<std::vector<
 		{
 			for (int j = 0; j < cache.size(); ++j)
 				y_interp[j] = cache[j][i]; // array of data
-			output.push_back(auxiliaries::interpolate(x_interp, y_interp, auxiliaries::InterpolationMode::kLinear, nbar, true));
+			output.push_back(interpolator(x_interp, y_interp, nbar));
 		}
 	}
 	else
@@ -281,7 +281,7 @@ std::vector<double> eos_reader::predefined::ist_for_ns(const std::vector<double>
 	return output;
 }
 
-std::vector<double> eos_reader::predefined::ist_for_ns_cached(std::vector<std::vector<double>> &cache, const std::vector<double> &input, std::ifstream &fstr)
+std::vector<double> eos_reader::predefined::ist_for_ns_cached(std::vector<std::vector<double>> &cache, const std::vector<double> &input, std::ifstream &fstr, const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &interpolator)
 {
 	if (cache.empty())
 	{
@@ -312,7 +312,7 @@ std::vector<double> eos_reader::predefined::ist_for_ns_cached(std::vector<std::v
 		{
 			for (int j = 0; j < cache.size(); ++j)
 				y_interp[j] = cache[j][i]; // array of data
-			output.push_back(auxiliaries::interpolate(x_interp, y_interp, auxiliaries::InterpolationMode::kLinear, nbar, true));
+			output.push_back(interpolator(x_interp, y_interp, nbar));
 		}
 	}
 	else if (nbar < nbar_crust_limit)
@@ -321,7 +321,7 @@ std::vector<double> eos_reader::predefined::ist_for_ns_cached(std::vector<std::v
 		{
 			for (int j = 0; j < cache.size(); ++j)
 				y_interp[j] = cache[j][i]; // array of data
-			output.push_back(auxiliaries::interpolate(x_interp, y_interp, auxiliaries::InterpolationMode::kLinear, nbar, true));
+			output.push_back(interpolator(x_interp, y_interp, nbar));
 		}
 	}
 	else
