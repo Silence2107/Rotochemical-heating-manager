@@ -32,7 +32,10 @@ namespace auxiliaries
         Cache cache;                                   // data which should be saved
     public:
         /// @brief public constructor of CachedFunc
-        CachedFunc(const std::function<Foutput(Cache &, Args...)> &func) : func{func} {}
+        CachedFunc(const std::function<Foutput(Cache &, Args...)> &func, Cache defaultcache = Cache()) : func{func} 
+        {
+            erase(defaultcache);
+        }
         /// @brief Invokes wrapped function based on cache and provided arguments
         /// @param ...args Function arguments besides cache
         /// @return Foutput from this invocation
