@@ -16,7 +16,14 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &c
 	// for P'_rho I will use the following function
 	auto eos_prime = [&eos, density_step](double dens)
 	{
-		return (eos(dens + density_step) - eos(dens)) / (density_step);
+		try
+		{
+			return (eos(dens + density_step / 2) - eos(dens - density_step / 2)) / (density_step);
+		}
+		catch (const std::exception &e)
+		{
+			throw std::runtime_error("Pressure derivative computation failed; Encountered in tov_solver::tov_solution; " + std::string(e.what()));
+		}
 		// maybe should implement leap-frog as well/instead
 	};
 
