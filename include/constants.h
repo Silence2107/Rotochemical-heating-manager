@@ -33,6 +33,8 @@ namespace constants
 		const double gev_over_msol = 8.951E-58;
 		/// @brief Conversion from GeV to MeV
 		const double gev_over_mev = 1E3;
+		/// @brief Conversion from GeV^-1 to s
+		const double gev_s = 1.5192E24;
 	}
 	/// @brief APR4 notable constants
 	namespace apr4
