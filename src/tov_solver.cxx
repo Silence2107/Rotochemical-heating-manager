@@ -18,7 +18,7 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &c
 	{
 		try
 		{
-			return (eos(dens + density_step / 2) - eos(dens - density_step / 2)) / (density_step);
+			return (eos(dens + density_step) - eos(dens)) / (density_step);
 		}
 		catch (const std::exception &e)
 		{
