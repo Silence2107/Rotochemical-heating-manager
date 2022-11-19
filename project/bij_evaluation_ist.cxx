@@ -22,18 +22,24 @@
 int main()
 {
     std::ifstream fstr("../data/IST_NS.TXT");
-    auto istdat = [&fstr](const std::vector<double> &input)
+    // initialize ist eos cached
+    auto ist_cached = auxiliaries::CachedFunc<std::vector<std::vector<double>>, std::vector<double>, const std::vector<double> &, std::ifstream &, const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &>(eos_reader::predefined::ist_for_ns_cached);
+    auto istdat = [&fstr, &ist_cached](const std::vector<double> &input)
     {
-        return eos_reader::eos_data(input, eos_reader::EOS::IST, fstr);
+        return eos_reader::eos_data(
+            input, [&](const std::vector<double> &input, std::ifstream &fstr)
+            { return ist_cached(input, fstr, [&](const std::vector<double> &input, const std::vector<double> &output, double val)
+                                { return auxiliaries::interpolate(input, output, auxiliaries::InterpolationMode::kLinear, val, true); }); },
+            fstr);
     };
 
+    auto eos_interpolator = auxiliaries::CachedFunc<std::function<double(double)>, double, const std::vector<double> &, const std::vector<double> &, auxiliaries::InterpolationMode, double, bool>(auxiliaries::interpolate_cached);
+    // IST EoS with caching support
+    // EoS : energy density rho ([0:~0.12]GeV^4) -> pressure ([0:~1.65]GeV^4)
+    // Recaching happens if cache is empty or in case nbar_discretization changes
     auto eos_cached = auxiliaries::CachedFunc<std::vector<std::vector<double>>, double, double, int>(
-        [&istdat](std::vector<std::vector<double>> &cache, double rho, int nbar_discretization)
+        [&istdat, &eos_interpolator](std::vector<std::vector<double>> &cache, double rho, int nbar_discretization)
         {
-            // IST EoS with caching support
-            // EoS : energy density rho ([0:~0.12]GeV^4) -> pressure ([0:~1.65]GeV^4)
-            // Recaching happens if cache is empty or in case nbar_discretization changes
-
             using namespace constants;
             if (rho < 0 || rho > conversion::mev_over_fm3_gev4 * ist_ns::edensity_upp)
                 throw std::runtime_error("Data request out of range; Encountered in main::eos_cached");
@@ -56,13 +62,14 @@ int main()
                 cache[1][0] = conversion::mev_over_fm3_gev4 * ist_ns::pressure_low;
                 cache[1][cache[1].size() - 1] = conversion::mev_over_fm3_gev4 * ist_ns::pressure_upp;
             }
-            return auxiliaries::interpolate(cache[0], cache[1], auxiliaries::InterpolationMode::kLinear, rho);
+            return eos_interpolator(cache[0], cache[1], auxiliaries::InterpolationMode::kCubic, rho, true);
         });
 
+    // callable cached EoS
     auto eos = [&eos_cached](double rho, int nbar_discretization = 2000) -> double
     {
         return eos_cached(rho, nbar_discretization);
-    }; // now we have callable cachable eos
+    };
 
     // Possible applications follow (uncomment for usage)
 
@@ -92,8 +99,9 @@ int main()
     // tg->GetYaxis()->SetRangeUser(1E-8, 1E-1);
     // gPad->SetLogx();
     // gPad->SetLogy();
-    c->SaveAs("pictures/mass_of_r_ist.pdf");*/
-
+    c->SaveAs("../pictures/mass_of_r_ist.pdf");
+    */
+    
     /*
     TCanvas *c = new TCanvas("c", "c", 600, 600);
     auto tov_solution = auxiliaries::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
@@ -182,13 +190,13 @@ int main()
     {
         double R_ns = tov_solution(eos, 0, init_densities[i], 1.0 / size * 5E19, 1E-6)[4];
         // std::cout << tov_solution(eos, R_ns, init_densities[i], 1.0 / size * 5E19, 1E-6)[0] * 1.79 / 2 * 1E-57 << '\n';
-        tov_solution.erase();
+        // tov_solution.erase();
         double G = 6.709E-39; // gravitational constant, natural units
         for (int j = 0; j < size; ++j)
         {
-            x[i][j] = static_cast<double>(j + 1) / size * R_ns;
-            ephi[i][j] = TMath::Exp(tov_solution(eos, x[i][j], init_densities[i], 1.0 / size * R_ns, 1E-6)[2]);
-            elambda[i][j] = TMath::Power(1 - 2 * G * tov_solution(eos, x[i][j], init_densities[i], 1.0 / size * R_ns, 1E-6)[0] / x[i][j], -1.0 / 2);
+            x[i][j] = static_cast<double>(j + 0.5) / size * R_ns;
+            ephi[i][j] = TMath::Exp(tov_solution(eos, x[i][j], init_densities[i], 1.0 / size * 5E19, 1E-6)[2]);
+            elambda[i][j] = TMath::Power(1 - 2 * G * tov_solution(eos, x[i][j], init_densities[i], 1.0 / size * 5E19, 1E-6)[0] / x[i][j], -1.0 / 2);
             // std::cout << elambda[i][j] << '\n';
             x[i][j] *= 2E-19 / 11.46; // in (11.46 km) units, which is R_ns at M_ns = 2.0 M_sun
         }
@@ -266,7 +274,7 @@ int main()
     joint_metric_functions->GetXaxis()->SetLimits(0, 0.9);
     sublegend->Draw();
     legend->Draw();
-    c->SaveAs("pictures/various_metric_functions.pdf");*/
+    c->SaveAs("../pictures/various_metric_functions_ist.pdf");*/
 
     // We have to find B_ij coefficients, whose definition follows B_ij = \int_0^R 4pir^2 e^{\Lambda(r)-\Phi(r)} dn_i/d\mu_j dr
     // It is not challenging to extract R, \Lambda(r), \Phi(r) from TOV solver
@@ -276,7 +284,7 @@ int main()
     // and mu_j = q_j mu_q + B_j mu_b with mu_q = -\cbrt{3pi^2 n_B Ye} and mu_b = (rho+P)/n_B - mu_q (Yp-Ye)
     // convention : [0] = e, [1] = mu, [2] = n, [3] = p
 
-    
+    /*
     std::vector<std::vector<double>> Bij(4, std::vector<double>(4)); // 4x4 matrix that were looking for
 
     auto tov = auxiliaries::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
@@ -375,7 +383,6 @@ int main()
         return output;
     };
 
-
     using namespace constants::ist_ns;
     using namespace constants;
     for (double nbar_loc = nbar_upp / 3; nbar_loc > nbar_core_limit; nbar_loc += (nbar_upp / 10 - nbar_core_limit) / 1000.0)
@@ -385,10 +392,11 @@ int main()
                n_e = istdat(std::vector<double>({nbar_loc}))[5];
         size_t i_mu = floor((mub - scientific::M_N * conversion::gev_over_mev) / 5), j_mu = floor((mub + muq - scientific::M_N * conversion::gev_over_mev) / 5), k_mu = floor(muq / 5);
         auto n_vect = n_i_of_mu_j_extractor(i_mu, j_mu, k_mu);
-        //compare n_vect with densities defined above
+        // compare n_vect with densities defined above
         double n_n_ext = n_vect[0], n_p_ext = n_vect[1], n_e_ext = n_vect[2];
         std::cout << "nbar = " << nbar_loc << "; n_n = " << n_n << " against n_n_ext = " << n_n_ext << "; n_p = " << n_p << " against n_p_ext = " << n_p_ext << "; n_e = " << n_e << " against n_e_ext = " << n_e_ext << std::endl;
     }
+    */
 
     /*
     double R_ns = tov(eos, 0, initial_density, 1.0 / 1000 * constants::conversion::km_gev, density_step)[4];
