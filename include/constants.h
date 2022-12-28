@@ -1,8 +1,6 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#include <TMath.h>
-
 /// @brief various constants useful in current research <para></para>
 /// contains namespace scientific, namespace conversion, namespace apr4, namespace ist_ns
 namespace constants
@@ -16,7 +14,7 @@ namespace constants
 		/// @brief Nucleon mass in GeV units
 		const double M_N = 0.93956563;
 		/// @brief Value of pi
-		const double Pi = TMath::Pi();
+		const double Pi = 3.14159265359;
 	}
 	/// @brief conversion table
 	namespace conversion
@@ -35,6 +33,8 @@ namespace constants
 		const double gev_over_msol = 8.951E-58;
 		/// @brief Conversion from GeV to MeV
 		const double gev_over_mev = 1E3;
+		/// @brief Conversion from GeV^-1 to s
+		const double gev_s = 1.5192E24;
 	}
 	/// @brief APR4 notable constants
 	namespace apr4

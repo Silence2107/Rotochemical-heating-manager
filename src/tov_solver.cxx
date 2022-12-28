@@ -5,8 +5,7 @@
 
 #include <vector>
 #include <iostream>
-
-#include <TMath.h>
+#include <cmath>
 
 std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &cache, const std::function<double(double)> &eos, double r, double center_density, double radius_step, double density_step)
 {
@@ -17,7 +16,14 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &c
 	// for P'_rho I will use the following function
 	auto eos_prime = [&eos, density_step](double dens)
 	{
-		return (eos(dens + density_step) - eos(dens)) / (density_step);
+		try
+		{
+			return (eos(dens + density_step) - eos(dens)) / (density_step);
+		}
+		catch (const std::exception &e)
+		{
+			throw std::runtime_error("Pressure derivative computation failed; Encountered in tov_solver::tov_solution; " + std::string(e.what()));
+		}
 		// maybe should implement leap-frog as well/instead
 	};
 
@@ -44,7 +50,7 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &c
 		cache[4].push_back(0); // make sure cache[4][0] exists so that further check does not fail
 		emptyflag = true;
 	}
-	if (emptyflag || TMath::Abs(cache[4][0] - center_density) > density_step)
+	if (emptyflag || fabs(cache[4][0] - center_density) > density_step)
 	{ // recache in case cache is empty or center_density differs from cached
 		cache = std::vector<std::vector<double>>(5, std::vector<double>());
 		double m(0), rho(center_density), r(0), phi(0); // initial values; for phi we know phi(R) = 1/2 ln(1-2GM/R), so we will need to shift total function later
@@ -97,11 +103,11 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &c
 		}
 
 		// shift phi function so that to satisfy phi(R) condition
-		double phi_shift = 1.0 / 2 * TMath::Log(1 - 2 * G * cache[1].back() / cache[0].back()) - cache[3].back();
+		double phi_shift = 1.0 / 2 * log(1 - 2 * G * cache[1].back() / cache[0].back()) - cache[3].back();
 		for (auto &elem : cache[3])
 			elem += phi_shift;
 	}
-	
+
 	/*if (cache[0].back() <= r)
 	{ // output in case provided coordinate is out of range
 		return std::vector<double>({cache[1].back(), cache[2].back(), cache[3].back(), eos(cache[2].back()), cache[0].back()});

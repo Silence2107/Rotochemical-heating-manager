@@ -7,24 +7,12 @@
 #include <vector>
 #include <functional>
 
-/// @brief contains:
-/// enum EOS with values EOS::APR4;
-/// function eos_data;
-/// function apr4
-/// function ist_for_ns
+/// @brief Various functionality for reading EoS datafiles
 namespace eos_reader
 {
-	/// @brief predefined EoS calculators and corresponding enum values
+	/// @brief predefined EoS readers
 	namespace predefined
 	{
-		/// @brief used to distinguish EoS when passing datafile to eos_data
-		/// @deprecated use explicit EoS functions instead
-		enum class EOS
-		{
-			APR4,
-			IST
-		};
-
 		/// @brief APR4 EoS reader
 		/// @param input input[0] - barionic density in fm-3
 		/// @param fstr File to read from
@@ -67,14 +55,6 @@ namespace eos_reader
 			const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &interpolator = [](const std::vector<double> &x, const std::vector<double> &y, double val)
 			{ return auxiliaries::interpolate(x, y, auxiliaries::InterpolationMode::kLinear, val); });
 	}
-
-	/// @brief General purpose EoS reader; bases on known EoS filestyle and input stream with such file allows to extract various data
-	/// @param input Input that is required for EoS
-	/// @param eos EoS from the eos_reader::predefined::EOS
-	/// @param fstr EoS datafile
-	/// @return EoS output
-	/// @deprecated use explicit EoS functions instead
-	std::vector<double> eos_data(const std::vector<double> &input, eos_reader::predefined::EOS eos, std::ifstream &fstr);
 
 	/// @brief General purpose EoS reader; bases on known EoS filestyle and input stream with such file allows to extract various data
 	/// @param input Input that is required for EoS
