@@ -72,7 +72,7 @@ int main(int argc, char **argv)
                                                            auxiliaries::InterpolationMode, double, bool>(auxiliaries::interpolate_cached);
     auto eos_interpolator = [&eos_interpolator_cached](const std::vector<double> &input, const std::vector<double> &output, double val)
     {
-        // P(rho) cached cubic interpolator, checks enabled
+        // P(rho) cached linear interpolator, checks enabled
         return eos_interpolator_cached(input, output, auxiliaries::InterpolationMode::kLinear, val, false);
     }; // defines EoS interpolator
     auto nbar_interpolator_cached = auxiliaries::CachedFunc<std::function<double(double)>,
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
                                                             auxiliaries::InterpolationMode, double, bool>(auxiliaries::interpolate_cached);
     auto nbar_interpolator = [&nbar_interpolator_cached](const std::vector<double> &input, const std::vector<double> &output, double val)
     {
-        // nbar(r) cached cubic interpolator, checks enabled
+        // nbar(r) cached linear interpolator, checks enabled
         return nbar_interpolator_cached(input, output, auxiliaries::InterpolationMode::kLinear, val, false);
     };                                                                  // defines nbar interpolator
     size_t discr_size_EoS = 1000;                                       // linspace size for EoS interpolation
