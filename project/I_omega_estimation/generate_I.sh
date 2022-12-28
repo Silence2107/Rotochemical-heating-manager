@@ -1,7 +1,7 @@
 #!/bin/bash
 
-filepath="../data/ist_ns_I_omega_i_lin_interp.txt"
-executable="../bin/estimator_for_I_omegai.out"
+filepath="../../data/ist_ns_I_omega_i_lin_interp.txt"
+executable="../../bin/estimator_for_I_omegai.out"
 touch $filepath
 echo "M/Msol I_e I_n I_p" > $filepath
 

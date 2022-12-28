@@ -2,7 +2,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-inf = open('data/ist_ns_I_omega_i_lin_interp.txt', 'r')
+inf = open('../../data/ist_ns_I_omega_i_lin_interp.txt', 'r')
 
 # transform to pandas
 df = pd.read_csv(inf, sep=' ')
