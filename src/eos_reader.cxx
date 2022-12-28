@@ -350,28 +350,6 @@ std::vector<double> eos_reader::predefined::ist_for_ns_cached(std::vector<std::v
 	return output;
 }
 
-std::vector<double> eos_reader::eos_data(const std::vector<double> &input, eos_reader::predefined::EOS eos, std::ifstream &fstr)
-{
-	std::vector<double> result; // empty placeholder for output array
-
-	using namespace eos_reader::predefined;
-	switch (eos) // choose EoS
-	{
-	case EOS::APR4:
-		result = apr4(input, fstr);
-		break;
-	case EOS::IST:
-		result = ist_for_ns(input, fstr);
-		break;
-	default:
-		throw std::runtime_error("Unknown eos; Encountered in eos_reader::eos_data");
-	}
-
-	fstr.clear();
-	fstr.seekg(0, std::ios::beg); // reset fstream to initial state for further usage
-	return result;				  // output
-}
-
 std::vector<double> eos_reader::eos_data(const std::vector<double> &input, const std::function<std::vector<double>(const std::vector<double> &, std::ifstream &)> &eos, std::ifstream &fstr)
 {
 	std::vector<double> result; // empty placeholder for output array
