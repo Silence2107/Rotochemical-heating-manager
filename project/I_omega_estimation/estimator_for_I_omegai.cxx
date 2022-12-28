@@ -28,7 +28,7 @@ int main(int argc, char **argv)
 
     //IST NS SETUP
     // (1) definition of data_reader -- takes input vector and outputs vector of outputs from EoS datafile
-    std::ifstream fstr("../data/IST_NS.TXT");
+    std::ifstream fstr("../../data/IST_NS.TXT");
     auto ist_cached = auxiliaries::CachedFunc<std::vector<std::vector<double>>,
                                               std::vector<double>, const std::vector<double> &, std::ifstream &,
                                               const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &>(eos_reader::predefined::ist_for_ns_cached);
