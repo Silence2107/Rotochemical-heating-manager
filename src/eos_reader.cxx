@@ -12,7 +12,10 @@
 
 std::vector<double> eos_reader::predefined::apr4(const std::vector<double> &input, std::ifstream &fstr)
 {
-	using namespace constants::apr4;
+	double nbar_low = 6.023E-13,
+		   nbar_upp = 1.89,
+		   nbar_core_limit = 9E-2,
+		   nbar_crust_limit = 2.096E-2;
 	std::vector<double> output;
 	double nbar = input[0];					// barionic density (input[0])
 	if (nbar > nbar_upp || nbar < nbar_low) // we do not have data beyond these values
@@ -129,7 +132,10 @@ std::vector<double> eos_reader::predefined::apr4_cached(std::vector<std::vector<
 			++line_number;
 		} // read all data before line 236 into cache
 	}
-	using namespace constants::apr4;
+	double nbar_low = 6.023E-13,
+		   nbar_upp = 1.89,
+		   nbar_core_limit = 9E-2,
+		   nbar_crust_limit = 2.096E-2;
 	std::vector<double> output;
 	double nbar = input[0];					// barionic density (input[0])
 	if (nbar > nbar_upp || nbar < nbar_low) // we do not have data beyond these values
@@ -182,7 +188,10 @@ std::vector<double> eos_reader::predefined::apr4_cached(std::vector<std::vector<
 
 std::vector<double> eos_reader::predefined::ist_for_ns(const std::vector<double> &input, std::ifstream &fstr)
 {
-	using namespace constants::ist_ns;
+	double nbar_low = 2.3739996827636742E-11,
+		   nbar_upp = 2.3189838273277710,
+		   nbar_crust_limit = 9.9798029952044190E-2,
+		   nbar_core_limit = 9.9999913289570197E-2;
 	std::vector<double> output;
 	double nbar = input[0];					// barionic density (input[0])
 	if (nbar > nbar_upp || nbar < nbar_low) // we do not have data beyond these values
@@ -297,7 +306,10 @@ std::vector<double> eos_reader::predefined::ist_for_ns_cached(std::vector<std::v
 			cache.push_back(data);
 		} // read all data into cache
 	}
-	using namespace constants::ist_ns;
+	double nbar_low = 2.3739996827636742E-11,
+           nbar_upp = 2.3189838273277710,
+           nbar_crust_limit = 9.9798029952044190E-2,
+           nbar_core_limit = 9.9999913289570197E-2;
 	std::vector<double> output;
 	double nbar = input[0];					// barionic density (input[0])
 	if (nbar > nbar_upp || nbar < nbar_low) // we do not have data beyond these values
