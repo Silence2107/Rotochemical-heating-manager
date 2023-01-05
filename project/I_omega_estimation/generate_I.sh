@@ -1,9 +1,9 @@
 #!/bin/bash
 
-filepath="../../data/ist_ns_I_omega_i_lin_interp.txt"
+filepath="../../data/apr4_I_omega_i_lin_interp.txt"
 executable="../../bin/estimator_for_I_omegai.out"
 touch $filepath
-echo "M/Msol I_e I_n I_p" > $filepath
+echo "M/Msol I_e I_mu I_n I_p" > $filepath
 
 for val in {1..99}
 do
