@@ -31,6 +31,16 @@ namespace cooling
         /// @brief Specific heat calculator
         namespace specific_heat
         {
+            /// @brief specific heat calculator based on Fermi gas model cv = sum (m_star * k_fermi)/3 * T
+            /// @param m_star_functions m_star functions for each species (GeV)
+            /// @param k_fermi_functions k_fermi functions for each species (GeV); must be in the same order as m_star_functions
+            /// @param nbar_of_r nbar(r) function in the NS (datafile units)
+            /// @param exp_lambda_of_r exp(lambda(r)) function in the NS
+            /// @param exp_phi_of_r exp(phi(r)) function in the NS
+            /// @param r_ns NS radius [GeV^{-1}]
+            /// @param radius_step radius step for the integration [GeV^{-1}]
+            /// @return Cv(t, T^inf) [GeV^{0}] (integrated)
+            std::function<double(double, double)> fermi_specific_heat(const std::vector<std::function<double(double)>> &m_star_functions, const std::vector<std::function<double(double)>> &k_fermi_functions, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_lambda_of_r, const std::function<double(double)> &exp_phi_of_r, double r_ns, double radius_step);
         }
 
         /// @brief Photon related cooling functionality

@@ -94,3 +94,39 @@ std::function<double(double, double)> cooling::predefined::photonic::surface_lum
         return 4 * Pi * R * R * Sigma * T_s6_to_4 * pow(1.0E6/gev_over_k, 4) * pow(exp_phi_at_R, 2);
     };
 }
+
+std::function<double(double, double)> cooling::predefined::specific_heat::fermi_specific_heat(const std::vector<std::function<double(double)>> &m_star_functions, const std::vector<std::function<double(double)>> &k_fermi_functions, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_lambda_of_r, const std::function<double(double)> &exp_phi_of_r, double r_ns, double radius_step)
+{
+    return [=](double t, double T)
+    {
+        using namespace constants::scientific;
+        using namespace constants::conversion;
+
+        // Cv density
+        auto cv = [=](double r) 
+        {
+            double cv_dens = 0;
+            for (size_t i = 0; i < m_star_functions.size(); ++i)
+            {
+                double nbar = nbar_of_r(r);
+                double m_star = m_star_functions[i](nbar);
+                double k_fermi = k_fermi_functions[i](nbar);
+                double exp_min_phi = 1.0/exp_phi_of_r(r);
+                cv_dens += m_star * k_fermi / 3.0 * T * exp_min_phi;
+            }
+            return cv_dens;
+        };
+
+        // calculate the integral
+        double integral = 0;
+
+        for (double r = radius_step; r < r_ns; r += radius_step)
+        {
+            double jacob = 4 * Pi * Pi * r * r * exp_lambda_of_r(r);
+            double cv_dens = cv(r);
+            integral += cv_dens * jacob * radius_step;
+        }
+
+        return integral;
+    };
+}

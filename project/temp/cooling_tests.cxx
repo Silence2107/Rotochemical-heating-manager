@@ -74,15 +74,131 @@ int main()
         return tov_cached(eos_cached, r, center_density, radius_step, density_step);
     };
 
+    auto nbar = auxiliaries::CachedFunc<std::vector<std::vector<double>>, double, double>(
+        [&](std::vector<std::vector<double>> &cache, double r)
+        {
+            // cache contains {r, n_B(r)} arrays; recaching is not supported at the moment, call ::erase instead
+            // return nbar(r) for given r (in datafile units)
+
+            if (cache.empty())
+            {
+                nbar_interpolator_cached.erase(); // clean up cached interpolator
+                double R_ns = tov(0.0)[4];
+                cache = std::vector<std::vector<double>>(2, std::vector<double>());
+                for (double r_current = 0; r_current < R_ns; r_current += radius_step)
+                    cache[0].push_back(r_current);
+                for (size_t i = 0; i < cache[0].size(); ++i)
+                {
+                    double r_current = cache[0][i];
+                    // now we somehow have to find corresponding n_B
+                    // let's stick to densities
+                    double density_at_r = tov(r_current)[1];
+
+                    double nbar_left = nbar_low, nbar_right = nbar_upp; // we need these for bisection search; in fm-3 units for now
+                    double nbar_mid = (nbar_left + nbar_right) / 2.0;
+                    while (fabs(nbar_right - nbar_left) > nbar_low)
+                    {
+                        // while we are too far from appropriate precision for nbar estimate
+                        // recalculate via bisection method
+                        nbar_mid = (nbar_left + nbar_right) / 2.0;
+                        if (energy_density_conversion * energy_density_of_nbar(nbar_mid) > density_at_r)
+                            nbar_right = nbar_mid;
+                        else
+                            nbar_left = nbar_mid;
+                    }
+                    cache[1].push_back(nbar_mid);
+                }
+                cache[0].push_back(R_ns);
+                cache[1].push_back(0.0);
+            }
+            return nbar_interpolator(cache[0], cache[1], r);
+        });
+
     // ready to run
 
     double r_ns = tov(0.0)[4];
     double m_ns = tov(r_ns)[0];
     double eta = 1E-18;
 
+    auto exp_phi = [&tov](double r)
+    {
+        return std::exp(tov(r)[2]);
+    };
+
+    auto exp_lambda = [&tov](double r)
+    {
+        return pow(1 - 2 * constants::scientific::G * tov(r)[0] / r, -0.5);
+    };
+
     auto photon_luminosity = cooling::predefined::photonic::surface_luminosity(r_ns, m_ns, eta);
 
+    auto heat_capacity = cooling::predefined::specific_heat::fermi_specific_heat(
+        m_stars_of_nbar, k_fermi_of_nbar, nbar, exp_lambda, exp_phi, r_ns, radius_step);
+
+    auto cooling_rhs = [&heat_capacity, &photon_luminosity](double t, double T)
+    {
+        return -photon_luminosity(t, T) / heat_capacity(t, T);
+    };
+
+    // solve cooling equation
+
+    auto cooling_solver = auxiliaries::CachedFunc<std::vector<std::vector<double>>, double, double, const std::function<double(double, double)> &, double, double,
+                                                    const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &>(cooling::solver::stationary_cooling_cached);
+
+    // evolution up to 1 Myr, with 0.1 MeV initial temperature and 0.001 Myr step
+    double t_end = 1.0 * constants::conversion::myr_over_s * constants::conversion::gev_s,
+              T_init = 0.1 / constants::conversion::gev_over_mev,
+              t_step = 0.001 * constants::conversion::myr_over_s * constants::conversion::gev_s;
+
+    // invoke the solver once to cache the solution
+    cooling_solver(t_end, cooling_rhs, T_init, t_step, cooling_interpolator);
+
+    // plot the solution
+    std::vector<double> x(100, 0);
+    std::vector<double> y(100, 0);
+    for (int i = 0; i <= 100; ++i)
+    {
+        x[i] = i * t_end / 100.0;
+        y[i] = cooling_solver(x[i], cooling_rhs, T_init, t_step, cooling_interpolator);
+        x[i] /= constants::conversion::myr_over_s * constants::conversion::gev_s;
+        y[i] *= constants::conversion::gev_over_mev;
+    }
+
+    TCanvas *c1 = new TCanvas("c1", "c1");
+    auto gr = new TGraph(100, x.data(), y.data());
+    gr->Draw("AL");
+    // title offset
+    gr->GetYaxis()->SetTitleOffset(1.5);
+    gPad->SetLogx();
+
+    gr->GetXaxis()->SetTitle("t [Myr]");
+    gr->GetYaxis()->SetTitle("T [MeV]");
+    c1->SaveAs("cooling.pdf");
+
+    // plot nbar of r in the whole star
+    /*
+    std::vector<double> x(1000, 0);
+    std::vector<double> y(1000, 0);
+    for (int i = 0; i <= 1000; ++i)
+    {
+        x[i] = i * r_ns / 1000.0;
+        y[i] = nbar(x[i]);
+        x[i] /= constants::conversion::km_gev;
+    }
+
+    TCanvas *c1 = new TCanvas("c1", "c1");
+    auto gr = new TGraph(1000, x.data(), y.data());
+    gr->Draw("AL");
+    // title offset
+    gr->GetYaxis()->SetTitleOffset(1.5);
+
+    gr->GetXaxis()->SetTitle("r [km]");
+    gr->GetYaxis()->SetTitle("n_B [fm^{-3}]");
+    c1->SaveAs("nbar.pdf");
+    */
+
     // plot luminocity for temperatures between 1 and 100 MeV
+    /*
     std::vector<double> x(100, 0);
     std::vector<double> y(100, 0);
     for (int i = 0; i < 100; ++i)
@@ -99,5 +215,5 @@ int main()
 
     gr->GetXaxis()->SetTitle("T [MeV]");
     gr->GetYaxis()->SetTitle("L [erg/s]");
-    c1->SaveAs("photon_luminosity.pdf");
+    c1->SaveAs("photon_luminosity.pdf");*/
 }

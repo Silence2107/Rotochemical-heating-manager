@@ -39,6 +39,8 @@ namespace constants
 		const double gev_over_k = 1.1604E13;
 		/// @brief Conversion from erg to GeV
 		const double erg_over_gev = 6.2415E2;
+		/// @brief Conversion from Myr to s
+		const double myr_over_s = 3.1536E13;
 	}
 }
 
