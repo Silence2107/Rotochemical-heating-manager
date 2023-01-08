@@ -5,6 +5,8 @@
 
 #include <vector>
 #include <functional>
+#include <map>
+#include <string>
 #include <cmath>
 #include <stdexcept>
 
@@ -26,8 +28,9 @@ double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double
         {
             ++iter;
             F = cooling_rhs(t + time_step, T_new);
-            F_shift = cooling_rhs(t + time_step, T_new + time_step * F) - F;
-            T_new -= (T_new - T - time_step * F) / (1 - F_shift / F);
+            auto temp_step = time_step / (t + time_step) * T_new;
+            F_shift = cooling_rhs(t + time_step, T_new + temp_step) - F;
+            T_new -= (T_new - T - time_step * F) / (1 - time_step * F_shift / temp_step);
             if (iter > max_iter)
                 break;
         } while (std::abs(T_new - T - time_step * F) > eps * T);
@@ -95,38 +98,73 @@ std::function<double(double, double)> cooling::predefined::photonic::surface_lum
     };
 }
 
-std::function<double(double, double)> cooling::predefined::specific_heat::fermi_specific_heat(const std::vector<std::function<double(double)>> &m_star_functions, const std::vector<std::function<double(double)>> &k_fermi_functions, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_lambda_of_r, const std::function<double(double)> &exp_phi_of_r, double r_ns, double radius_step)
+std::function<double(double, double)> cooling::predefined::specific_heat::fermi_specific_heat_cached(std::vector<double> &cache, const std::map<std::string, std::function<double(double)>> &m_star_functions, const std::map<std::string, std::function<double(double)>> &k_fermi_functions, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_lambda_of_r, const std::function<double(double)> &exp_phi_of_r, double r_ns, double radius_step)
 {
-    return [=](double t, double T)
+    if (cache.empty())
     {
+        cache = std::vector<double>(1, 0);
         using namespace constants::scientific;
-        using namespace constants::conversion;
 
-        // Cv density
-        auto cv = [=](double r) 
+        // Cv/T^inf density
+        auto cv_over_T = [=](double r)
         {
-            double cv_dens = 0;
-            for (size_t i = 0; i < m_star_functions.size(); ++i)
+            double cv_over_T_dens = 0;
+            for (auto it = m_star_functions.begin(); it != m_star_functions.end(); ++it)
             {
+                auto key = it->first;
                 double nbar = nbar_of_r(r);
-                double m_star = m_star_functions[i](nbar);
-                double k_fermi = k_fermi_functions[i](nbar);
-                double exp_min_phi = 1.0/exp_phi_of_r(r);
-                cv_dens += m_star * k_fermi / 3.0 * T * exp_min_phi;
+                double m_star = m_star_functions.at(key)(nbar);
+                double k_fermi = k_fermi_functions.at(key)(nbar);
+                double exp_min_phi = 1.0 / exp_phi_of_r(r);
+                cv_over_T_dens += m_star * k_fermi / 3.0 * exp_min_phi;
             }
-            return cv_dens;
+            return cv_over_T_dens;
         };
 
         // calculate the integral
-        double integral = 0;
-
         for (double r = radius_step; r < r_ns; r += radius_step)
         {
-            double jacob = 4 * Pi * Pi * r * r * exp_lambda_of_r(r);
-            double cv_dens = cv(r);
-            integral += cv_dens * jacob * radius_step;
+            double jacob = 4 * Pi * r * r * exp_lambda_of_r(r);
+            double cv_over_T_dens = cv_over_T(r);
+            cache[0] += cv_over_T_dens * jacob * radius_step;
         }
+    }
+    return [&cache](double t, double T)
+    {
+        return cache[0] * T;
+    };
+}
 
-        return integral;
+std::function<double(double, double)> cooling::predefined::neutrinic::hadron_durca_luminocity_cached(std::vector<double> &cache, const std::function<double(double)> &m_star_n, const std::function<double(double)> &m_star_p, const std::function<double(double)> &m_star_l, const std::function<double(double)> &k_fermi_n, const std::function<double(double)> &k_fermi_p, const std::function<double(double)> &k_fermi_l, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_lambda_of_r, const std::function<double(double)> &exp_phi_of_r, double r_ns, double radius_step)
+{
+    if (cache.empty())
+    {
+        cache = std::vector<double>(1, 0);
+        using namespace constants::scientific;
+        using namespace constants::conversion;
+
+        // Qv/T^6inf = f(r)
+        auto qv_over_t6 = [=](double r)
+        {
+            double nbar = nbar_of_r(r);
+            if (k_fermi_l(nbar) + k_fermi_p(nbar) - k_fermi_n(nbar) <= 0)
+                return 0.0;
+            double dens = (4.001E27 / 1.68E54) * (m_star_n(nbar) / M_N) * (m_star_p(nbar) / M_N) * m_star_l(nbar) *
+                          pow(exp_phi_of_r(r), -6) * pow(gev_over_k, 6) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3);
+            return dens;
+        };
+
+        // calculate the integral
+        for (double r = radius_step; r < r_ns; r += radius_step)
+        {
+            double jacob = 4 * Pi * r * r * exp_lambda_of_r(r) * exp_phi_of_r(r) * exp_phi_of_r(r);
+            double cv_over_T_dens = qv_over_t6(r);
+            cache[0] += cv_over_T_dens * jacob * radius_step;
+        }
+    }
+
+    return [&cache](double t, double T)
+    {
+        return cache[0] * pow(T, 6);
     };
 }

@@ -5,6 +5,8 @@
 
 #include <vector>
 #include <functional>
+#include <map>
+#include <string>
 
 /// @brief Cooling related namespace
 namespace cooling
@@ -32,15 +34,16 @@ namespace cooling
         namespace specific_heat
         {
             /// @brief specific heat calculator based on Fermi gas model cv = sum (m_star * k_fermi)/3 * T
-            /// @param m_star_functions m_star functions for each species (GeV)
-            /// @param k_fermi_functions k_fermi functions for each species (GeV); must be in the same order as m_star_functions
+            /// @param cache cache support via CachedFunction wrapper; holds cache[0]=Cv/T^inf
+            /// @param m_star_functions m_star functions for each species (GeV); this dictionary defines considered species by its keys
+            /// @param k_fermi_functions k_fermi functions for each species (GeV); must have (at least) the same keys as m_star_functions
             /// @param nbar_of_r nbar(r) function in the NS (datafile units)
             /// @param exp_lambda_of_r exp(lambda(r)) function in the NS
             /// @param exp_phi_of_r exp(phi(r)) function in the NS
             /// @param r_ns NS radius [GeV^{-1}]
             /// @param radius_step radius step for the integration [GeV^{-1}]
             /// @return Cv(t, T^inf) [GeV^{0}] (integrated)
-            std::function<double(double, double)> fermi_specific_heat(const std::vector<std::function<double(double)>> &m_star_functions, const std::vector<std::function<double(double)>> &k_fermi_functions, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_lambda_of_r, const std::function<double(double)> &exp_phi_of_r, double r_ns, double radius_step);
+            std::function<double(double, double)> fermi_specific_heat_cached(std::vector<double> &cache, const std::map<std::string, std::function<double(double)>> &m_star_functions, const std::map<std::string, std::function<double(double)>> &k_fermi_functions, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_lambda_of_r, const std::function<double(double)> &exp_phi_of_r, double r_ns, double radius_step);
         }
 
         /// @brief Photon related cooling functionality
@@ -52,6 +55,27 @@ namespace cooling
             /// @param eta g_14^2 * delta M / M , where g_14 is surface_gravity/(10^14 cm/s^2) and delta M is the light element mass on the surface
             /// @return cooling luminosity function of (t, T^inf) [GeV^{2}]
             std::function<double(double, double)> surface_luminosity(double R, double M, double eta);
+        }
+
+        /// @brief Neutrino related cooling functionality
+        namespace neutrinic
+        {
+            /// @brief Returns the cooling luminosity function of (t, T^inf) for a given temperature, (n, p, l) m*'s and k_fermi's. The calculation is based on the formula Keisuke thesis.
+            /// @param cache cache support via CachedFunction wrapper; holds cache[0]=L^inf/(T^inf)^6
+            /// @param m_star_n neutron m* [GeV]
+            /// @param m_star_p proton m* [GeV]
+            /// @param m_star_l lepton m* [GeV]
+            /// @param k_fermi_n neutron k_fermi [GeV]
+            /// @param k_fermi_p proton k_fermi [GeV]
+            /// @param k_fermi_l lepton k_fermi [GeV]
+            /// @param nbar_of_r nbar(r) function in the NS (datafile units)
+            /// @param exp_lambda_of_r exp(lambda(r)) function in the NS
+            /// @param exp_phi_of_r exp(phi(r)) function in the NS
+            /// @param r_ns NS radius [GeV^{-1}]
+            /// @param radius_step radius step for the integration [GeV^{-1}]
+            /// @return cooling luminosity function of (t, T^inf) [GeV^{2}]
+            /// @note Covers processes: n -> p + l + anti-nu_l, p + l -> n + nu_l
+            std::function<double(double, double)> hadron_durca_luminocity_cached(std::vector<double> &cache, const std::function<double(double)> &m_star_n, const std::function<double(double)> &m_star_p, const std::function<double(double)> &m_star_l, const std::function<double(double)> &k_fermi_n, const std::function<double(double)> &k_fermi_p, const std::function<double(double)> &k_fermi_l, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_lambda_of_r, const std::function<double(double)> &exp_phi_of_r, double r_ns, double radius_step);
         }
     }
 }
