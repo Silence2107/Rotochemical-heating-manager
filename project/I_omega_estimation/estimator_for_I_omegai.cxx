@@ -124,10 +124,10 @@ int main(int argc, char **argv)
     double r_crust = nbar(0.0)[1];
     double m_ns = tov(r_ns)[0];
     std::cout << m_ns * constants::conversion::gev_over_msol << " ";
-    for (size_t species = 0; species < Y_i_functions_of_nbar.size(); ++species)
+    for (auto species = Y_i_functions_of_nbar.begin(); species != Y_i_functions_of_nbar.end(); ++species)
     {
         double I_i = 0.0;
-        auto Y_i = Y_i_functions_of_nbar[species];
+        auto Y_i = species->second;
         double omega_k_sqr = pow(2.0 / 3, 3.0) * constants::scientific::G * m_ns / (r_ns * r_ns * r_ns);
         auto integrand = [&](double r)
         {
