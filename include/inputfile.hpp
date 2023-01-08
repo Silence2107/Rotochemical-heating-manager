@@ -8,6 +8,8 @@
 #include <fstream>
 #include <functional>
 #include <vector>
+#include <map>
+#include <string>
 #include <cmath>
 
 /// @brief inputfile powering the rotochemical manager
@@ -64,38 +66,42 @@ namespace inputfile
     { return data_reader({nbar})[1]; };
 
     // baryonic density fraction functions of baryonic density (units are given by datafile)
-    std::vector<std::function<double(double)>> Y_i_functions_of_nbar =
+    std::map<std::string, std::function<double(double)>> Y_i_functions_of_nbar =
         {
-            [](double nbar)
-            { return (nbar >= nbar_core_limit) ? data_reader({nbar})[3] : 0.0; }, // electron fraction
-            [](double nbar)
-            { return (nbar >= nbar_core_limit) ? data_reader({nbar})[4] : 0.0; }, // muon fraction
-            [](double nbar)
-            { return (nbar >= nbar_core_limit) ? data_reader({nbar})[5] : 1.0; }, // neutron fraction
-            [](double nbar)
-            { return (nbar >= nbar_core_limit) ? data_reader({nbar})[6] : 0.0; } // proton fraction
-
-    };
-
-    // effective mass functions of baryonic density (GeV units)
-    std::vector<std::function<double(double)>> m_stars_of_nbar =
-        {
-            [](double nbar)
-            { return (nbar >= nbar_core_limit) ? data_reader({nbar})[12] : constants::scientific::M_N; }, // neutron
-            [](double nbar)
-            { return (nbar >= nbar_core_limit) ? data_reader({nbar})[11] : constants::scientific::M_N; } // proton
+            {"electron", [](double nbar)
+             { return (nbar >= nbar_core_limit) ? data_reader({nbar})[3] : 0.0; }},
+            {"muon", [](double nbar)
+             { return (nbar >= nbar_core_limit) ? data_reader({nbar})[4] : 0.0; }},
+            {"neutron", [](double nbar)
+             { return (nbar >= nbar_core_limit) ? data_reader({nbar})[5] : 1.0; }},
+            {"proton", [](double nbar)
+             { return (nbar >= nbar_core_limit) ? data_reader({nbar})[6] : 0.0; }}
 
     };
 
     // fermi momentum functions of baryonic density (GeV units)
-    std::vector<std::function<double(double)>> k_fermi_of_nbar =
+    std::map<std::string, std::function<double(double)>> k_fermi_of_nbar =
         {
-            [](double nbar)
-            { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar})[5] * nbar * nbar_conversion, 1.0 / 3) : pow(3 * constants::scientific::Pi * constants::scientific::Pi * nbar * nbar_conversion, 1.0 / 3); }, // neutron
-            [](double nbar)
-            { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar})[6] * nbar * nbar_conversion, 1.0 / 3) : 0.0; } // proton
+            {"electron", [](double nbar)
+             { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar})[3] * nbar * nbar_conversion, 1.0 / 3) : 0.0; }},
+            {"muon", [](double nbar)
+             { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar})[4] * nbar * nbar_conversion, 1.0 / 3) : 0.0; }},
+            {"neutron", [](double nbar)
+             { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar})[5] * nbar * nbar_conversion, 1.0 / 3) : pow(3 * constants::scientific::Pi * constants::scientific::Pi * nbar * nbar_conversion, 1.0 / 3); }},
+            {"proton", [](double nbar)
+             { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar})[6] * nbar * nbar_conversion, 1.0 / 3) : 0.0; }}};
 
-    };
+    // effective mass functions of baryonic density (GeV units)
+    std::map<std::string, std::function<double(double)>> m_stars_of_nbar =
+        {
+            {"electron", [](double nbar)
+             { return (nbar >= nbar_core_limit) ? sqrt(constants::scientific::M_e * constants::scientific::M_e + pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar})[3] * nbar * nbar_conversion, 2.0 / 3)) : constants::scientific::M_e; }},
+            {"muon", [](double nbar)
+             { return (nbar >= nbar_core_limit) ? sqrt(constants::scientific::M_mu * constants::scientific::M_mu + pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar})[4] * nbar * nbar_conversion, 2.0 / 3)) : constants::scientific::M_mu; }},
+            {"neutron", [](double nbar)
+             { return (nbar >= nbar_core_limit) ? data_reader({nbar})[12] : constants::scientific::M_N; }},
+            {"proton", [](double nbar)
+             { return (nbar >= nbar_core_limit) ? data_reader({nbar})[11] : constants::scientific::M_N; }}};
 
     // (3) TOV solver setup
 
@@ -129,7 +135,7 @@ namespace inputfile
     double density_step = 0.0001 * edensity_upp * energy_density_conversion;
 
     // TOV solver center density in GeV^4
-    double center_density = 0.2 * edensity_upp * energy_density_conversion;
+    double center_density = 0.8 * edensity_upp * energy_density_conversion;
 }
 
 #endif
