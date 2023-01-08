@@ -11,6 +11,10 @@ namespace constants
 		const double G = 6.709E-39;
 		/// @brief Nucleon mass in GeV units
 		const double M_N = 0.93956563;
+		/// @brief Electron mass in GeV units
+		const double M_e = 0.0005109989461;
+		/// @brief Muon mass in GeV units
+		const double M_mu = 0.1056583745;
 		/// @brief Value of pi
 		const double Pi = 3.14159265359;
 		/// @brief Stefan-Boltzmann constant in natural units
