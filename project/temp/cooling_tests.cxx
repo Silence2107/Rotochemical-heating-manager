@@ -116,10 +116,11 @@ int main()
 
     // ready to run
 
+    
     double r_ns = tov(0.0)[4];
     double m_ns = tov(r_ns)[0];
     double eta = 1E-18;
-
+    
     auto exp_phi = [&tov](double r)
     {
         return std::exp(tov(r)[2]);
@@ -130,25 +131,43 @@ int main()
         return pow(1 - 2 * constants::scientific::G * tov(r)[0] / r, -0.5);
     };
 
+    // photon luminosity
     auto photon_luminosity = cooling::predefined::photonic::surface_luminosity(r_ns, m_ns, eta);
 
-    auto heat_capacity = cooling::predefined::specific_heat::fermi_specific_heat(
+    // neutrino luminosity
+    auto hadron_durca_luminosity = auxiliaries::CachedFunc<std::vector<double>, std::function<double(double, double)>,
+                                                           const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, double, double>(cooling::predefined::neutrinic::hadron_durca_luminocity_cached);
+    
+    auto neutrino_luminosity = [&](double t, double T)
+    {
+        return hadron_durca_luminosity(
+                m_stars_of_nbar.at("neutron"), m_stars_of_nbar.at("proton"), m_stars_of_nbar.at("electron"), k_fermi_of_nbar.at("neutron"), k_fermi_of_nbar.at("proton"), k_fermi_of_nbar.at("electron"), nbar, exp_lambda, exp_phi, r_ns, radius_step)(t, T) + // via electron
+               hadron_durca_luminosity(
+                m_stars_of_nbar.at("neutron"), m_stars_of_nbar.at("proton"), m_stars_of_nbar.at("muon"), k_fermi_of_nbar.at("neutron"), k_fermi_of_nbar.at("proton"), k_fermi_of_nbar.at("muon"), nbar, exp_lambda, exp_phi, r_ns, radius_step)(t, T); // via muon
+    };
+
+    // specific heat
+    auto fermi_specific_heat = auxiliaries::CachedFunc<std::vector<double>, std::function<double(double, double)>,
+                                                       const std::map<std::string, std::function<double(double)>> &, const std::map<std::string, std::function<double(double)>> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, double, double>(cooling::predefined::specific_heat::fermi_specific_heat_cached);
+
+    auto heat_capacity = fermi_specific_heat(
         m_stars_of_nbar, k_fermi_of_nbar, nbar, exp_lambda, exp_phi, r_ns, radius_step);
 
-    auto cooling_rhs = [&heat_capacity, &photon_luminosity](double t, double T)
+    auto cooling_rhs = [&heat_capacity, &photon_luminosity, &neutrino_luminosity](double t, double T)
     {
-        return -photon_luminosity(t, T) / heat_capacity(t, T);
+        return -(photon_luminosity(t, T) + neutrino_luminosity(t, T)) / heat_capacity(t, T);
+        //return -photon_luminosity(t, T) / heat_capacity(t, T);
     };
 
     // solve cooling equation
 
     auto cooling_solver = auxiliaries::CachedFunc<std::vector<std::vector<double>>, double, double, const std::function<double(double, double)> &, double, double,
-                                                    const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &>(cooling::solver::stationary_cooling_cached);
+                                                  const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &>(cooling::solver::stationary_cooling_cached);
 
     // evolution up to 1 Myr, with 0.1 MeV initial temperature and 0.001 Myr step
     double t_end = 1.0 * constants::conversion::myr_over_s * constants::conversion::gev_s,
-              T_init = 0.1 / constants::conversion::gev_over_mev,
-              t_step = 0.001 * constants::conversion::myr_over_s * constants::conversion::gev_s;
+           T_init = 0.1 / constants::conversion::gev_over_mev,
+           t_step = 0.001 * constants::conversion::myr_over_s * constants::conversion::gev_s;
 
     // invoke the solver once to cache the solution
     cooling_solver(t_end, cooling_rhs, T_init, t_step, cooling_interpolator);
@@ -160,6 +179,9 @@ int main()
     {
         x[i] = i * t_end / 100.0;
         y[i] = cooling_solver(x[i], cooling_rhs, T_init, t_step, cooling_interpolator);
+        // print luminosities
+        std::cout << x[i] << " " << y[i] << " " << photon_luminosity(x[i], y[i]) << " " << neutrino_luminosity(x[i], y[i]) << " " << cooling_rhs(x[i], y[i]) << std::endl;
+
         x[i] /= constants::conversion::myr_over_s * constants::conversion::gev_s;
         y[i] *= constants::conversion::gev_over_mev;
     }
@@ -179,7 +201,7 @@ int main()
     /*
     std::vector<double> x(1000, 0);
     std::vector<double> y(1000, 0);
-    for (int i = 0; i <= 1000; ++i)
+    for (int i = 0; i < 1000; ++i)
     {
         x[i] = i * r_ns / 1000.0;
         y[i] = nbar(x[i]);
@@ -197,7 +219,8 @@ int main()
     c1->SaveAs("nbar.pdf");
     */
 
-    // plot luminocity for temperatures between 1 and 100 MeV
+    // plot photon luminosity for temperatures between 1 and 100 MeV
+    
     /*
     std::vector<double> x(100, 0);
     std::vector<double> y(100, 0);
@@ -215,5 +238,6 @@ int main()
 
     gr->GetXaxis()->SetTitle("T [MeV]");
     gr->GetYaxis()->SetTitle("L [erg/s]");
-    c1->SaveAs("photon_luminosity.pdf");*/
+    c1->SaveAs("photon_luminosity.pdf");
+    */
 }
