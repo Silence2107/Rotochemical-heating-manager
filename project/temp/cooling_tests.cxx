@@ -116,11 +116,10 @@ int main()
 
     // ready to run
 
-    
     double r_ns = tov(0.0)[4];
     double m_ns = tov(r_ns)[0];
     double eta = 1E-18;
-    
+
     auto exp_phi = [&tov](double r)
     {
         return std::exp(tov(r)[2]);
@@ -135,15 +134,17 @@ int main()
     auto photon_luminosity = cooling::predefined::photonic::surface_luminosity(r_ns, m_ns, eta);
 
     // neutrino luminosity
-    auto hadron_durca_luminosity = auxiliaries::CachedFunc<std::vector<double>, std::function<double(double, double)>,
-                                                           const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, double, double>(cooling::predefined::neutrinic::hadron_durca_luminocity_cached);
-    
+    auto hadron_durca_luminosity_electron = auxiliaries::CachedFunc<std::vector<double>, std::function<double(double, double)>,
+                                                                    const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, double, double>(cooling::predefined::neutrinic::hadron_durca_luminocity_cached);
+    auto hadron_durca_luminosity_muon = auxiliaries::CachedFunc<std::vector<double>, std::function<double(double, double)>,
+                                                                const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, double, double>(cooling::predefined::neutrinic::hadron_durca_luminocity_cached);
+
     auto neutrino_luminosity = [&](double t, double T)
     {
-        return hadron_durca_luminosity(
-                m_stars_of_nbar.at("neutron"), m_stars_of_nbar.at("proton"), m_stars_of_nbar.at("electron"), k_fermi_of_nbar.at("neutron"), k_fermi_of_nbar.at("proton"), k_fermi_of_nbar.at("electron"), nbar, exp_lambda, exp_phi, r_ns, radius_step)(t, T) + // via electron
-               hadron_durca_luminosity(
-                m_stars_of_nbar.at("neutron"), m_stars_of_nbar.at("proton"), m_stars_of_nbar.at("muon"), k_fermi_of_nbar.at("neutron"), k_fermi_of_nbar.at("proton"), k_fermi_of_nbar.at("muon"), nbar, exp_lambda, exp_phi, r_ns, radius_step)(t, T); // via muon
+        return hadron_durca_luminosity_electron(
+                   m_stars_of_nbar.at("neutron"), m_stars_of_nbar.at("proton"), m_stars_of_nbar.at("electron"), k_fermi_of_nbar.at("neutron"), k_fermi_of_nbar.at("proton"), k_fermi_of_nbar.at("electron"), nbar, exp_lambda, exp_phi, r_ns, radius_step)(t, T) + 
+               hadron_durca_luminosity_muon(
+                   m_stars_of_nbar.at("neutron"), m_stars_of_nbar.at("proton"), m_stars_of_nbar.at("muon"), k_fermi_of_nbar.at("neutron"), k_fermi_of_nbar.at("proton"), k_fermi_of_nbar.at("muon"), nbar, exp_lambda, exp_phi, r_ns, radius_step)(t, T); 
     };
 
     // specific heat
@@ -156,7 +157,7 @@ int main()
     auto cooling_rhs = [&heat_capacity, &photon_luminosity, &neutrino_luminosity](double t, double T)
     {
         return -(photon_luminosity(t, T) + neutrino_luminosity(t, T)) / heat_capacity(t, T);
-        //return -photon_luminosity(t, T) / heat_capacity(t, T);
+        // return -photon_luminosity(t, T) / heat_capacity(t, T);
     };
 
     // solve cooling equation
@@ -220,7 +221,7 @@ int main()
     */
 
     // plot photon luminosity for temperatures between 1 and 100 MeV
-    
+
     /*
     std::vector<double> x(100, 0);
     std::vector<double> y(100, 0);
