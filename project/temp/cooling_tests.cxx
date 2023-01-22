@@ -12,9 +12,13 @@
 #include <stdexcept>
 #include <iostream>
 
+#include <sstream>
+#include <fstream>
+
 #include <TCanvas.h>
 #include <TGraph.h>
 #include <TAxis.h>
+#include <TLegend.h>
 
 int main()
 {
@@ -28,9 +32,6 @@ int main()
     {
         return cooling_interpolator_cached(x, y, auxiliaries::InterpolationMode::kCubic, val, false);
     };
-
-    auto cooling_solver_cached = auxiliaries::CachedFunc<std::vector<std::vector<double>>, double, double, const std::function<double(double, double)> &, double, double,
-                                                         const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &>(cooling::solver::stationary_cooling_cached);
 
     // RUN --------------------------------------------------------------------------
 
@@ -118,7 +119,7 @@ int main()
 
     double r_ns = tov(0.0)[4];
     double m_ns = tov(r_ns)[0];
-    double eta = 1E-18;
+    double eta = 2.26E-18;
 
     auto exp_phi = [&tov](double r)
     {
@@ -139,12 +140,25 @@ int main()
     auto hadron_durca_luminosity_muon = auxiliaries::CachedFunc<std::vector<double>, std::function<double(double, double)>,
                                                                 const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, double, double>(cooling::predefined::neutrinic::hadron_durca_luminocity_cached);
 
+    auto hadron_murca_luminosity_electron = auxiliaries::CachedFunc<std::vector<double>, std::function<double(double, double)>,
+                                                                   const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, double, double, double>(cooling::predefined::neutrinic::hadron_murca_luminocity_cached);
+    auto hadron_murca_luminosity_muon = auxiliaries::CachedFunc<std::vector<double>, std::function<double(double, double)>,
+                                                                const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, double, double, double>(cooling::predefined::neutrinic::hadron_murca_luminocity_cached);
+
+    auto hadron_bremsstrahlung_luminosity = auxiliaries::CachedFunc<std::vector<double>, std::function<double(double, double)>,
+                                                                 const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, double, double>(cooling::predefined::neutrinic::hadron_bremsstrahlung_luminocity_cached);
     auto neutrino_luminosity = [&](double t, double T)
     {
         return hadron_durca_luminosity_electron(
-                   m_stars_of_nbar.at("neutron"), m_stars_of_nbar.at("proton"), m_stars_of_nbar.at("electron"), k_fermi_of_nbar.at("neutron"), k_fermi_of_nbar.at("proton"), k_fermi_of_nbar.at("electron"), nbar, exp_lambda, exp_phi, r_ns, radius_step)(t, T) + 
+                   m_stars_of_nbar.at("neutron"), m_stars_of_nbar.at("proton"), m_stars_of_nbar.at("electron"), k_fermi_of_nbar.at("neutron"), k_fermi_of_nbar.at("proton"), k_fermi_of_nbar.at("electron"), nbar, exp_lambda, exp_phi, r_ns, radius_step)(t, T) +
                hadron_durca_luminosity_muon(
-                   m_stars_of_nbar.at("neutron"), m_stars_of_nbar.at("proton"), m_stars_of_nbar.at("muon"), k_fermi_of_nbar.at("neutron"), k_fermi_of_nbar.at("proton"), k_fermi_of_nbar.at("muon"), nbar, exp_lambda, exp_phi, r_ns, radius_step)(t, T); 
+                   m_stars_of_nbar.at("neutron"), m_stars_of_nbar.at("proton"), m_stars_of_nbar.at("muon"), k_fermi_of_nbar.at("neutron"), k_fermi_of_nbar.at("proton"), k_fermi_of_nbar.at("muon"), nbar, exp_lambda, exp_phi, r_ns, radius_step)(t, T) +
+               hadron_murca_luminosity_electron(
+                   m_stars_of_nbar.at("neutron"), m_stars_of_nbar.at("proton"), m_stars_of_nbar.at("electron"), k_fermi_of_nbar.at("neutron"), k_fermi_of_nbar.at("proton"), k_fermi_of_nbar.at("electron"), nbar, exp_lambda, exp_phi, r_ns, radius_step, nbar_conversion)(t, T) +
+               hadron_murca_luminosity_muon(
+                   m_stars_of_nbar.at("neutron"), m_stars_of_nbar.at("proton"), m_stars_of_nbar.at("muon"), k_fermi_of_nbar.at("neutron"), k_fermi_of_nbar.at("proton"), k_fermi_of_nbar.at("muon"), nbar, exp_lambda, exp_phi, r_ns, radius_step, nbar_conversion)(t, T) +
+               hadron_bremsstrahlung_luminosity(
+                   m_stars_of_nbar.at("neutron"), m_stars_of_nbar.at("proton"), k_fermi_of_nbar.at("neutron"), k_fermi_of_nbar.at("proton"), nbar, exp_lambda, exp_phi, r_ns, radius_step)(t, T);
     };
 
     // specific heat
@@ -157,45 +171,82 @@ int main()
     auto cooling_rhs = [&heat_capacity, &photon_luminosity, &neutrino_luminosity](double t, double T)
     {
         return -(photon_luminosity(t, T) + neutrino_luminosity(t, T)) / heat_capacity(t, T);
-        // return -photon_luminosity(t, T) / heat_capacity(t, T);
     };
 
     // solve cooling equation
 
-    auto cooling_solver = auxiliaries::CachedFunc<std::vector<std::vector<double>>, double, double, const std::function<double(double, double)> &, double, double,
+    auto cooling_solver = auxiliaries::CachedFunc<std::vector<std::vector<double>>, double, double, const std::function<double(double, double)> &, double, double, double,
                                                   const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &>(cooling::solver::stationary_cooling_cached);
 
-    // evolution up to 1 Myr, with 0.1 MeV initial temperature and 0.001 Myr step
-    double t_end = 1.0 * constants::conversion::myr_over_s * constants::conversion::gev_s,
-           T_init = 0.1 / constants::conversion::gev_over_mev,
-           t_step = 0.001 * constants::conversion::myr_over_s * constants::conversion::gev_s;
+    // evolution options
+    double t_end = 6.1E-0 * constants::conversion::myr_over_s * constants::conversion::gev_s,
+           T_init = 6.610E+06 / constants::conversion::gev_over_k,
+           base_t_step = 1.0E-18 * constants::conversion::myr_over_s * constants::conversion::gev_s;
+
+    double exp_rate_estim = pow(t_end / base_t_step, 1.0 / 1000) * pow((pow(t_end / base_t_step, 1.0 / 1000) - 1), 1.0 / 1000);
 
     // invoke the solver once to cache the solution
-    cooling_solver(t_end, cooling_rhs, T_init, t_step, cooling_interpolator);
+    cooling_solver(t_end, cooling_rhs, T_init, base_t_step, exp_rate_estim, cooling_interpolator);
 
     // plot the solution
-    std::vector<double> x(100, 0);
-    std::vector<double> y(100, 0);
-    for (int i = 0; i <= 100; ++i)
+    std::vector<double> x(1000, 0);
+    std::vector<double> y(1000, 0);
+    std::cout << "M/Msol " << m_ns * constants::conversion::gev_over_msol << std::endl;
+    std::cout << "t [years] " << "\tT [K] " << "\tL_ph [erg/s] " << "\tL_nu [erg/s] " << std::endl;
+    for (int i = 0; i <= 1000; ++i)
     {
-        x[i] = i * t_end / 100.0;
-        y[i] = cooling_solver(x[i], cooling_rhs, T_init, t_step, cooling_interpolator);
-        // print luminosities
-        std::cout << x[i] << " " << y[i] << " " << photon_luminosity(x[i], y[i]) << " " << neutrino_luminosity(x[i], y[i]) << " " << cooling_rhs(x[i], y[i]) << std::endl;
+        x[i] = base_t_step * (pow(exp_rate_estim, i+1) - 1) / (exp_rate_estim - 1);
+        y[i] = cooling_solver(x[i], cooling_rhs, T_init, base_t_step, exp_rate_estim, cooling_interpolator);
+        // print luminosities in humanic units
+        std::cout << 1.0E6 * x[i] / (constants::conversion::myr_over_s * constants::conversion::gev_s) << " " << y[i] * constants::conversion::gev_over_k << " " << 
+            photon_luminosity(x[i], y[i]) * constants::conversion::gev_s / constants::conversion::erg_over_gev << " " << neutrino_luminosity(x[i], y[i]) * constants::conversion::gev_s / constants::conversion::erg_over_gev << std::endl;
+        //rescale 
+        x[i] *= 1.0E6 / (constants::conversion::myr_over_s * constants::conversion::gev_s);
+        y[i] *= constants::conversion::gev_over_k;
+    }
 
-        x[i] /= constants::conversion::myr_over_s * constants::conversion::gev_s;
-        y[i] *= constants::conversion::gev_over_mev;
+    // compare with nscool
+    std::ifstream apr_2_1_nscool("../../data/Prof_APR_Cat_2.1.dat");
+    std::vector<double> x_nscool, y_nscool;
+    // iterate over file, but skip 25 lines
+    for (int i = 0; i < 25; ++i)
+    {
+        std::string line;
+        std::getline(apr_2_1_nscool, line);
+    }
+    while (apr_2_1_nscool.good())
+    {
+        std::string line;
+        std::getline(apr_2_1_nscool, line);
+        line = auxiliaries::retrieve_cleared_line(line);
+        std::stringstream ss(line);
+        double step, t, T;
+        ss >> step >> t >> T;
+        x_nscool.push_back(t);
+        y_nscool.push_back(T);
     }
 
     TCanvas *c1 = new TCanvas("c1", "c1");
-    auto gr = new TGraph(100, x.data(), y.data());
+    auto gr = new TGraph(1000, x.data(), y.data());
+    gr->SetLineColor(kBlue);
     gr->Draw("AL");
     // title offset
     gr->GetYaxis()->SetTitleOffset(1.5);
     gPad->SetLogx();
 
-    gr->GetXaxis()->SetTitle("t [Myr]");
-    gr->GetYaxis()->SetTitle("T [MeV]");
+    gr->GetXaxis()->SetTitle("t [yr]");
+    gr->GetYaxis()->SetTitle("T [K]");
+
+    auto gr_ns_cool = new TGraph(x_nscool.size(), x_nscool.data(), y_nscool.data());
+    gr_ns_cool->SetLineColor(kRed);
+    gr_ns_cool->Draw("L");
+
+    auto legend = new TLegend(0.1, 0.1, 0.38, 0.38);
+    legend->AddEntry(gr, "RH Manager", "l");
+    legend->AddEntry(gr_ns_cool, "NSCool", "l");
+
+    legend->Draw();
+
     c1->SaveAs("cooling.pdf");
 
     // plot nbar of r in the whole star

@@ -10,16 +10,16 @@
 #include <cmath>
 #include <stdexcept>
 
-double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double>> &cache, double t, const std::function<double(double, double)> &cooling_rhs, double initial_temperature, double time_step,
+double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double>> &cache, double t, const std::function<double(double, double)> &cooling_rhs, double initial_temperature, double base_time_step, double exp_rate,
                                                   const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &interpolator)
 {
     // times must be positive
-    if (t < 0 || time_step <= 0)
+    if (t < 0 || base_time_step <= 0)
         throw std::invalid_argument("Evolution time must be positive");
     // inverse euler solver; I want this method to be stable for any time step, including huge ones
-    auto back_euler_step = [&cooling_rhs, time_step](double t, double T)
+    auto back_euler_step = [&cooling_rhs](double t, double T, double time_step)
     {
-        // solve T_{n+1} - T_n - dt * F(t_{n+1}, T_{n+1}) = 0 with Newton's steps
+        // solve T_{n+1} - T_n - dt * a^n * F(t_{n+1}, T_{n+1}) = 0 with Newton's steps
         double eps = 1e-10;
         size_t max_iter = 100, iter = 0;
         double T_new = T;
@@ -37,31 +37,22 @@ double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double
         return T_new;
     };
 
-    // if we conduct a first calculation, we need to fill the cache
-    if (cache.empty())
+    // if we conduct a first calculation (or time exceeded existing cache), we need to fill the cache
+    if (cache.empty() || cache[0].back() < t)
     {
-        size_t discr_size = std::ceil(t / time_step) + 2;
-        cache = std::vector<std::vector<double>>(2, std::vector<double>(discr_size, 0));
-        // fill the cache[0] with time linspaced values, and the cache[1] with the corresponding temperatures
-        cache[0][0] = 0;
-        cache[1][0] = initial_temperature;
-        for (size_t i = 1; i < discr_size; ++i)
+        // create two empty vectors
+        cache = std::vector<std::vector<double>>(2, std::vector<double>());
+        // fill the cache[0] with time exp. growing values, and the cache[1] with the corresponding temperatures
+        cache[0].push_back(0.0);
+        cache[1].push_back(initial_temperature);
+        double t_curr = 0.0, time_step = base_time_step;
+        do
         {
-            cache[0][i] = cache[0][i - 1] + time_step;
-            cache[1][i] = back_euler_step(cache[0][i], cache[1][i - 1]);
-        }
-    }
-    // if the maximum time exceeds the one in the cache, we need to extend the cache
-    else if (t > cache[0].back())
-    {
-        size_t add_discr_size = std::ceil((t - cache[0].back()) / time_step) + 2;
-        cache[0].resize(cache[0].size() + add_discr_size);
-        cache[1].resize(cache[1].size() + add_discr_size);
-        for (size_t i = cache[0].size() - add_discr_size; i < cache[0].size(); ++i)
-        {
-            cache[0][i] = cache[0][i - 1] + time_step;
-            cache[1][i] = back_euler_step(cache[0][i], cache[1][i - 1]);
-        }
+            cache[1].push_back(back_euler_step(t_curr, cache[1].back(), time_step));
+            t_curr += time_step;
+            cache[0].push_back(t_curr);
+            time_step *= exp_rate;
+        } while (t > t_curr);
     }
     // now we're sure the time is in the cache, we just interpolate
     return interpolator(cache[0], cache[1], t);
@@ -94,7 +85,7 @@ std::function<double(double, double)> cooling::predefined::photonic::surface_lum
         // surface temperature normalized to 1E6 K in 4th power
         double T_s6_to_4 = (a * T_s6_Fe_to_4 + T_s6_a_to_4) / (a + 1);
 
-        return 4 * Pi * R * R * Sigma * T_s6_to_4 * pow(1.0E6/gev_over_k, 4) * pow(exp_phi_at_R, 2);
+        return 4 * Pi * R * R * Sigma * T_s6_to_4 * pow(1.0E6 / gev_over_k, 4) * pow(exp_phi_at_R, 2);
     };
 }
 
@@ -125,8 +116,8 @@ std::function<double(double, double)> cooling::predefined::specific_heat::fermi_
         for (double r = radius_step; r < r_ns; r += radius_step)
         {
             double jacob = 4 * Pi * r * r * exp_lambda_of_r(r);
-            double cv_over_T_dens = cv_over_T(r);
-            cache[0] += cv_over_T_dens * jacob * radius_step;
+            double part_integrand = cv_over_T(r);
+            cache[0] += part_integrand * jacob * radius_step;
         }
     }
     return [&cache](double t, double T)
@@ -147,9 +138,15 @@ std::function<double(double, double)> cooling::predefined::neutrinic::hadron_dur
         auto qv_over_t6 = [=](double r)
         {
             double nbar = nbar_of_r(r);
-            if (k_fermi_l(nbar) + k_fermi_p(nbar) - k_fermi_n(nbar) <= 0)
+            double pf_l = k_fermi_l(nbar),
+                   pf_n = k_fermi_n(nbar),
+                   pf_p = k_fermi_p(nbar);
+            double mst_n = m_star_n(nbar),
+                   mst_p = m_star_p(nbar),
+                   mst_l = m_star_l(nbar);
+            if (pf_l + pf_p - pf_n <= 0)
                 return 0.0;
-            double dens = (4.001E27 / 1.68E54) * (m_star_n(nbar) / M_N) * (m_star_p(nbar) / M_N) * m_star_l(nbar) *
+            double dens = (4.001E27 / 1.68E54) * (mst_n / M_N) * (mst_p / M_N) * mst_l *
                           pow(exp_phi_of_r(r), -6) * pow(gev_over_k, 6) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3);
             return dens;
         };
@@ -158,13 +155,105 @@ std::function<double(double, double)> cooling::predefined::neutrinic::hadron_dur
         for (double r = radius_step; r < r_ns; r += radius_step)
         {
             double jacob = 4 * Pi * r * r * exp_lambda_of_r(r) * exp_phi_of_r(r) * exp_phi_of_r(r);
-            double cv_over_T_dens = qv_over_t6(r);
-            cache[0] += cv_over_T_dens * jacob * radius_step;
+            double part_integrand = qv_over_t6(r);
+            cache[0] += part_integrand * jacob * radius_step;
         }
     }
 
     return [&cache](double t, double T)
     {
         return cache[0] * pow(T, 6);
+    };
+}
+
+std::function<double(double, double)> cooling::predefined::neutrinic::hadron_murca_luminocity_cached(std::vector<double> &cache, const std::function<double(double)> &m_star_n, const std::function<double(double)> &m_star_p, const std::function<double(double)> &m_star_l, const std::function<double(double)> &k_fermi_n, const std::function<double(double)> &k_fermi_p, const std::function<double(double)> &k_fermi_l, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_lambda_of_r, const std::function<double(double)> &exp_phi_of_r, double r_ns, double radius_step, double nbar_conversion)
+{
+    if (cache.empty())
+    {
+        cache = std::vector<double>(1, 0);
+        using namespace constants::scientific;
+        using namespace constants::conversion;
+
+        // Qv/T^8inf = f(r)
+        auto qv_over_t8 = [=](double r)
+        {
+            double nbar = nbar_of_r(r);
+            double pf_l = k_fermi_l(nbar),
+                   pf_n = k_fermi_n(nbar),
+                   pf_p = k_fermi_p(nbar);
+            double mst_n = m_star_n(nbar),
+                   mst_p = m_star_p(nbar),
+                   mst_l = m_star_l(nbar);
+            double alpha = 1.76 - 0.63 * pow(N_sat / (nbar * nbar_conversion), 2.0 / 3), beta = 0.68,
+                   v_fl = pf_l / mst_l;
+            double dens = (8.05E21 / 1.68E72) * v_fl * pow(mst_n / M_N, 3) * (mst_p / M_N) * pf_p *
+                          pow(exp_phi_of_r(r), -8) * alpha * beta *
+                          pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3);
+            if (pf_l + 3 * pf_p - pf_n > 0)
+                dens += (8.05E21 / (8 * 1.68E72)) * (pow(pf_l + 3 * pf_p - pf_n, 2) / mst_l) * pow(mst_p / M_N, 3) * (mst_n / M_N) *
+                        pow(exp_phi_of_r(r), -8) * alpha * beta *
+                        pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3);
+            return dens;
+        };
+
+        // calculate the integral
+        for (double r = radius_step; r < r_ns; r += radius_step)
+        {
+            double jacob = 4 * Pi * r * r * exp_lambda_of_r(r) * exp_phi_of_r(r) * exp_phi_of_r(r);
+            double part_integrand = qv_over_t8(r);
+            cache[0] += part_integrand * jacob * radius_step;
+        }
+    }
+
+    return [&cache](double t, double T)
+    {
+        return cache[0] * pow(T, 8);
+    };
+}
+
+std::function<double(double, double)> cooling::predefined::neutrinic::hadron_bremsstrahlung_luminocity_cached(std::vector<double> &cache, const std::function<double(double)> &m_star_n, const std::function<double(double)> &m_star_p, const std::function<double(double)> &k_fermi_n, const std::function<double(double)> &k_fermi_p, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_lambda_of_r, const std::function<double(double)> &exp_phi_of_r, double r_ns, double radius_step)
+{
+    if (cache.empty())
+    {
+        cache = std::vector<double>(1, 0);
+        using namespace constants::scientific;
+        using namespace constants::conversion;
+
+        // Qv/T^8inf = f(r)
+        auto qv_over_t8 = [=](double r)
+        {
+            double nbar = nbar_of_r(r);
+            double pf_n = k_fermi_n(nbar),
+                   pf_p = k_fermi_p(nbar);
+            double mst_n = m_star_n(nbar),
+                   mst_p = m_star_p(nbar);
+            double alpha_nn = 0.59, alpha_np = 1.06, alpha_pp = 0.11,
+                   beta_nn = 0.56, beta_np = 0.66, beta_pp = 0.7;
+            int n_flavours = 2;
+            double dens_nn = (7.5E19 / 1.68E72) * pow(mst_n / M_N, 4) * pf_n * n_flavours *
+                             pow(exp_phi_of_r(r), -8) * alpha_nn * beta_nn *
+                             pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3),
+                   dens_pp = (7.5E19 / 1.68E72) * pow(mst_p / M_N, 4) * pf_p * n_flavours *
+                             pow(exp_phi_of_r(r), -8) * alpha_pp * beta_pp *
+                             pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3),
+                   dens_np = (1.5E20 / 1.68E72) * pow(mst_p / M_N, 2) * pow(mst_n / M_N, 2) * pf_p * n_flavours *
+                             pow(exp_phi_of_r(r), -8) * alpha_np * beta_np *
+                             pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3);
+
+            return dens_nn + dens_np + dens_pp;
+        };
+
+        // calculate the integral
+        for (double r = radius_step; r < r_ns; r += radius_step)
+        {
+            double jacob = 4 * Pi * r * r * exp_lambda_of_r(r) * exp_phi_of_r(r) * exp_phi_of_r(r);
+            double part_integrand = qv_over_t8(r);
+            cache[0] += part_integrand * jacob * radius_step;
+        }
+    }
+
+    return [&cache](double t, double T)
+    {
+        return cache[0] * pow(T, 8);
     };
 }
