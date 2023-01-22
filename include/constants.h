@@ -19,6 +19,8 @@ namespace constants
 		const double Pi = 3.14159265359;
 		/// @brief Stefan-Boltzmann constant in natural units
 		const double Sigma = Pi * Pi / 60.0;
+		/// @brief Nuclear matter saturation density in GeV^3
+		const double N_sat = 0.0012345;
 	}
 	/// @brief conversion table
 	namespace conversion
