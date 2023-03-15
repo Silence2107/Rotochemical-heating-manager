@@ -99,9 +99,9 @@ namespace inputfile
             {"muon", [](double nbar)
              { return (nbar >= nbar_core_limit) ? sqrt(constants::scientific::M_mu * constants::scientific::M_mu + pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar})[4] * nbar * nbar_conversion, 2.0 / 3)) : constants::scientific::M_mu; }},
             {"neutron", [](double nbar)
-             { return (nbar >= nbar_core_limit) ? data_reader({nbar})[12] : constants::scientific::M_N; }},
+             { return (nbar >= nbar_core_limit) ? data_reader({nbar})[12] * constants::scientific::M_N : constants::scientific::M_N; }},
             {"proton", [](double nbar)
-             { return (nbar >= nbar_core_limit) ? data_reader({nbar})[11] : constants::scientific::M_N; }}};
+             { return (nbar >= nbar_core_limit) ? data_reader({nbar})[11] * constants::scientific::M_N : constants::scientific::M_N; }}};
 
     // (3) TOV solver setup
 
@@ -132,10 +132,10 @@ namespace inputfile
     double radius_step = 0.001 * 5E19;
 
     // TOV solver density step size in GeV^4
-    double density_step = 0.0001 * edensity_upp * energy_density_conversion;
+    double density_step = 1E-8 * edensity_upp * energy_density_conversion;
 
     // TOV solver center density in GeV^4
-    double center_density = 0.8 * edensity_upp * energy_density_conversion;
+    double center_density = 0.255 * edensity_upp * energy_density_conversion;
 }
 
 #endif
