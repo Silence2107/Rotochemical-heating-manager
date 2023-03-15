@@ -163,7 +163,7 @@ int main()
 
     // specific heat
     auto fermi_specific_heat = auxiliaries::CachedFunc<std::vector<double>, std::function<double(double, double)>,
-                                                       const std::map<std::string, std::function<double(double)>> &, const std::map<std::string, std::function<double(double)>> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, double, double>(cooling::predefined::specific_heat::fermi_specific_heat_cached);
+                                                       const std::map<std::string, std::function<double(double)>> &, const std::map<std::string, std::function<double(double)>> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, double, double>(cooling::predefined::auxiliary::fermi_specific_heat_cached);
 
     auto heat_capacity = fermi_specific_heat(
         m_stars_of_nbar, k_fermi_of_nbar, nbar, exp_lambda, exp_phi, r_ns, radius_step);
@@ -178,9 +178,11 @@ int main()
     auto cooling_solver = auxiliaries::CachedFunc<std::vector<std::vector<double>>, double, double, const std::function<double(double, double)> &, double, double, double,
                                                   const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &>(cooling::solver::stationary_cooling_cached);
 
+    double exp_phi_at_R = pow(1 - 2 * constants::scientific::G * m_ns / r_ns, 0.5);
+
     // evolution options
     double t_end = 6.1E-0 * constants::conversion::myr_over_s * constants::conversion::gev_s,
-           T_init = 6.610E+06 / constants::conversion::gev_over_k,
+           T_init = 5E9 * exp_phi_at_R / constants::conversion::gev_over_k,
            base_t_step = 1.0E-18 * constants::conversion::myr_over_s * constants::conversion::gev_s;
 
     double exp_rate_estim = pow(t_end / base_t_step, 1.0 / 1000) * pow((pow(t_end / base_t_step, 1.0 / 1000) - 1), 1.0 / 1000);
@@ -192,21 +194,21 @@ int main()
     std::vector<double> x(1000, 0);
     std::vector<double> y(1000, 0);
     std::cout << "M/Msol " << m_ns * constants::conversion::gev_over_msol << std::endl;
-    std::cout << "t [years] " << "\tT [K] " << "\tL_ph [erg/s] " << "\tL_nu [erg/s] " << std::endl;
+    std::cout << "t [years] " << "\tTe^inf [K] " << "\tL_ph [erg/s] " << "\tL_nu [erg/s] " << std::endl;
     for (int i = 0; i <= 1000; ++i)
     {
         x[i] = base_t_step * (pow(exp_rate_estim, i+1) - 1) / (exp_rate_estim - 1);
         y[i] = cooling_solver(x[i], cooling_rhs, T_init, base_t_step, exp_rate_estim, cooling_interpolator);
         // print luminosities in humanic units
-        std::cout << 1.0E6 * x[i] / (constants::conversion::myr_over_s * constants::conversion::gev_s) << " " << y[i] * constants::conversion::gev_over_k << " " << 
+        std::cout << 1.0E6 * x[i] / (constants::conversion::myr_over_s * constants::conversion::gev_s) << " " << cooling::predefined::auxiliary::te_tb_relation(y[i], r_ns, m_ns, eta) * exp_phi_at_R * constants::conversion::gev_over_k << " " << 
             photon_luminosity(x[i], y[i]) * constants::conversion::gev_s / constants::conversion::erg_over_gev << " " << neutrino_luminosity(x[i], y[i]) * constants::conversion::gev_s / constants::conversion::erg_over_gev << std::endl;
         //rescale 
         x[i] *= 1.0E6 / (constants::conversion::myr_over_s * constants::conversion::gev_s);
-        y[i] *= constants::conversion::gev_over_k;
+        y[i] = cooling::predefined::auxiliary::te_tb_relation(y[i], r_ns, m_ns, eta) * exp_phi_at_R * constants::conversion::gev_over_k;
     }
 
     // compare with nscool
-    std::ifstream apr_2_1_nscool("../../data/Prof_APR_Cat_2.1.dat");
+    std::ifstream apr_2_1_nscool("../../data/Teff_Try.dat");
     std::vector<double> x_nscool, y_nscool;
     // iterate over file, but skip 25 lines
     for (int i = 0; i < 25; ++i)
