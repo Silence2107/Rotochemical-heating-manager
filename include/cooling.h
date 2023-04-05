@@ -31,8 +31,8 @@ namespace cooling
     /// @brief Predefined functionality, including cooling luminosities
     namespace predefined
     {
-        /// @brief Specific heat calculator
-        namespace specific_heat
+        /// @brief Auxiliary physics related to cooling
+        namespace auxiliary
         {
             /// @brief specific heat calculator based on Fermi gas model cv = sum (m_star * k_fermi)/3 * T
             /// @param cache cache support via CachedFunction wrapper; holds cache[0]=Cv/T^inf
@@ -45,6 +45,47 @@ namespace cooling
             /// @param radius_step radius step for the integration [GeV^{-1}]
             /// @return Cv(t, T^inf) [GeV^{0}] (integrated)
             std::function<double(double, double)> fermi_specific_heat_cached(std::vector<double> &cache, const std::map<std::string, std::function<double(double)>> &m_star_functions, const std::map<std::string, std::function<double(double)>> &k_fermi_functions, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_lambda_of_r, const std::function<double(double)> &exp_phi_of_r, double r_ns, double radius_step);
+
+            /// @brief Te-Tb relation, based on Keisure thesis
+            /// @param Tb internal temperature [GeV], measured by distant observer (inf)
+            /// @param R NS radius [GeV^{-1}]
+            /// @param M NS mass [GeV]
+            /// @param eta NS light element share
+            /// @return corresponding surface temperature [GeV]
+            double te_tb_relation(double Tb, double R, double M, double eta);
+
+            /// @brief Nucleon critical temperature parametrization from Keisuke thesis, (2.34)
+            /// @param k_fermi fermi momentum [GeV], correspoding to the nucleon
+            /// @param temp_ampl amplitude parameter [GeV]
+            /// @param k_offs mean-like parameter [GeV]
+            /// @param k_width variance-like parameter [GeV]
+            /// @param quad_skew high order correction to the gaussian [dimensionless]
+            /// @return T0 * exp[- ((k_fermi - k_offs) / (k_width))^2 - quad_skew * ((k_fermi - k_offs) / (k_width))^4]
+            double critical_temperature_smeared_guassian(double k_fermi, double temp_ampl, double k_offs, double k_width, double quad_skew);
+        
+            /// @brief Critical temperature in AO model
+            /// @param k_fermi fermi momentum [GeV], correspoding to the nucleon
+            double critical_temperature_ao(double k_fermi);
+
+            /// @brief Critical temperature in CCDK model
+            /// @param k_fermi fermi momentum [GeV], correspoding to the nucleon
+            double critical_temperature_ccdk(double k_fermi);
+
+            /// @brief Critical temperature in "a" model
+            /// @param k_fermi fermi momentum [GeV], correspoding to the nucleon
+            double critical_temperature_a(double k_fermi);
+
+            /// @brief Critical temperature in "b" model
+            /// @param k_fermi fermi momentum [GeV], correspoding to the nucleon
+            double critical_temperature_b(double k_fermi);
+
+            /// @brief Critical temperature in "c" model
+            /// @param k_fermi fermi momentum [GeV], correspoding to the nucleon
+            double critical_temperature_c(double k_fermi);
+
+            /// @brief Critical temperature in "a2" model
+            /// @param k_fermi fermi momentum [GeV], correspoding to the nucleon
+            double critical_temperature_a2(double k_fermi);
         }
 
         /// @brief Photon related cooling functionality
@@ -108,7 +149,7 @@ namespace cooling
             /// @param r_ns NS radius [GeV^{-1}]
             /// @param radius_step radius step for the integration [GeV^{-1}]
             /// @return cooling luminosity function of (t, T^inf) [GeV^{2}]
-            /// @note Covers processes: n + n -> n + n + nu_l + anti-nu_l, p + p -> p + p + nu_l + anti-nu_l, n + p -> n + p + nu_l + anti-nu_l for (2?) neutrino sorts
+            /// @note Covers processes: n + n -> n + n + nu_l + anti-nu_l, p + p -> p + p + nu_l + anti-nu_l, n + p -> n + p + nu_l + anti-nu_l for 3 neutrino sorts
             std::function<double(double, double)> hadron_bremsstrahlung_luminocity_cached(std::vector<double> &cache, const std::function<double(double)> &m_star_n, const std::function<double(double)> &m_star_p, const std::function<double(double)> &k_fermi_n, const std::function<double(double)> &k_fermi_p, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_lambda_of_r, const std::function<double(double)> &exp_phi_of_r, double r_ns, double radius_step);
         }
     }

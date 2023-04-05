@@ -58,38 +58,45 @@ double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double
     return interpolator(cache[0], cache[1], t);
 }
 
+double cooling::predefined::auxiliary::te_tb_relation(double Tb, double R, double M, double eta)
+{
+    using namespace constants::scientific;
+    using namespace constants::conversion;
+
+    // calculate exp phi(R)
+    double exp_phi_at_R = pow(1 - 2 * G * M / R, 0.5);
+
+    // calculate g_14
+    double g = G * M / (R * R * exp_phi_at_R);                    // gravitational acceleration at the surface in GeV
+    double g_14 = g * gev_s * gev_s / (1.0E14 * km_gev * 1.0E-5); // normalized to 1E14 cm/s^2
+
+    // local temperature on surface normalized to 1E9 K
+    double T_local_9 = Tb * 1.0 / exp_phi_at_R * gev_over_k / 1.0E9;
+
+    // now we just use the formulas from the paper
+    double dzeta = T_local_9 - pow(7 * T_local_9 * pow(g_14, 0.5), 0.5) * 1.0E-3;
+    double T_s6_Fe_to_4 = g_14 * (pow(7 * dzeta, 2.25) + pow(dzeta / 3, 1.25)),
+           T_s6_a_to_4 = g_14 * pow(18.1 * T_local_9, 2.42);
+
+    double a = (1.2 + pow(5.3 * 1.0E-6 / eta, 0.38)) * pow(T_local_9, 5.0 / 3);
+
+    // surface temperature normalized to 1E6 K in 4th power
+    double T_s6_to_4 = (a * T_s6_Fe_to_4 + T_s6_a_to_4) / (a + 1);
+
+    return pow(T_s6_to_4, 1.0 / 4) * 1.0E6 / gev_over_k;
+}
+
 std::function<double(double, double)> cooling::predefined::photonic::surface_luminosity(double R, double M, double eta)
 {
     return [=](double t, double T)
     {
         using namespace constants::scientific;
-        using namespace constants::conversion;
-
-        // calculate exp phi(R)
-        double exp_phi_at_R = pow(1 - 2 * G * M / R, 0.5);
-
-        // calculate g_14
-        double g = G * M / (R * R * exp_phi_at_R);                    // gravitational acceleration at the surface in GeV
-        double g_14 = g * gev_s * gev_s / (1.0E14 * km_gev * 1.0E-5); // normalized to 1E14 cm/s^2
-
-        // local temperature on surface normalized to 1E9 K
-        double T_local_9 = T * 1.0 / exp_phi_at_R * gev_over_k / 1.0E9;
-
-        // now we just use the formulas from the paper
-        double dzeta = T_local_9 - pow(7 * T_local_9 * pow(g_14, 0.5), 0.5) * 1.0E-3;
-        double T_s6_Fe_to_4 = g_14 * (pow(7 * dzeta, 2.25) + pow(dzeta / 3, 1.25)),
-               T_s6_a_to_4 = g_14 * pow(18.1 * T_local_9, 2.42);
-
-        double a = (1.2 + pow(5.3 * 1.0E-6 / eta, 0.38)) * pow(T_local_9, 5.0 / 3);
-
-        // surface temperature normalized to 1E6 K in 4th power
-        double T_s6_to_4 = (a * T_s6_Fe_to_4 + T_s6_a_to_4) / (a + 1);
-
-        return 4 * Pi * R * R * Sigma * T_s6_to_4 * pow(1.0E6 / gev_over_k, 4) * pow(exp_phi_at_R, 2);
+        double exp_2phi_at_R = 1 - 2 * G * M / R;
+        return 4 * Pi * R * R * Sigma * pow(cooling::predefined::auxiliary::te_tb_relation(T, R, M, eta), 4) * exp_2phi_at_R;
     };
 }
 
-std::function<double(double, double)> cooling::predefined::specific_heat::fermi_specific_heat_cached(std::vector<double> &cache, const std::map<std::string, std::function<double(double)>> &m_star_functions, const std::map<std::string, std::function<double(double)>> &k_fermi_functions, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_lambda_of_r, const std::function<double(double)> &exp_phi_of_r, double r_ns, double radius_step)
+std::function<double(double, double)> cooling::predefined::auxiliary::fermi_specific_heat_cached(std::vector<double> &cache, const std::map<std::string, std::function<double(double)>> &m_star_functions, const std::map<std::string, std::function<double(double)>> &k_fermi_functions, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_lambda_of_r, const std::function<double(double)> &exp_phi_of_r, double r_ns, double radius_step)
 {
     if (cache.empty())
     {
@@ -146,7 +153,7 @@ std::function<double(double, double)> cooling::predefined::neutrinic::hadron_dur
                    mst_l = m_star_l(nbar);
             if (pf_l + pf_p - pf_n <= 0)
                 return 0.0;
-            double dens = (4.001E27 / 1.68E54) * (mst_n / M_N) * (mst_p / M_N) * mst_l *
+            double dens = (4.24E27 / 1.68E54) * (mst_n / M_N) * (mst_p / M_N) * mst_l *
                           pow(exp_phi_of_r(r), -6) * pow(gev_over_k, 6) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3);
             return dens;
         };
@@ -229,7 +236,7 @@ std::function<double(double, double)> cooling::predefined::neutrinic::hadron_bre
                    mst_p = m_star_p(nbar);
             double alpha_nn = 0.59, alpha_np = 1.06, alpha_pp = 0.11,
                    beta_nn = 0.56, beta_np = 0.66, beta_pp = 0.7;
-            int n_flavours = 2;
+            int n_flavours = 3;
             double dens_nn = (7.5E19 / 1.68E72) * pow(mst_n / M_N, 4) * pf_n * n_flavours *
                              pow(exp_phi_of_r(r), -8) * alpha_nn * beta_nn *
                              pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3),
@@ -256,4 +263,51 @@ std::function<double(double, double)> cooling::predefined::neutrinic::hadron_bre
     {
         return cache[0] * pow(T, 8);
     };
+}
+
+double cooling::predefined::auxiliary::critical_temperature_smeared_guassian(double k_fermi, double temp_ampl, double k_offs, double k_width, double quad_skew)
+{
+    return temp_ampl * exp(-pow((k_fermi - k_offs) / k_width, 2) - quad_skew * pow((k_fermi - k_offs) / k_width, 4));
+}
+
+double cooling::predefined::auxiliary::critical_temperature_ao(double k_fermi)
+{
+    using namespace constants::conversion;
+    return cooling::predefined::auxiliary::critical_temperature_smeared_guassian(
+        k_fermi, 2.35E9 / gev_over_k, 0.49 / (1.0E-18 * km_gev), 0.31 / (1.0E-18 * km_gev), 0.0);
+}
+
+double cooling::predefined::auxiliary::critical_temperature_ccdk(double k_fermi)
+{
+    using namespace constants::conversion;
+    return cooling::predefined::auxiliary::critical_temperature_smeared_guassian(
+        k_fermi, 6.6E9 / gev_over_k, 0.66 / (1.0E-18 * km_gev), 0.46 / (1.0E-18 * km_gev), 0.69);
+}
+
+double cooling::predefined::auxiliary::critical_temperature_a(double k_fermi)
+{
+    using namespace constants::conversion;
+    return cooling::predefined::auxiliary::critical_temperature_smeared_guassian(
+        k_fermi, 1.0E9 / gev_over_k, 1.8 / (1.0E-18 * km_gev), 0.5 / (1.0E-18 * km_gev), 0.0);
+}
+
+double cooling::predefined::auxiliary::critical_temperature_b(double k_fermi)
+{
+    using namespace constants::conversion;
+    return cooling::predefined::auxiliary::critical_temperature_smeared_guassian(
+        k_fermi, 3.0E9 / gev_over_k, 2.0 / (1.0E-18 * km_gev), 0.5 / (1.0E-18 * km_gev), 0.0);
+}
+
+double cooling::predefined::auxiliary::critical_temperature_c(double k_fermi)
+{
+    using namespace constants::conversion;
+    return cooling::predefined::auxiliary::critical_temperature_smeared_guassian(
+        k_fermi, 1.0E10 / gev_over_k, 2.5 / (1.0E-18 * km_gev), 0.7 / (1.0E-18 * km_gev), 0.0);
+}
+
+double cooling::predefined::auxiliary::critical_temperature_a2(double k_fermi)
+{
+    using namespace constants::conversion;
+    return cooling::predefined::auxiliary::critical_temperature_smeared_guassian(
+        k_fermi, 5.5E9 / gev_over_k, 2.3 / (1.0E-18 * km_gev), 0.9 / (1.0E-18 * km_gev), 0.0);
 }

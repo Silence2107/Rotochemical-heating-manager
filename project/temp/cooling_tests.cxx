@@ -200,26 +200,26 @@ int main()
         x[i] = base_t_step * (pow(exp_rate_estim, i+1) - 1) / (exp_rate_estim - 1);
         y[i] = cooling_solver(x[i], cooling_rhs, T_init, base_t_step, exp_rate_estim, cooling_interpolator);
         // print luminosities in humanic units
-        std::cout << 1.0E6 * x[i] / (constants::conversion::myr_over_s * constants::conversion::gev_s) << " " << cooling::predefined::auxiliary::te_tb_relation(y[i], r_ns, m_ns, eta) * exp_phi_at_R * constants::conversion::gev_over_k << " " << 
-            photon_luminosity(x[i], y[i]) * constants::conversion::gev_s / constants::conversion::erg_over_gev << " " << neutrino_luminosity(x[i], y[i]) * constants::conversion::gev_s / constants::conversion::erg_over_gev << std::endl;
+        std::cout << 1.0E6 * x[i] / (constants::conversion::myr_over_s * constants::conversion::gev_s) << "\t" << cooling::predefined::auxiliary::te_tb_relation(y[i], r_ns, m_ns, eta) * exp_phi_at_R * constants::conversion::gev_over_k << "\t" << 
+            photon_luminosity(x[i], y[i]) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << neutrino_luminosity(x[i], y[i]) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << std::endl;
         //rescale 
         x[i] *= 1.0E6 / (constants::conversion::myr_over_s * constants::conversion::gev_s);
         y[i] = cooling::predefined::auxiliary::te_tb_relation(y[i], r_ns, m_ns, eta) * exp_phi_at_R * constants::conversion::gev_over_k;
     }
 
     // compare with nscool
-    std::ifstream apr_2_1_nscool("../../data/Teff_Try.dat");
+    std::ifstream apr_nscool("../../data/1.4.dat");
     std::vector<double> x_nscool, y_nscool;
     // iterate over file, but skip 25 lines
     for (int i = 0; i < 25; ++i)
     {
         std::string line;
-        std::getline(apr_2_1_nscool, line);
+        std::getline(apr_nscool, line);
     }
-    while (apr_2_1_nscool.good())
+    while (apr_nscool.good())
     {
         std::string line;
-        std::getline(apr_2_1_nscool, line);
+        std::getline(apr_nscool, line);
         line = auxiliaries::retrieve_cleared_line(line);
         std::stringstream ss(line);
         double step, t, T;
@@ -235,6 +235,7 @@ int main()
     // title offset
     gr->GetYaxis()->SetTitleOffset(1.5);
     gPad->SetLogx();
+    gPad->SetLogy();
 
     gr->GetXaxis()->SetTitle("t [yr]");
     gr->GetYaxis()->SetTitle("T [K]");
