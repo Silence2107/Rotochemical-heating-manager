@@ -135,41 +135,135 @@ int main()
     auto photon_luminosity = cooling::predefined::photonic::surface_luminosity(r_ns, m_ns, eta);
 
     // neutrino luminosity
-    auto hadron_durca_luminosity_electron = auxiliaries::CachedFunc<std::vector<double>, std::function<double(double, double)>,
-                                                                    const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, double, double>(cooling::predefined::neutrinic::hadron_durca_luminocity_cached);
-    auto hadron_durca_luminosity_muon = auxiliaries::CachedFunc<std::vector<double>, std::function<double(double, double)>,
-                                                                const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, double, double>(cooling::predefined::neutrinic::hadron_durca_luminocity_cached);
+    auto hadron_durca_emissivity = [&](double r, const std::string& lepton_flavour, double t, double T)
+    {
+        using namespace constants::scientific;
+        using namespace constants::conversion;
 
-    auto hadron_murca_luminosity_electron = auxiliaries::CachedFunc<std::vector<double>, std::function<double(double, double)>,
-                                                                   const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, double, double, double>(cooling::predefined::neutrinic::hadron_murca_luminocity_cached);
-    auto hadron_murca_luminosity_muon = auxiliaries::CachedFunc<std::vector<double>, std::function<double(double, double)>,
-                                                                const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, double, double, double>(cooling::predefined::neutrinic::hadron_murca_luminocity_cached);
+        double nbar_val = nbar(r);
+        double pf_l = k_fermi_of_nbar.at(lepton_flavour)(nbar_val),
+                pf_n = k_fermi_of_nbar.at("neutron")(nbar_val),
+                pf_p = k_fermi_of_nbar.at("proton")(nbar_val);
+        double mst_n = m_stars_of_nbar.at("neutron")(nbar_val),
+                mst_p = m_stars_of_nbar.at("proton")(nbar_val),
+                mst_l = m_stars_of_nbar.at(lepton_flavour)(nbar_val);
+        if (pf_l + pf_p - pf_n <= 0)
+            return 0.0;
+        double dens = (4.24E27 / 1.68E54) * (mst_n / M_N) * (mst_p / M_N) * mst_l *
+                        pow(T/exp_phi(r), 6) * pow(gev_over_k, 6) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3);
+        return dens;
+    };
 
-    auto hadron_bremsstrahlung_luminosity = auxiliaries::CachedFunc<std::vector<double>, std::function<double(double, double)>,
-                                                                 const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, double, double>(cooling::predefined::neutrinic::hadron_bremsstrahlung_luminocity_cached);
+    auto hadron_murca_emissivity = [&](double r, const std::string& lepton_flavour, double t, double T)
+    {
+        using namespace constants::scientific;
+        using namespace constants::conversion;
+
+        double nbar_val = nbar(r);
+        double pf_l = k_fermi_of_nbar.at(lepton_flavour)(nbar_val),
+                pf_n = k_fermi_of_nbar.at("neutron")(nbar_val),
+                pf_p = k_fermi_of_nbar.at("proton")(nbar_val);
+        double mst_n = m_stars_of_nbar.at("neutron")(nbar_val),
+                mst_p = m_stars_of_nbar.at("proton")(nbar_val),
+                mst_l = m_stars_of_nbar.at(lepton_flavour)(nbar_val);
+        double alpha = 1.76 - 0.63 * pow(N_sat / (nbar_val * nbar_conversion), 2.0 / 3), beta = 0.68,
+               v_fl = pf_l / mst_l;
+        double dens = (8.05E21 / 1.68E72) * v_fl * pow(mst_n / M_N, 3) * (mst_p / M_N) * pf_p *
+                      pow(T/exp_phi(r), 8) * alpha * beta *
+                      pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3);
+        if (pf_l + 3 * pf_p - pf_n > 0)
+            dens += (8.05E21 / (8 * 1.68E72)) * (pow(pf_l + 3 * pf_p - pf_n, 2) / mst_l) * pow(mst_p / M_N, 3) * (mst_n / M_N) *
+                    pow(T/exp_phi(r), 8) * alpha * beta *
+                    pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3);
+        return dens;
+    };
+
+    auto hadron_bremsstrahlung_emissivity = [&](double r, double t, double T)
+    {
+        using namespace constants::scientific;
+        using namespace constants::conversion;
+
+        double nbar_val = nbar(r);
+        double pf_n = k_fermi_of_nbar.at("neutron")(nbar_val),
+                pf_p = k_fermi_of_nbar.at("proton")(nbar_val);
+        double mst_n = m_stars_of_nbar.at("neutron")(nbar_val),
+                mst_p = m_stars_of_nbar.at("proton")(nbar_val);
+        double alpha_nn = 0.59, alpha_np = 1.06, alpha_pp = 0.11,
+               beta_nn = 0.56, beta_np = 0.66, beta_pp = 0.7;
+        int n_flavours = 3;
+        double dens_nn = (7.5E19 / 1.68E72) * pow(mst_n / M_N, 4) * pf_n * n_flavours *
+                         pow(T/exp_phi(r), 8) * alpha_nn * beta_nn *
+                         pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3),
+               dens_pp = (7.5E19 / 1.68E72) * pow(mst_p / M_N, 4) * pf_p * n_flavours *
+                         pow(T/exp_phi(r), 8) * alpha_pp * beta_pp *
+                         pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3),
+               dens_np = (1.5E20 / 1.68E72) * pow(mst_p / M_N, 2) * pow(mst_n / M_N, 2) * pf_p * n_flavours *
+                         pow(T/exp_phi(r), 8) * alpha_np * beta_np *
+                         pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3);
+
+        return dens_nn + dens_np + dens_pp;
+    };
+
     auto neutrino_luminosity = [&](double t, double T)
     {
-        return hadron_durca_luminosity_electron(
-                   m_stars_of_nbar.at("neutron"), m_stars_of_nbar.at("proton"), m_stars_of_nbar.at("electron"), k_fermi_of_nbar.at("neutron"), k_fermi_of_nbar.at("proton"), k_fermi_of_nbar.at("electron"), nbar, exp_lambda, exp_phi, r_ns, radius_step)(t, T) +
-               hadron_durca_luminosity_muon(
-                   m_stars_of_nbar.at("neutron"), m_stars_of_nbar.at("proton"), m_stars_of_nbar.at("muon"), k_fermi_of_nbar.at("neutron"), k_fermi_of_nbar.at("proton"), k_fermi_of_nbar.at("muon"), nbar, exp_lambda, exp_phi, r_ns, radius_step)(t, T) +
-               hadron_murca_luminosity_electron(
-                   m_stars_of_nbar.at("neutron"), m_stars_of_nbar.at("proton"), m_stars_of_nbar.at("electron"), k_fermi_of_nbar.at("neutron"), k_fermi_of_nbar.at("proton"), k_fermi_of_nbar.at("electron"), nbar, exp_lambda, exp_phi, r_ns, radius_step, nbar_conversion)(t, T) +
-               hadron_murca_luminosity_muon(
-                   m_stars_of_nbar.at("neutron"), m_stars_of_nbar.at("proton"), m_stars_of_nbar.at("muon"), k_fermi_of_nbar.at("neutron"), k_fermi_of_nbar.at("proton"), k_fermi_of_nbar.at("muon"), nbar, exp_lambda, exp_phi, r_ns, radius_step, nbar_conversion)(t, T) +
-               hadron_bremsstrahlung_luminosity(
-                   m_stars_of_nbar.at("neutron"), m_stars_of_nbar.at("proton"), k_fermi_of_nbar.at("neutron"), k_fermi_of_nbar.at("proton"), nbar, exp_lambda, exp_phi, r_ns, radius_step)(t, T);
+        auto Q_nu = [&](double r, double t, double T)
+        {
+            double result = 0;
+            for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
+            {
+                auto key = it->first;
+                if (key == "electron" || key == "muon" || key == "tau")
+                {
+                    result += hadron_murca_emissivity(r, key, t, T);
+                    result += hadron_durca_emissivity(r, key, t, T);
+                }
+            }
+            result += hadron_bremsstrahlung_emissivity(r, t, T);
+            return result;
+        };
+        std::function<double(double, double, double)> redshifted_Q_nu = [&](double r, double t, double T)
+        {
+            return Q_nu(r, t, T) * exp_phi(r) * exp_phi(r);
+        };
+        double L_nu = 0;
+        for (double r = radius_step / 2; r < r_ns - radius_step / 2; r += radius_step)
+        {
+            L_nu += redshifted_Q_nu(r, t, T) * 4 * constants::scientific::Pi * r * r * radius_step * exp_lambda(r);
+        }
+        return L_nu;
     };
 
     // specific heat
-    auto fermi_specific_heat = auxiliaries::CachedFunc<std::vector<double>, std::function<double(double, double)>,
-                                                       const std::map<std::string, std::function<double(double)>> &, const std::map<std::string, std::function<double(double)>> &, const std::function<double(double)> &, const std::function<double(double)> &, const std::function<double(double)> &, double, double>(cooling::predefined::auxiliary::fermi_specific_heat_cached);
+    auto fermi_specific_heat_dens = [&](double r, double t, double T)
+    {
+        using namespace constants::scientific;
 
-    auto heat_capacity = fermi_specific_heat(
-        m_stars_of_nbar, k_fermi_of_nbar, nbar, exp_lambda, exp_phi, r_ns, radius_step);
+        double cv_dens = 0;
+        for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
+        {
+            auto key = it->first;
+            double nbar_val = nbar(r);
+            double m_star = m_stars_of_nbar.at(key)(nbar_val);
+            double k_fermi = k_fermi_of_nbar.at(key)(nbar_val);
+            double exp_min_phi = 1.0 / exp_phi(r);
+            cv_dens += m_star * k_fermi / 3.0 * exp_min_phi * T;
+        }
+        return cv_dens;
+    };
+
+    auto heat_capacity = [&](double t, double T)
+    {
+        double result = 0.0;
+        for (double r = radius_step / 2; r < r_ns - radius_step/2 ; r += radius_step)
+        {
+            result += fermi_specific_heat_dens(r, t, T) * 4 * constants::scientific::Pi * r * r * radius_step * exp_lambda(r);
+        }
+        return result;
+    };
 
     auto cooling_rhs = [&heat_capacity, &photon_luminosity, &neutrino_luminosity](double t, double T)
     {
+        //std::cout << t << " " << photon_luminosity(t, T) << " " << neutrino_luminosity(t, T) << " " << heat_capacity(t, T) << '\n';
         return -(photon_luminosity(t, T) + neutrino_luminosity(t, T)) / heat_capacity(t, T);
     };
 
@@ -195,13 +289,20 @@ int main()
     std::vector<double> y(1000, 0);
     std::cout << "M/Msol " << m_ns * constants::conversion::gev_over_msol << std::endl;
     std::cout << "t [years] " << "\tTe^inf [K] " << "\tL_ph [erg/s] " << "\tL_nu [erg/s] " << std::endl;
-    for (int i = 0; i <= 1000; ++i)
+    for (int i = 0;; ++i)
     {
         x[i] = base_t_step * (pow(exp_rate_estim, i+1) - 1) / (exp_rate_estim - 1);
+        if (x[i] > t_end)
+        {
+            x.resize(i);
+            y.resize(i);
+            break;
+        }
         y[i] = cooling_solver(x[i], cooling_rhs, T_init, base_t_step, exp_rate_estim, cooling_interpolator);
         // print luminosities in humanic units
         std::cout << 1.0E6 * x[i] / (constants::conversion::myr_over_s * constants::conversion::gev_s) << "\t" << cooling::predefined::auxiliary::te_tb_relation(y[i], r_ns, m_ns, eta) * exp_phi_at_R * constants::conversion::gev_over_k << "\t" << 
-            photon_luminosity(x[i], y[i]) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << neutrino_luminosity(x[i], y[i]) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << std::endl;
+            photon_luminosity(x[i], y[i]) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << neutrino_luminosity(x[i], y[i]) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" <<
+            heat_capacity(x[i], y[i]) << '\n';
         //rescale 
         x[i] *= 1.0E6 / (constants::conversion::myr_over_s * constants::conversion::gev_s);
         y[i] = cooling::predefined::auxiliary::te_tb_relation(y[i], r_ns, m_ns, eta) * exp_phi_at_R * constants::conversion::gev_over_k;
@@ -229,7 +330,7 @@ int main()
     }
 
     TCanvas *c1 = new TCanvas("c1", "c1");
-    auto gr = new TGraph(1000, x.data(), y.data());
+    auto gr = new TGraph(x.size(), x.data(), y.data());
     gr->SetLineColor(kBlue);
     gr->Draw("AL");
     // title offset

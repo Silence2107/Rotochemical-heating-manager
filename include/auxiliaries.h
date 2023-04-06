@@ -5,6 +5,8 @@
 #include <vector>
 #include <functional>
 
+#include "../include/constants.h"
+
 /// @brief various auxiliary functionality;
 /// contains:
 /// function retrieve_cleared_line;
@@ -90,6 +92,27 @@ namespace auxiliaries
     /// @param disable_checks false by default. If true, no checks are performed. For performance reasons.
     /// @return interpolated value
     double interpolate_cached(std::function<double(double)> &cache, const std::vector<double> &input, const std::vector<double> &output, InterpolationMode mode, double x, bool disable_checks = false);
+
+    /// @brief integrator over NS volume
+    /// @param function to integrate with parameters double r, args...
+    /// @param rmin lower bound
+    /// @param rmax upper bound
+    /// @param r_step integration step
+    /// @param exp_lambda exponent of lambda function(to be used in jacobian)
+    /// @return integral value as a function of args...
+    template <class... Args>
+    std::function<double(Args... args)> integrate_volume(const std::function<double(double, Args...)> &function, double rmin, double rmax, double r_step, const std::function<double(double)> &exp_lambda)
+    {
+        return [=](Args... args) -> double
+        {
+            double result = 0.0;
+            for (double r = rmin + r_step / 2; r < rmax - r_step / 2; r += r_step)
+            {
+                result += function(r, args...) * 4 * constants::scientific::Pi * r * r * r_step * exp_lambda(r);
+            }
+            return result;
+        };
+    }
 }
 
 #endif

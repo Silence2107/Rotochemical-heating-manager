@@ -135,7 +135,7 @@ namespace inputfile
     double density_step = 1E-8 * edensity_upp * energy_density_conversion;
 
     // TOV solver center density in GeV^4
-    double center_density = 1.0/7.44 * edensity_upp * energy_density_conversion;
+    double center_density = 1.0 / 7.44 * edensity_upp * energy_density_conversion;
 }
 
 #endif

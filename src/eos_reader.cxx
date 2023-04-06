@@ -146,7 +146,7 @@ std::vector<double> eos_reader::predefined::apr4_cached(std::vector<std::vector<
 		x_interp[j] = cache[j][2]; // array of baryonic densities
 	if (nbar > nbar_core_limit)
 	{
-		for (int i = 0; i < 7; ++i) // 7 variables to extract
+		for (int i = 0; i < 17; ++i) // 17 variables to extract
 		{
 			for (int j = 0; j < cache.size(); ++j)
 				y_interp[j] = cache[j][i]; // array of data
