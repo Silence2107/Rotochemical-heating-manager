@@ -204,34 +204,24 @@ int main()
         return dens_nn + dens_np + dens_pp;
     };
 
-    auto neutrino_luminosity = [&](double t, double T)
+    auto Q_nu = [&](double r, double t, double T)
     {
-        auto Q_nu = [&](double r, double t, double T)
+        double result = 0;
+        for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
         {
-            double result = 0;
-            for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
+            auto key = it->first;
+            if (key == "electron" || key == "muon" || key == "tau")
             {
-                auto key = it->first;
-                if (key == "electron" || key == "muon" || key == "tau")
-                {
-                    result += hadron_murca_emissivity(r, key, t, T);
-                    result += hadron_durca_emissivity(r, key, t, T);
-                }
+                result += hadron_murca_emissivity(r, key, t, T);
+                result += hadron_durca_emissivity(r, key, t, T);
             }
-            result += hadron_bremsstrahlung_emissivity(r, t, T);
-            return result;
-        };
-        std::function<double(double, double, double)> redshifted_Q_nu = [&](double r, double t, double T)
-        {
-            return Q_nu(r, t, T) * exp_phi(r) * exp_phi(r);
-        };
-        double L_nu = 0;
-        for (double r = radius_step / 2; r < r_ns - radius_step / 2; r += radius_step)
-        {
-            L_nu += redshifted_Q_nu(r, t, T) * 4 * constants::scientific::Pi * r * r * radius_step * exp_lambda(r);
         }
-        return L_nu;
+        result += hadron_bremsstrahlung_emissivity(r, t, T);
+        return result * exp_phi(r) * exp_phi(r);
     };
+
+    auto neutrino_luminosity = auxiliaries::integrate_volume<double, double>(
+        std::function<double(double, double, double)>(Q_nu), 0, r_ns, radius_step, exp_lambda);
 
     // specific heat
     auto fermi_specific_heat_dens = [&](double r, double t, double T)
@@ -251,15 +241,8 @@ int main()
         return cv_dens;
     };
 
-    auto heat_capacity = [&](double t, double T)
-    {
-        double result = 0.0;
-        for (double r = radius_step / 2; r < r_ns - radius_step/2 ; r += radius_step)
-        {
-            result += fermi_specific_heat_dens(r, t, T) * 4 * constants::scientific::Pi * r * r * radius_step * exp_lambda(r);
-        }
-        return result;
-    };
+    auto heat_capacity = auxiliaries::integrate_volume<double, double>(
+        std::function<double(double, double, double)>(fermi_specific_heat_dens), 0, r_ns, radius_step, exp_lambda);
 
     auto cooling_rhs = [&heat_capacity, &photon_luminosity, &neutrino_luminosity](double t, double T)
     {

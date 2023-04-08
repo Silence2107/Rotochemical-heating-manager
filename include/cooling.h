@@ -34,18 +34,6 @@ namespace cooling
         /// @brief Auxiliary physics related to cooling
         namespace auxiliary
         {
-            /// @brief specific heat calculator based on Fermi gas model cv = sum (m_star * k_fermi)/3 * T
-            /// @param cache cache support via CachedFunction wrapper; holds cache[0]=Cv/T^inf
-            /// @param m_star_functions m_star functions for each species (GeV); this dictionary defines considered species by its keys
-            /// @param k_fermi_functions k_fermi functions for each species (GeV); must have (at least) the same keys as m_star_functions
-            /// @param nbar_of_r nbar(r) function in the NS (datafile units)
-            /// @param exp_lambda_of_r exp(lambda(r)) function in the NS
-            /// @param exp_phi_of_r exp(phi(r)) function in the NS
-            /// @param r_ns NS radius [GeV^{-1}]
-            /// @param radius_step radius step for the integration [GeV^{-1}]
-            /// @return Cv(t, T^inf) [GeV^{0}] (integrated)
-            std::function<double(double, double)> fermi_specific_heat_cached(std::vector<double> &cache, const std::map<std::string, std::function<double(double)>> &m_star_functions, const std::map<std::string, std::function<double(double)>> &k_fermi_functions, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_lambda_of_r, const std::function<double(double)> &exp_phi_of_r, double r_ns, double radius_step);
-
             /// @brief Te-Tb relation, based on Keisure thesis
             /// @param Tb internal temperature [GeV], measured by distant observer (inf)
             /// @param R NS radius [GeV^{-1}]
@@ -101,57 +89,7 @@ namespace cooling
 
         /// @brief Neutrino related cooling functionality
         namespace neutrinic
-        {
-            /// @brief Returns the cooling luminosity function of (t, T^inf) for a given temperature, (n, p, l) m*'s and k_fermi's. The calculation is based on the formula Keisuke thesis.
-            /// @param cache cache support via CachedFunction wrapper; holds cache[0]=L^inf/(T^inf)^6
-            /// @param m_star_n neutron m* [GeV]
-            /// @param m_star_p proton m* [GeV]
-            /// @param m_star_l lepton m* [GeV]
-            /// @param k_fermi_n neutron k_fermi [GeV]
-            /// @param k_fermi_p proton k_fermi [GeV]
-            /// @param k_fermi_l lepton k_fermi [GeV]
-            /// @param nbar_of_r nbar(r) function in the NS (datafile units)
-            /// @param exp_lambda_of_r exp(lambda(r)) function in the NS
-            /// @param exp_phi_of_r exp(phi(r)) function in the NS
-            /// @param r_ns NS radius [GeV^{-1}]
-            /// @param radius_step radius step for the integration [GeV^{-1}]
-            /// @return cooling luminosity function of (t, T^inf) [GeV^{2}]
-            /// @note Covers processes: n -> p + l + anti-nu_l, p + l -> n + nu_l
-            std::function<double(double, double)> hadron_durca_luminocity_cached(std::vector<double> &cache, const std::function<double(double)> &m_star_n, const std::function<double(double)> &m_star_p, const std::function<double(double)> &m_star_l, const std::function<double(double)> &k_fermi_n, const std::function<double(double)> &k_fermi_p, const std::function<double(double)> &k_fermi_l, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_lambda_of_r, const std::function<double(double)> &exp_phi_of_r, double r_ns, double radius_step);
-
-            /// @brief Returns the cooling luminosity function of (t, T^inf) for a given temperature, (n, p, l) m*'s and k_fermi's. The calculation is based on the formula Keisuke thesis.
-            /// @param cache cache support via CachedFunction wrapper; holds cache[0]=L^inf/(T^inf)^8
-            /// @param m_star_n neutron m* [GeV]
-            /// @param m_star_p proton m* [GeV]
-            /// @param m_star_l lepton m* [GeV]
-            /// @param k_fermi_n neutron k_fermi [GeV]
-            /// @param k_fermi_p proton k_fermi [GeV]
-            /// @param k_fermi_l lepton k_fermi [GeV]
-            /// @param nbar_of_r nbar(r) function in the NS (datafile units)
-            /// @param exp_lambda_of_r exp(lambda(r)) function in the NS
-            /// @param exp_phi_of_r exp(phi(r)) function in the NS
-            /// @param r_ns NS radius [GeV^{-1}]
-            /// @param radius_step radius step for the integration [GeV^{-1}]
-            /// @param nbar_conversion conversion factor from datafile nbar units to GeV^3
-            /// @return cooling luminosity function of (t, T^inf) [GeV^{2}]
-            /// @note Covers processes: n + N1 -> p + N2 + l + anti-nu_l, p + N2 + l -> n + N1 + nu_l
-            std::function<double(double, double)> hadron_murca_luminocity_cached(std::vector<double> &cache, const std::function<double(double)> &m_star_n, const std::function<double(double)> &m_star_p, const std::function<double(double)> &m_star_l, const std::function<double(double)> &k_fermi_n, const std::function<double(double)> &k_fermi_p, const std::function<double(double)> &k_fermi_l, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_lambda_of_r, const std::function<double(double)> &exp_phi_of_r, double r_ns, double radius_step, double nbar_conversion);
-
-            /// @brief Returns the cooling luminosity function of (t, T^inf) for a given temperature, (n, p, l) m*'s and k_fermi's. The calculation is based on https://arxiv.org/pdf/astro-ph/0012122.pdf.
-            /// @param cache cache support via CachedFunction wrapper; holds cache[0]=L^inf/(T^inf)^8
-            /// @param m_star_n neutron m* [GeV]
-            /// @param m_star_p proton m* [GeV]
-            /// @param k_fermi_n neutron k_fermi [GeV]
-            /// @param k_fermi_p proton k_fermi [GeV]
-            /// @param nbar_of_r nbar(r) function in the NS (datafile units)
-            /// @param exp_lambda_of_r exp(lambda(r)) function in the NS
-            /// @param exp_phi_of_r exp(phi(r)) function in the NS
-            /// @param r_ns NS radius [GeV^{-1}]
-            /// @param radius_step radius step for the integration [GeV^{-1}]
-            /// @return cooling luminosity function of (t, T^inf) [GeV^{2}]
-            /// @note Covers processes: n + n -> n + n + nu_l + anti-nu_l, p + p -> p + p + nu_l + anti-nu_l, n + p -> n + p + nu_l + anti-nu_l for 3 neutrino sorts
-            std::function<double(double, double)> hadron_bremsstrahlung_luminocity_cached(std::vector<double> &cache, const std::function<double(double)> &m_star_n, const std::function<double(double)> &m_star_p, const std::function<double(double)> &k_fermi_n, const std::function<double(double)> &k_fermi_p, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_lambda_of_r, const std::function<double(double)> &exp_phi_of_r, double r_ns, double radius_step);
-        }
+        {}
     }
 }
 
