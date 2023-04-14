@@ -9,6 +9,7 @@
 #include <string>
 #include <cmath>
 #include <stdexcept>
+//#include <iostream>
 
 double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double>> &cache, double t, const std::function<double(double, double)> &cooling_rhs, double initial_temperature, double base_time_step, double exp_rate,
                                                   const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &interpolator)
@@ -52,6 +53,7 @@ double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double
             t_curr += time_step;
             cache[0].push_back(t_curr);
             time_step *= exp_rate;
+            //std::cout << cache[0].back() << " " << cache[1].back() << '\n';
         } while (t > t_curr);
     }
     // now we're sure the time is in the cache, we just interpolate
@@ -75,15 +77,16 @@ double cooling::predefined::auxiliary::te_tb_relation(double Tb, double R, doubl
 
     // now we just use the formulas from the paper
     double dzeta = T_local_9 - pow(7 * T_local_9 * pow(g_14, 0.5), 0.5) * 1.0E-3;
-    double T_s6_Fe_to_4 = g_14 * (pow(7 * dzeta, 2.25) + pow(dzeta / 3, 1.25)),
+    // dzeta > 0 -- from rotochemical notes
+    double T_s6_Fe_to_4 = (dzeta > 0 ? g_14 * (pow(7 * dzeta, 2.25) + pow(dzeta / 3, 1.25)) : 0.0),
            T_s6_a_to_4 = g_14 * pow(18.1 * T_local_9, 2.42);
 
     double a = (1.2 + pow(5.3 * 1.0E-6 / eta, 0.38)) * pow(T_local_9, 5.0 / 3);
 
     // surface temperature normalized to 1E6 K in 4th power
     double T_s6_to_4 = (a * T_s6_Fe_to_4 + T_s6_a_to_4) / (a + 1);
-
-    return pow(T_s6_to_4, 1.0 / 4) * 1.0E6 / gev_over_k;
+    double Ts = pow(T_s6_to_4, 1.0 / 4) * 1.0E6 / gev_over_k;
+    return (Ts < Tb / exp_phi_at_R) ? Ts : Tb / exp_phi_at_R;
 }
 
 std::function<double(double, double)> cooling::predefined::photonic::surface_luminosity(double R, double M, double eta)
@@ -101,44 +104,41 @@ double cooling::predefined::auxiliary::critical_temperature_smeared_guassian(dou
     return temp_ampl * exp(-pow((k_fermi - k_offs) / k_width, 2) - quad_skew * pow((k_fermi - k_offs) / k_width, 4));
 }
 
-double cooling::predefined::auxiliary::critical_temperature_ao(double k_fermi)
+double cooling::predefined::auxiliary::superfluid_gap_1s0(double tau)
 {
-    using namespace constants::conversion;
-    return cooling::predefined::auxiliary::critical_temperature_smeared_guassian(
-        k_fermi, 2.35E9 / gev_over_k, 0.49 / (1.0E-18 * km_gev), 0.31 / (1.0E-18 * km_gev), 0.0);
+    return std::sqrt(1 - tau) * (1.456 - 0.157 / std::sqrt(tau) + 1.764 / tau);
 }
 
-double cooling::predefined::auxiliary::critical_temperature_ccdk(double k_fermi)
+double cooling::predefined::auxiliary::superfluid_gap_3p2(double tau)
 {
-    using namespace constants::conversion;
-    return cooling::predefined::auxiliary::critical_temperature_smeared_guassian(
-        k_fermi, 6.6E9 / gev_over_k, 0.66 / (1.0E-18 * km_gev), 0.46 / (1.0E-18 * km_gev), 0.69);
+    return std::sqrt(1 - tau) * (0.7893 + 1.188 / tau);
 }
 
-double cooling::predefined::auxiliary::critical_temperature_a(double k_fermi)
+double cooling::predefined::auxiliary::critical_temperature(double k_fermi, cooling::predefined::auxiliary::CriticalTemperatureModel model)
 {
     using namespace constants::conversion;
-    return cooling::predefined::auxiliary::critical_temperature_smeared_guassian(
-        k_fermi, 1.0E9 / gev_over_k, 1.8 / (1.0E-18 * km_gev), 0.5 / (1.0E-18 * km_gev), 0.0);
-}
-
-double cooling::predefined::auxiliary::critical_temperature_b(double k_fermi)
-{
-    using namespace constants::conversion;
-    return cooling::predefined::auxiliary::critical_temperature_smeared_guassian(
-        k_fermi, 3.0E9 / gev_over_k, 2.0 / (1.0E-18 * km_gev), 0.5 / (1.0E-18 * km_gev), 0.0);
-}
-
-double cooling::predefined::auxiliary::critical_temperature_c(double k_fermi)
-{
-    using namespace constants::conversion;
-    return cooling::predefined::auxiliary::critical_temperature_smeared_guassian(
-        k_fermi, 1.0E10 / gev_over_k, 2.5 / (1.0E-18 * km_gev), 0.7 / (1.0E-18 * km_gev), 0.0);
-}
-
-double cooling::predefined::auxiliary::critical_temperature_a2(double k_fermi)
-{
-    using namespace constants::conversion;
-    return cooling::predefined::auxiliary::critical_temperature_smeared_guassian(
-        k_fermi, 5.5E9 / gev_over_k, 2.3 / (1.0E-18 * km_gev), 0.9 / (1.0E-18 * km_gev), 0.0);
+    using namespace cooling::predefined::auxiliary;
+    switch (model)
+    {
+    case CriticalTemperatureModel::kA:
+        return critical_temperature_smeared_guassian(
+            k_fermi, 1.0E9 / gev_over_k, 1.8 / (1.0E-18 * km_gev), 0.5 / (1.0E-18 * km_gev), 0.0);
+    case CriticalTemperatureModel::kB:
+        return critical_temperature_smeared_guassian(
+            k_fermi, 3.0E9 / gev_over_k, 2.0 / (1.0E-18 * km_gev), 0.5 / (1.0E-18 * km_gev), 0.0);
+    case CriticalTemperatureModel::kC:
+        return critical_temperature_smeared_guassian(
+            k_fermi, 1.0E10 / gev_over_k, 2.5 / (1.0E-18 * km_gev), 0.7 / (1.0E-18 * km_gev), 0.0);
+    case CriticalTemperatureModel::kA2:
+        return critical_temperature_smeared_guassian(
+            k_fermi, 5.5E9 / gev_over_k, 2.3 / (1.0E-18 * km_gev), 0.9 / (1.0E-18 * km_gev), 0.0);
+    case CriticalTemperatureModel::kCCDK:
+        return critical_temperature_smeared_guassian(
+            k_fermi, 6.6E9 / gev_over_k, 0.66 / (1.0E-18 * km_gev), 0.46 / (1.0E-18 * km_gev), 0.69);
+    case CriticalTemperatureModel::kAO:
+        return critical_temperature_smeared_guassian(
+            k_fermi, 2.35E9 / gev_over_k, 0.49 / (1.0E-18 * km_gev), 0.31 / (1.0E-18 * km_gev), 0.0);
+    default:
+        throw std::runtime_error("Unknown critical temperature model");
+    }
 }

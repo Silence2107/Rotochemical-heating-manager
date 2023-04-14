@@ -51,29 +51,29 @@ namespace cooling
             /// @return T0 * exp[- ((k_fermi - k_offs) / (k_width))^2 - quad_skew * ((k_fermi - k_offs) / (k_width))^4]
             double critical_temperature_smeared_guassian(double k_fermi, double temp_ampl, double k_offs, double k_width, double quad_skew);
         
-            /// @brief Critical temperature in AO model
-            /// @param k_fermi fermi momentum [GeV], correspoding to the nucleon
-            double critical_temperature_ao(double k_fermi);
+            /// @brief Enumerate choices for the nucleon critical temperature parametrization
+            enum class CriticalTemperatureModel
+            {
+                kAO,
+                kCCDK,
+                kA,
+                kB,
+                kC,
+                kA2
+            };
 
-            /// @brief Critical temperature in CCDK model
+            /// @brief Critical temperature in given model
             /// @param k_fermi fermi momentum [GeV], correspoding to the nucleon
-            double critical_temperature_ccdk(double k_fermi);
+            /// @param model choice of the model
+            double critical_temperature(double k_fermi, CriticalTemperatureModel model);
 
-            /// @brief Critical temperature in "a" model
-            /// @param k_fermi fermi momentum [GeV], correspoding to the nucleon
-            double critical_temperature_a(double k_fermi);
+            /// @brief Superfluid gap in 1S0 state (A)
+            /// @param tau T/Tc
+            double superfluid_gap_1s0(double tau);
 
-            /// @brief Critical temperature in "b" model
-            /// @param k_fermi fermi momentum [GeV], correspoding to the nucleon
-            double critical_temperature_b(double k_fermi);
-
-            /// @brief Critical temperature in "c" model
-            /// @param k_fermi fermi momentum [GeV], correspoding to the nucleon
-            double critical_temperature_c(double k_fermi);
-
-            /// @brief Critical temperature in "a2" model
-            /// @param k_fermi fermi momentum [GeV], correspoding to the nucleon
-            double critical_temperature_a2(double k_fermi);
+            /// @brief Superfluid gap in 3P2 state (B)
+            /// @param tau T/Tc
+            double superfluid_gap_3p2(double tau);
         }
 
         /// @brief Photon related cooling functionality

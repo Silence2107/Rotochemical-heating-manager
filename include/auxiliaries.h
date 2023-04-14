@@ -105,10 +105,23 @@ namespace auxiliaries
     {
         return [=](Args... args) -> double
         {
-            double result = 0.0;
+            /*double result = 0.0;
             for (double r = rmin + r_step / 2; r < rmax - r_step / 2; r += r_step)
             {
                 result += function(r, args...) * 4 * constants::scientific::Pi * r * r * r_step * exp_lambda(r);
+            }
+            return result;*/
+            // 6-point Gauss-Legendre quadrature
+            std::vector<double> weights = {0.1713244923791704, 0.3607615730481386, 0.4679139345726910, 0.4679139345726910, 0.3607615730481386, 0.1713244923791704},
+                                 points = {-0.9324695142031521, -0.6612093864662645, -0.2386191860831969, 0.2386191860831969, 0.6612093864662645, 0.9324695142031521};
+            double result = 0.0;
+            auto integrand = [=](double r) -> double
+            {
+                return function(r, args...) * 4 * constants::scientific::Pi * r * r * exp_lambda(r);
+            };
+            for (int i = 0; i < weights.size(); i++)
+            {
+                result += (rmax - rmin) / 2 * weights[i] * integrand((rmax - rmin) / 2 * points[i] + (rmax + rmin) / 2);
             }
             return result;
         };
