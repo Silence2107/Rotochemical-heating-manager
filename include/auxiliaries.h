@@ -34,7 +34,7 @@ namespace auxiliaries
         Cache cache;                                   // data which should be saved
     public:
         /// @brief public constructor of CachedFunc
-        CachedFunc(const std::function<Foutput(Cache &, Args...)> &func, Cache defaultcache = Cache()) : func{func} 
+        CachedFunc(const std::function<Foutput(Cache &, Args...)> &func, Cache defaultcache = Cache()) : func{func}
         {
             erase(defaultcache);
         }
@@ -49,7 +49,8 @@ namespace auxiliaries
         /// @return std::function<Foutput(Args...)>
         operator std::function<Foutput(Args...)>()
         {
-            return [this](Args... args) { return func(this->cache, args...); };
+            return [this](Args... args)
+            { return func(this->cache, args...); };
         }
         /// @brief Erases cache
         /// @param defaultval Value that is substituted inside the cache; equals 'Cache()' by default, pass your version if needed/required
@@ -84,7 +85,7 @@ namespace auxiliaries
     /// Make sure to have sufficient amount of points when choosing mode;
     /// Also make sure to have arrays sorted beforehand. Sorting will not be done here;
     /// Note : both increasing and decreasing input arrays are supported
-    /// @param cache Cache support. Wrap it with CachedFunc to use it. 
+    /// @param cache Cache support. Wrap it with CachedFunc to use it.
     /// @param input input array to interpolate
     /// @param output output array to interpolate
     /// @param mode interpolation mode
@@ -93,39 +94,75 @@ namespace auxiliaries
     /// @return interpolated value
     double interpolate_cached(std::function<double(double)> &cache, const std::vector<double> &input, const std::vector<double> &output, InterpolationMode mode, double x, bool disable_checks = false);
 
+    /// @brief Integration modes
+    enum class IntegrationMode
+    {
+        /// @brief Rectangular integration
+        kRectangular,
+        /// @brief Gauss-Legendre integration with 6 points
+        kGaussLegendre_6p,
+        /// @brief Gauss-Legendre integration with 12 points
+        kGaussLegendre_12p
+    };
+
     /// @brief integrator over NS volume
     /// @param function to integrate with parameters double r, args...
     /// @param rmin lower bound
     /// @param rmax upper bound
-    /// @param r_step integration step
     /// @param exp_lambda exponent of lambda function(to be used in jacobian)
+    /// @param mode integration mode
+    /// @param r_step integration step (for rectangular integration). Defaults to 10 meters
     /// @return integral value as a function of args...
     template <class... Args>
-    std::function<double(Args... args)> integrate_volume(const std::function<double(double, Args...)> &function, double rmin, double rmax, double r_step, const std::function<double(double)> &exp_lambda)
+    std::function<double(Args... args)> integrate_volume(const std::function<double(double, Args...)> &function, double rmin, double rmax, const std::function<double(double)> &exp_lambda, IntegrationMode mode, double r_step = 5.06E16)
     {
         return [=](Args... args) -> double
         {
-            /*double result = 0.0;
-            for (double r = rmin + r_step / 2; r < rmax - r_step / 2; r += r_step)
+            switch (mode)
             {
-                result += function(r, args...) * 4 * constants::scientific::Pi * r * r * r_step * exp_lambda(r);
+            case IntegrationMode::kRectangular:
+            {
+                double result = 0.0;
+                for (double r = rmin + r_step / 2; r < rmax - r_step / 2; r += r_step)
+                {
+                    result += function(r, args...) * 4 * constants::scientific::Pi * r * r * r_step * exp_lambda(r);
+                }
+                return result;
             }
-            return result;*/
-            // 6-point Gauss-Legendre quadrature
-            std::vector<double> weights = {0.1713244923791704, 0.3607615730481386, 0.4679139345726910, 0.4679139345726910, 0.3607615730481386, 0.1713244923791704},
-                                 points = {-0.9324695142031521, -0.6612093864662645, -0.2386191860831969, 0.2386191860831969, 0.6612093864662645, 0.9324695142031521};
-            double result = 0.0;
-            auto integrand = [=](double r) -> double
+            case IntegrationMode::kGaussLegendre_6p:
             {
-                return function(r, args...) * 4 * constants::scientific::Pi * r * r * exp_lambda(r);
-            };
-            for (int i = 0; i < weights.size(); i++)
-            {
-                result += (rmax - rmin) / 2 * weights[i] * integrand((rmax - rmin) / 2 * points[i] + (rmax + rmin) / 2);
+                std::vector<double> weights = {0.1713244923791704, 0.3607615730481386, 0.4679139345726910, 0.4679139345726910, 0.3607615730481386, 0.1713244923791704},
+                                    points = {-0.9324695142031521, -0.6612093864662645, -0.2386191860831969, 0.2386191860831969, 0.6612093864662645, 0.9324695142031521};
+                double result = 0.0;
+                auto integrand = [=](double r) -> double
+                {
+                    return function(r, args...) * 4 * constants::scientific::Pi * r * r * exp_lambda(r);
+                };
+                for (int i = 0; i < weights.size(); i++)
+                {
+                    result += (rmax - rmin) / 2 * weights[i] * integrand((rmax - rmin) / 2 * points[i] + (rmax + rmin) / 2);
+                }
+                return result;
             }
-            return result;
+            case IntegrationMode::kGaussLegendre_12p:
+            {
+                std::vector<double> weights = {0.04717533638651177, 0.10693932599531843, 0.16007832854334622, 0.20316742672306592, 0.23349253653835481, 0.24914704581340277, 0.24914704581340277, 0.23349253653835481, 0.20316742672306592, 0.16007832854334622, 0.10693932599531843, 0.04717533638651177},
+                                    points = {-0.9815606342467192, -0.9041172563704749, -0.7699026741943047, -0.5873179542866175, -0.3678314989981802, -0.1252334085114699, 0.1252334085114699, 0.3678314989981802, 0.5873179542866175, 0.7699026741943047, 0.9041172563704749, 0.9815606342467192};
+                double result = 0.0;
+                auto integrand = [=](double r) -> double
+                {
+                    return function(r, args...) * 4 * constants::scientific::Pi * r * r * exp_lambda(r);
+                };
+                for (int i = 0; i < weights.size(); i++)
+                {
+                    result += (rmax - rmin) / 2 * weights[i] * integrand((rmax - rmin) / 2 * points[i] + (rmax + rmin) / 2);
+                }
+                return result;
+            }
+            default:
+                throw std::runtime_error("Unimplemented integration mode; Encountered in auxiliaries::integrate_volume");
+            }
         };
     }
 }
-
 #endif
