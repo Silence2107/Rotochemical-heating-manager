@@ -75,9 +75,7 @@ namespace inputfile
             {"neutron", [](double nbar)
              { return (nbar >= nbar_core_limit) ? data_reader({nbar})[5] : 1.0; }},
             {"proton", [](double nbar)
-             { return (nbar >= nbar_core_limit) ? data_reader({nbar})[6] : 0.0; }}
-
-    };
+             { return (nbar >= nbar_core_limit) ? data_reader({nbar})[6] : 0.0; }}};
 
     // fermi momentum functions of baryonic density (GeV units)
     std::map<std::string, std::function<double(double)>> k_fermi_of_nbar =
@@ -102,6 +100,16 @@ namespace inputfile
              { return (nbar >= nbar_core_limit) ? data_reader({nbar})[12] * constants::scientific::M_N : constants::scientific::M_N; }},
             {"proton", [](double nbar)
              { return (nbar >= nbar_core_limit) ? data_reader({nbar})[11] * constants::scientific::M_N : constants::scientific::M_N; }}};
+
+    std::function<double(double)> ion_volume_fr = [](double nbar)
+    { 
+        if (nbar >= nbar_crust_limit)
+            return 0.0;
+        using namespace constants::conversion;
+        using namespace constants::scientific;
+        auto eta_ion = 4.0 / 3 * Pi * pow(1.1, 3.0) * fm3_gev3 * data_reader({nbar})[0] * dyne_over_cm2_gev4 / M_N;
+        return eta_ion; 
+    };
 
     // (3) TOV solver setup
 
@@ -135,7 +143,7 @@ namespace inputfile
     double density_step = 1E-8 * edensity_upp * energy_density_conversion;
 
     // TOV solver center density in GeV^4
-    double center_density = 1.0 / 7.44 * edensity_upp * energy_density_conversion;
+    double center_density = 1.6 / 7.44 * edensity_upp * energy_density_conversion;
 }
 
 #endif

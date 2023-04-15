@@ -35,9 +35,9 @@ int main()
 
     // Superfluidity settings
 
-    bool superfluid_p_1s0 = true,
+    bool superfluid_p_1s0 = false,
          superfluid_n_3p2 = false,
-         superfluid_n_1s0 = true;
+         superfluid_n_1s0 = false;
 
     std::function<double(double)> superfluid_p_temp = [](double k_fermi)
     { return 0.0; };
@@ -731,7 +731,7 @@ int main()
     }
 
     // compare with nscool
-    std::ifstream apr_nscool("../../data/Teff_Try (3).dat");
+    std::ifstream apr_nscool("../../data/Teff_2.0_nopairing.dat");
     std::vector<double> x_nscool, y_nscool;
     // iterate over file, but skip 26 lines
     for (int i = 0; i < 26; ++i)
