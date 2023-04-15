@@ -102,13 +102,13 @@ namespace inputfile
              { return (nbar >= nbar_core_limit) ? data_reader({nbar})[11] * constants::scientific::M_N : constants::scientific::M_N; }}};
 
     std::function<double(double)> ion_volume_fr = [](double nbar)
-    { 
+    {
         if (nbar >= nbar_crust_limit)
             return 0.0;
         using namespace constants::conversion;
         using namespace constants::scientific;
         auto eta_ion = 4.0 / 3 * Pi * pow(1.1, 3.0) * fm3_gev3 * data_reader({nbar})[0] * dyne_over_cm2_gev4 / M_N;
-        return eta_ion; 
+        return std::min(1.0, eta_ion);
     };
 
     // (3) TOV solver setup
@@ -144,6 +144,63 @@ namespace inputfile
 
     // TOV solver center density in GeV^4
     double center_density = 1.6 / 7.44 * edensity_upp * energy_density_conversion;
+
+    // (4) Cooling solver
+
+    // Cooling solver setup
+    auto cooling_interpolator_cached = auxiliaries::CachedFunc<std::function<double(double)>,
+                                                               double, const std::vector<double> &, const std::vector<double> &,
+                                                               auxiliaries::InterpolationMode, double, bool>(auxiliaries::interpolate_cached);
+    auto cooling_interpolator = [](const std::vector<double> &x, const std::vector<double> &y, double val)
+    {
+        return cooling_interpolator_cached(x, y, auxiliaries::InterpolationMode::kCubic, val, false);
+    };
+
+    // Cooling settings
+    double crust_eta = 2.26E-18;
+
+    // Superfluidity settings
+
+    bool superfluid_p_1s0 = false,
+         superfluid_n_3p2 = false,
+         superfluid_n_1s0 = false;
+
+    std::function<double(double)> superfluid_p_temp = [](double k_fermi)
+    {
+        if (superfluid_p_1s0)
+        {
+            superfluid_p_temp = [](double k_fermi)
+            {
+                using namespace cooling::predefined::auxiliary;
+                return critical_temperature(k_fermi, CriticalTemperatureModel::kCCDK);
+            };
+        }
+        return 0.0;
+    };
+    std::function<double(double)> superfluid_n_temp = [](double k_fermi)
+    {
+        if (superfluid_n_3p2 || superfluid_n_1s0)
+        {
+            superfluid_n_temp = [](double k_fermi)
+            {
+                using namespace cooling::predefined::auxiliary;
+                return critical_temperature(k_fermi, CriticalTemperatureModel::kCCDK);
+            };
+        }
+        return 0.0;
+    };
+
+    // Evolution settings
+    double t_init = 0.0 * constants::conversion::myr_over_s * constants::conversion::gev_s,
+           t_end = 6.1E-0 * constants::conversion::myr_over_s * constants::conversion::gev_s,
+           base_t_step = 1.0E-18 * constants::conversion::myr_over_s * constants::conversion::gev_s;
+    // estimate for the number of time points (used for time step expansion, if enabled)
+    double cooling_n_points_estimate = 1000;
+    double T_init_local = 5E9 / constants::conversion::gev_over_k;
+
+    // time step expansion rate (set to 1.0 for constant time step)
+    double exp_rate_estim = pow((t_end - t_init) / base_t_step, 1.0 / cooling_n_points_estimate) *
+                            pow((pow((t_end - t_init) / base_t_step, 1.0 / cooling_n_points_estimate) - 1), 1.0 / cooling_n_points_estimate);
 }
 
 #endif
