@@ -6,7 +6,7 @@
 /// @brief various constants useful in astrophysics
 namespace constants
 {
-	/// @brief notable physics/math constants
+	/// @brief notable physics/math constants and predefined species
 	namespace scientific
 	{
 		/// @brief Gravitational constant in GeV^-2 units

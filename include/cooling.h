@@ -35,6 +35,12 @@ namespace cooling
         /// @brief Auxiliary physics related to cooling
         namespace auxiliary
         {
+            std::function<double(double, double, double)> fermi_specific_heat_density(
+                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+                double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+                const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp);
+
             /// @brief Te-Tb relation, based on Keisure thesis
             /// @param Tb internal temperature [GeV], measured by distant observer (inf)
             /// @param R NS radius [GeV^{-1}]

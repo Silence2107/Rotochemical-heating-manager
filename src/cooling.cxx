@@ -60,6 +60,72 @@ double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double
     return interpolator(cache[0], cache[1], t);
 }
 
+std::function<double(double, double, double)> cooling::predefined::auxiliary::fermi_specific_heat_density(
+                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+                double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+                const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
+{
+    return [=](double r, double t, double T)
+    {
+        using namespace constants::scientific;
+
+        double cv_dens = 0;
+        for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
+        {
+            auto key = it->first;
+            double nbar_val = nbar_of_r(r);
+            double m_star = m_stars_of_nbar.at(key)(nbar_val);
+            double k_fermi = k_fermi_of_nbar.at(key)(nbar_val);
+            double T_loc = T / exp_phi(r);
+            double diff = m_star * k_fermi / 3.0 * T_loc;
+
+            // superfluid factors
+            auto r_A = [&](double v)
+            {
+                return pow(0.4186 + sqrt(pow(1.007, 2.0) + pow(0.5010 * v, 2.0)), 2.5) *
+                       exp(1.456 - sqrt(pow(1.456, 2.0) + pow(v, 2.0)));
+            };
+            auto r_B = [&](double v)
+            {
+                return pow(0.6893 + sqrt(pow(0.790, 2.0) + pow(0.2824 * v, 2.0)), 2.0) *
+                       exp(1.934 - sqrt(pow(1.934, 2.0) + pow(v, 2.0)));
+            };
+
+            // proton superfluidity?
+            if (key == proton && superfluid_p_1s0)
+            {
+                double tau = T_loc / superfluid_p_temp(k_fermi);
+                if (tau < 1.0)
+                {
+                    using namespace cooling::predefined::auxiliary;
+                    diff *= r_A(superfluid_gap_1s0(tau));
+                }
+            }
+            // neutron superfluidity?
+            else if (key == neutron && (superfluid_n_3p2 || superfluid_n_1s0))
+            {
+                double tau = T_loc / superfluid_p_temp(k_fermi);
+                if (tau < 1.0)
+                {
+                    using namespace cooling::predefined::auxiliary;
+                    // 1S0/3P2 division at core entrance
+                    if (superfluid_n_1s0 && superfluid_n_3p2)
+                        diff *= (nbar_val > nbar_core_limit) ? r_B(superfluid_gap_3p2(tau)) : r_A(superfluid_gap_1s0(tau));
+                    // 3P2 only
+                    else if (superfluid_n_3p2)
+                        diff *= r_B(superfluid_gap_3p2(tau));
+                    // 1S0 only
+                    else
+                        diff *= r_A(superfluid_gap_1s0(tau));
+                }
+            }
+            cv_dens += diff;
+        }
+        return cv_dens;
+    };
+}
+
 double cooling::predefined::auxiliary::te_tb_relation(double Tb, double R, double M, double eta)
 {
     using namespace constants::scientific;
