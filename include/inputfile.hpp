@@ -106,7 +106,7 @@ namespace inputfile
             return 0.0;
         using namespace constants::conversion;
         using namespace constants::scientific;
-        auto eta_ion = 4.0 / 3 * Pi * pow(1.1, 3.0) * fm3_gev3 * data_reader({nbar})[0] * dyne_over_cm2_gev4 / M_N;
+        auto eta_ion = 4.0 / 3 * Pi * pow(1.1, 3.0) * fm3_gev3 * energy_density_of_nbar(nbar) / M_N;
         return std::min(1.0, eta_ion);
     };
 

@@ -77,23 +77,45 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &c
 			rho_rk[0] = rho_prime(rho, m, r);
 
 			if (rho + radius_step / 2 * rho_rk[0] < 0)
-				break;
-			m_rk[1] = m_prime(rho + radius_step / 2 * rho_rk[0], r + radius_step / 2);
-			rho_rk[1] = rho_prime(rho + radius_step / 2 * rho_rk[0], m + radius_step / 2 * m_rk[0], r + radius_step / 2);
-
+			{
+				m_rk[1] = 0.0;
+				rho_rk[1] = 0.0;
+			}
+			else
+			{
+				m_rk[1] = m_prime(rho + radius_step / 2 * rho_rk[0], r + radius_step / 2);
+				rho_rk[1] = rho_prime(rho + radius_step / 2 * rho_rk[0], m + radius_step / 2 * m_rk[0], r + radius_step / 2);
+			}
+			
 			if (rho + radius_step / 2 * rho_rk[1] < 0)
-				break;
-			m_rk[2] = m_prime(rho + radius_step / 2 * rho_rk[1], r + radius_step / 2);
-			rho_rk[2] = rho_prime(rho + radius_step / 2 * rho_rk[1], m + radius_step / 2 * m_rk[1], r + radius_step / 2);
-
+			{
+				m_rk[2] = 0.0;
+				rho_rk[2] = 0.0;
+			}
+			else
+			{
+				m_rk[2] = m_prime(rho + radius_step / 2 * rho_rk[1], r + radius_step / 2);
+				rho_rk[2] = rho_prime(rho + radius_step / 2 * rho_rk[1], m + radius_step / 2 * m_rk[1], r + radius_step / 2);
+			}
+			
 			if (rho + radius_step * rho_rk[2] < 0)
-				break;
-			m_rk[3] = m_prime(rho + radius_step * rho_rk[2], r + radius_step);
-			rho_rk[3] = rho_prime(rho + radius_step * rho_rk[2], m + radius_step * m_rk[2], r + radius_step);
+			{
+				m_rk[3] = 0.0;
+				rho_rk[3] = 0.0;
+			}
+			else
+			{
+				m_rk[3] = m_prime(rho + radius_step * rho_rk[2], r + radius_step);
+				rho_rk[3] = rho_prime(rho + radius_step * rho_rk[2], m + radius_step * m_rk[2], r + radius_step);
+			}
 
 			rho += radius_step / 6 * (rho_rk[0] + 2 * rho_rk[1] + 2 * rho_rk[2] + rho_rk[3]);
 			m += radius_step / 6 * (m_rk[0] + 2 * m_rk[1] + 2 * m_rk[2] + m_rk[3]);
 			r += radius_step;
+			if (rho < 0.0)
+			{
+				break;
+			}
 			phi += 0.5 * (rho - cache[2].back()) * (phi_integrand(rho) + phi_integrand(cache[2].back())); // trapezoid integral
 			// memorize results
 			cache[0].push_back(r);
