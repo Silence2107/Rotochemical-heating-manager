@@ -143,16 +143,17 @@ int main()
 
     auto Q_nu = [&](double r, double t, double T)
     {
+        using namespace constants::scientific;
         double result = 0;
         for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
         {
             auto key = it->first;
-            if (key == "electron" || key == "muon" || key == "tau")
+            if (key.classify() == auxiliaries::Species::ParticleClassification::kLepton)
             {
                 result += hadron_murca_emissivity(r, key, t, T);
                 result += hadron_durca_emissivity(r, key, t, T);
             }
-            if (key == "neutron" || key == "proton")
+            if (key.classify() == auxiliaries::Species::ParticleClassification::kBaryon)
             {
                 result += hadron_PBF_emissivity(r, key, t, T);
             }
@@ -192,7 +193,7 @@ int main()
             };
 
             // proton superfluidity?
-            if (key == "proton" && superfluid_p_1s0)
+            if (key == proton && superfluid_p_1s0)
             {
                 double tau = T_loc / superfluid_p_temp(k_fermi);
                 if (tau < 1.0)
@@ -202,7 +203,7 @@ int main()
                 }
             }
             // neutron superfluidity?
-            else if (key == "neutron" && (superfluid_n_3p2 || superfluid_n_1s0))
+            else if (key == neutron && (superfluid_n_3p2 || superfluid_n_1s0))
             {
                 double tau = T_loc / superfluid_p_temp(k_fermi);
                 if (tau < 1.0)
@@ -230,7 +231,7 @@ int main()
     auto cooling_rhs = [&heat_capacity, &photon_luminosity, &neutrino_luminosity](double t, double T)
     {
         // std::cout << t << " " << photon_luminosity(t, T) << " " << neutrino_luminosity(t, T) << " " << heat_capacity(t, T) << '\n';
-        return -(photon_luminosity(t, T) + neutrino_luminosity(t, T)) / heat_capacity(t, T);
+        return -(photon_luminosity(t + t_init, T) + neutrino_luminosity(t + t_init, T)) / heat_capacity(t + t_init, T);
     };
 
     // solve cooling equation

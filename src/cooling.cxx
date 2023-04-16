@@ -143,23 +143,23 @@ double cooling::predefined::auxiliary::critical_temperature(double k_fermi, cool
     }
 }
 
-std::function<double(double, const std::string &, double, double)> cooling::predefined::neutrinic::hadron_durca_emissivity(
-    const std::map<std::string, std::function<double(double)>> &k_fermi_of_nbar,
-    const std::map<std::string, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+std::function<double(double, const auxiliaries::Species &, double, double)> cooling::predefined::neutrinic::hadron_durca_emissivity(
+    const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
     double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
-    return [=](double r, const std::string &lepton_flavour, double t, double T)
+    return [=](double r, const auxiliaries::Species &lepton_flavour, double t, double T)
     {
         using namespace constants::scientific;
         using namespace constants::conversion;
 
         double nbar_val = nbar_of_r(r);
         double pf_l = k_fermi_of_nbar.at(lepton_flavour)(nbar_val),
-               pf_n = k_fermi_of_nbar.at("neutron")(nbar_val),
-               pf_p = k_fermi_of_nbar.at("proton")(nbar_val);
-        double mst_n = m_stars_of_nbar.at("neutron")(nbar_val),
-               mst_p = m_stars_of_nbar.at("proton")(nbar_val),
+               pf_n = k_fermi_of_nbar.at(neutron)(nbar_val),
+               pf_p = k_fermi_of_nbar.at(proton)(nbar_val);
+        double mst_n = m_stars_of_nbar.at(neutron)(nbar_val),
+               mst_p = m_stars_of_nbar.at(proton)(nbar_val),
                mst_l = m_stars_of_nbar.at(lepton_flavour)(nbar_val);
         double T_loc = T / exp_phi(r);
         if (pf_l + pf_p - pf_n <= 0)
@@ -299,23 +299,23 @@ std::function<double(double, const std::string &, double, double)> cooling::pred
     };
 }
 
-std::function<double(double, const std::string &, double, double)> cooling::predefined::neutrinic::hadron_murca_emissivity(
-    const std::map<std::string, std::function<double(double)>> &k_fermi_of_nbar,
-    const std::map<std::string, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+std::function<double(double, const auxiliaries::Species &, double, double)> cooling::predefined::neutrinic::hadron_murca_emissivity(
+    const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
     double nbar_core_limit, double nbar_conversion, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
-    return [=](double r, const std::string &lepton_flavour, double t, double T)
+    return [=](double r, const auxiliaries::Species &lepton_flavour, double t, double T)
     {
         using namespace constants::scientific;
         using namespace constants::conversion;
 
         double nbar_val = nbar_of_r(r);
         double pf_l = k_fermi_of_nbar.at(lepton_flavour)(nbar_val),
-               pf_n = k_fermi_of_nbar.at("neutron")(nbar_val),
-               pf_p = k_fermi_of_nbar.at("proton")(nbar_val);
-        double mst_n = m_stars_of_nbar.at("neutron")(nbar_val),
-               mst_p = m_stars_of_nbar.at("proton")(nbar_val),
+               pf_n = k_fermi_of_nbar.at(neutron)(nbar_val),
+               pf_p = k_fermi_of_nbar.at(proton)(nbar_val);
+        double mst_n = m_stars_of_nbar.at(neutron)(nbar_val),
+               mst_p = m_stars_of_nbar.at(proton)(nbar_val),
                mst_l = m_stars_of_nbar.at(lepton_flavour)(nbar_val);
         double T_loc = T / exp_phi(r);
         double alpha = 1.76 - 0.63 * pow(N_sat / (nbar_val * nbar_conversion), 2.0 / 3), beta = 0.68,
@@ -393,8 +393,8 @@ std::function<double(double, const std::string &, double, double)> cooling::pred
 }
 
 std::function<double(double, double, double)> cooling::predefined::neutrinic::hadron_bremsstrahlung_emissivity(
-    const std::map<std::string, std::function<double(double)>> &k_fermi_of_nbar,
-    const std::map<std::string, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
     const std::function<double(double)> &ion_volume_frac, double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
@@ -404,10 +404,10 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
         using namespace constants::conversion;
 
         double nbar_val = nbar_of_r(r);
-        double pf_n = k_fermi_of_nbar.at("neutron")(nbar_val),
-               pf_p = k_fermi_of_nbar.at("proton")(nbar_val);
-        double mst_n = m_stars_of_nbar.at("neutron")(nbar_val),
-               mst_p = m_stars_of_nbar.at("proton")(nbar_val);
+        double pf_n = k_fermi_of_nbar.at(neutron)(nbar_val),
+               pf_p = k_fermi_of_nbar.at(proton)(nbar_val);
+        double mst_n = m_stars_of_nbar.at(neutron)(nbar_val),
+               mst_p = m_stars_of_nbar.at(proton)(nbar_val);
         double alpha_nn = 0.59, alpha_np = 1.06, alpha_pp = 0.11,
                beta_nn = 0.56, beta_np = 0.66, beta_pp = 0.7;
         double T_loc = T / exp_phi(r);
@@ -498,13 +498,13 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
     };
 }
 
-std::function<double(double, const std::string &, double, double)> cooling::predefined::neutrinic::hadron_pbf_emissivity(
-                const std::map<std::string, std::function<double(double)>> &k_fermi_of_nbar,
-                const std::map<std::string, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+std::function<double(double, const auxiliaries::Species &, double, double)> cooling::predefined::neutrinic::hadron_pbf_emissivity(
+                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
                 double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
                 const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
-    return [=](double r, const std::string &hadron_flavour, double t, double T)
+    return [=](double r, const auxiliaries::Species &hadron, double t, double T)
     {
         // the process is not allowed in normal matter
         if (!(superfluid_n_3p2 || superfluid_n_1s0 || superfluid_p_1s0))
@@ -513,21 +513,21 @@ std::function<double(double, const std::string &, double, double)> cooling::pred
         using namespace constants::conversion;
 
         double nbar_val = nbar_of_r(r);
-        double pf = k_fermi_of_nbar.at(hadron_flavour)(nbar_val);
-        double mst = m_stars_of_nbar.at(hadron_flavour)(nbar_val);
+        double pf = k_fermi_of_nbar.at(hadron)(nbar_val);
+        double mst = m_stars_of_nbar.at(hadron)(nbar_val);
         double a_s, a_t;
-        if (hadron_flavour == "neutron")
+        if (hadron == neutron)
         {
             a_s = 1.0 + 1.588 * pow(pf / M_N, 2.0) * (1.0 + 0.262 * pow(mst / M_N, -2.0));
             a_t = 4.17;
         }
-        else if (hadron_flavour == "proton")
+        else if (hadron == proton)
         {
             a_s = 0.0064 + 1.588 * pow(pf / M_N, 2.0) * (1.0 + 0.262 * pow(mst / M_N, -2.0));
             a_t = 0.0;
         }
         else
-            throw std::runtime_error("Unknown hadron flavour: " + hadron_flavour + "; Encountered in hadron_PBF_emissivity");
+            throw std::runtime_error("Unexpected species: " + std::to_string(static_cast<int>(hadron.identify())) + "; Encountered in hadron_PBF_emissivity");
         double T_loc = T / exp_phi(r);
         int n_flavours = 3;
         double base_dens = (1.17E21 / 1.0E63) * (mst / M_N) * (pf / M_N) * n_flavours *
@@ -549,7 +549,7 @@ std::function<double(double, const std::string &, double, double)> cooling::pred
         };
 
         // proton superfluidity?
-        if (superfluid_p_1s0 && (hadron_flavour == "proton"))
+        if (superfluid_p_1s0 && (hadron == proton))
         {
             double tau = T_loc / superfluid_p_temp(pf);
             if (tau < 1.0)
@@ -560,7 +560,7 @@ std::function<double(double, const std::string &, double, double)> cooling::pred
         }
 
         // neutron superfluidity?
-        if ((superfluid_n_3p2 || superfluid_n_1s0) && (hadron_flavour == "neutron"))
+        if ((superfluid_n_3p2 || superfluid_n_1s0) && (hadron == neutron))
         {
             double tau = T_loc / superfluid_n_temp(pf);
             if (tau < 1.0)

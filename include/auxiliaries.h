@@ -5,12 +5,7 @@
 #include <vector>
 #include <functional>
 
-#include "../include/constants.h"
-
-/// @brief various auxiliary functionality;
-/// contains:
-/// function retrieve_cleared_line;
-/// class CachedFunc;
+/// @brief various auxiliary functionality
 namespace auxiliaries
 {
     /// @brief function that cleares line from stream
@@ -116,6 +111,7 @@ namespace auxiliaries
     template <class... Args>
     std::function<double(Args... args)> integrate_volume(const std::function<double(double, Args...)> &function, double rmin, double rmax, const std::function<double(double)> &exp_lambda, IntegrationMode mode, double r_step = 5.06E16)
     {
+        const double pi = 3.14159265359;
         return [=](Args... args) -> double
         {
             switch (mode)
@@ -125,7 +121,7 @@ namespace auxiliaries
                 double result = 0.0;
                 for (double r = rmin + r_step / 2; r < rmax - r_step / 2; r += r_step)
                 {
-                    result += function(r, args...) * 4 * constants::scientific::Pi * r * r * r_step * exp_lambda(r);
+                    result += function(r, args...) * 4 * pi * r * r * r_step * exp_lambda(r);
                 }
                 return result;
             }
@@ -136,7 +132,7 @@ namespace auxiliaries
                 double result = 0.0;
                 auto integrand = [=](double r) -> double
                 {
-                    return function(r, args...) * 4 * constants::scientific::Pi * r * r * exp_lambda(r);
+                    return function(r, args...) * 4 * pi * r * r * exp_lambda(r);
                 };
                 for (int i = 0; i < weights.size(); i++)
                 {
@@ -151,7 +147,7 @@ namespace auxiliaries
                 double result = 0.0;
                 auto integrand = [=](double r) -> double
                 {
-                    return function(r, args...) * 4 * constants::scientific::Pi * r * r * exp_lambda(r);
+                    return function(r, args...) * 4 * pi * r * r * exp_lambda(r);
                 };
                 for (int i = 0; i < weights.size(); i++)
                 {
@@ -164,5 +160,61 @@ namespace auxiliaries
             }
         };
     }
+
+    /// @brief Class that handles species-specific namings
+    class Species
+    {
+    public:
+        enum class ParticleType;
+        enum class ParticleClassification;
+
+    private:
+        /// @brief namings for species
+        ParticleType m_type;
+        /// @brief species classification
+        ParticleClassification m_classification;
+
+    public:
+        /// @brief Expected particle types
+        enum class ParticleType
+        {
+            kElectron,
+            kMuon,
+            kTau,
+            kProton,
+            kNeutron,
+            kPion,
+            kKaon,
+            kUquark,
+            kDquark,
+            kSquark
+        };
+        /// @brief Possible particle classifications
+        enum class ParticleClassification
+        {
+            kLepton,
+            kBaryon,
+            kMeson,
+            kQuark
+        };
+        /// @brief Constructor
+        /// @param naming particle type
+        /// @param classification particle classification
+        Species(ParticleType naming, ParticleClassification classification);
+        /// @brief Comparison operator
+        /// @param other other species
+        /// @return true if species are the same
+        bool operator==(const Species &other) const;
+        /// @brief Comparison operator (for lookup in std::map)
+        /// @param other other species
+        /// @return true if particle types are ordered as provided in ParticleType enum
+        bool operator<(const Species &other) const;
+        /// @brief Get particle type
+        ParticleType identify() const
+        { return m_type; }
+        /// @brief Get particle classification
+        ParticleClassification classify() const
+        { return m_classification; }
+    };
 }
 #endif

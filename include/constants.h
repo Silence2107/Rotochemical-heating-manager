@@ -1,6 +1,8 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+#include "../include/auxiliaries.h"
+
 /// @brief various constants useful in astrophysics
 namespace constants
 {
@@ -21,6 +23,28 @@ namespace constants
 		const double Sigma = Pi * Pi / 60.0;
 		/// @brief Nuclear matter saturation density in GeV^3
 		const double N_sat = 0.0012345;
+
+		// Predefined species
+		/// @brief Neutron species
+		const auxiliaries::Species neutron(auxiliaries::Species::ParticleType::kNeutron, auxiliaries::Species::ParticleClassification::kBaryon);
+		/// @brief Proton species
+		const auxiliaries::Species proton(auxiliaries::Species::ParticleType::kProton, auxiliaries::Species::ParticleClassification::kBaryon);
+		/// @brief Electron species
+		const auxiliaries::Species electron(auxiliaries::Species::ParticleType::kElectron, auxiliaries::Species::ParticleClassification::kLepton);
+		/// @brief Muon species
+		const auxiliaries::Species muon(auxiliaries::Species::ParticleType::kMuon, auxiliaries::Species::ParticleClassification::kLepton);
+		/// @brief Tau species
+		const auxiliaries::Species tau(auxiliaries::Species::ParticleType::kTau, auxiliaries::Species::ParticleClassification::kLepton);
+		/// @brief Pion species
+		const auxiliaries::Species pion(auxiliaries::Species::ParticleType::kPion, auxiliaries::Species::ParticleClassification::kMeson);
+		/// @brief Kaon species
+		const auxiliaries::Species kaon(auxiliaries::Species::ParticleType::kKaon, auxiliaries::Species::ParticleClassification::kMeson);
+		/// @brief Up quark species
+		const auxiliaries::Species uquark(auxiliaries::Species::ParticleType::kUquark, auxiliaries::Species::ParticleClassification::kQuark);
+		/// @brief Down quark species
+		const auxiliaries::Species dquark(auxiliaries::Species::ParticleType::kDquark, auxiliaries::Species::ParticleClassification::kQuark);
+		/// @brief Strange quark species
+		const auxiliaries::Species squark(auxiliaries::Species::ParticleType::kSquark, auxiliaries::Species::ParticleClassification::kQuark);
 	}
 	/// @brief conversion table
 	namespace conversion

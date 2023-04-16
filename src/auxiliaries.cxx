@@ -255,3 +255,18 @@ double auxiliaries::interpolate_cached(std::function<double(double)> &cache, con
             throw std::runtime_error("Searched value is out of range. Encountered in auxiliaries::interpolate");
     return cache(x);
 }
+
+auxiliaries::Species::Species(auxiliaries::Species::ParticleType type, auxiliaries::Species::ParticleClassification classification)
+    : m_type(type), m_classification(classification)
+{
+}
+
+bool auxiliaries::Species::operator==(const auxiliaries::Species& other) const
+{
+    return m_type == other.m_type;
+}
+
+bool auxiliaries::Species::operator<(const auxiliaries::Species &other) const
+{
+    return m_type < other.m_type;
+}
