@@ -8,6 +8,13 @@
 /// @brief various auxiliary functionality
 namespace auxiliaries
 {
+    /// @brief General purpose EoS reader; bases on known EoS filestyle and input stream with such file allows to extract various data
+	/// @param input Input that is required for EoS
+	/// @param eos An EoS function that takes input and fstr and returns EoS output
+	/// @param fstr EoS datafile
+	/// @return EoS output
+	std::vector<double> eos_data(const std::vector<double> &input, const std::function<std::vector<double>(const std::vector<double> &, std::ifstream &)> &eos, std::ifstream &fstr);
+    
     /// @brief function that cleares line from stream
     /// @param line line to clear out
     /// @return line, cleared of auxiliary symbols, preceeding, trailing or excessive whitespaces; separation between words is done with whitespaces

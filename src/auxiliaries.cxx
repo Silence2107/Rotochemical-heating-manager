@@ -5,6 +5,18 @@
 #include <algorithm>
 #include <vector>
 #include <functional>
+#include <fstream>
+
+std::vector<double> auxiliaries::eos_data(const std::vector<double> &input, const std::function<std::vector<double>(const std::vector<double> &, std::ifstream &)> &eos, std::ifstream &fstr)
+{
+	std::vector<double> result; // empty placeholder for output array
+
+	result = eos(input, fstr);
+
+	fstr.clear();
+	fstr.seekg(0, std::ios::beg); // reset fstream to initial state for further usage
+	return result;				  // output
+}
 
 std::string auxiliaries::retrieve_cleared_line(const std::string &line)
 {
