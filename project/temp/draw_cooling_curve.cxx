@@ -1,9 +1,9 @@
 
-#include "../include/auxiliaries.h"
-#include "../include/cooling.h"
-#include "../include/constants.h"
-#include "../include/tov_solver.h"
-#include "../include/inputfile.hpp"
+#include "../../include/auxiliaries.h"
+#include "../../include/cooling.h"
+#include "../../include/constants.h"
+#include "../../include/tov_solver.h"
+#include "../../include/inputfile.hpp"
 
 #include <vector>
 #include <functional>
