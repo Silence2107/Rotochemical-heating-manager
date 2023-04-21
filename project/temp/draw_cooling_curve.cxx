@@ -1,7 +1,6 @@
 
 #include "../include/auxiliaries.h"
 #include "../include/cooling.h"
-#include "../include/eos_reader.h"
 #include "../include/constants.h"
 #include "../include/tov_solver.h"
 #include "../include/inputfile.hpp"
@@ -140,11 +139,37 @@ int main()
     auto hadron_PBF_emissivity = cooling::predefined::neutrinic::hadron_pbf_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, exp_phi, superfluid_n_1s0,
         superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp);
+    
+    bool has_quarks = false;
+    for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
+    {
+        if (it->first.classify() == auxiliaries::Species::ParticleClassification::kQuark)
+        {
+            has_quarks = true;
+            break;
+        }
+    }
+
+    auto quark_durca_emissivity = (has_quarks ? cooling::predefined::neutrinic::quark_durca_emissivity(
+        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_u, superconduct_d, superconduct_s,
+        superconduct_u_temp, superconduct_d_temp, superconduct_s_temp) : [](double, double, double) { return 0.0; });
+
+    auto quark_murca_emissivity = (has_quarks ? cooling::predefined::neutrinic::quark_murca_emissivity(
+        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_u, superconduct_d, superconduct_s,
+        superconduct_u_temp, superconduct_d_temp, superconduct_s_temp) : [](double, double, double) { return 0.0; });
+
+    auto quark_bremsstrahlung_emissivity = (has_quarks ? cooling::predefined::neutrinic::quark_bremsstrahlung_emissivity(
+        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_u, superconduct_d, superconduct_s,
+        superconduct_u_temp, superconduct_d_temp, superconduct_s_temp) : [](double, double, double) { return 0.0; });
+
+    auto electron_bremsstrahlung_emissivity = cooling::predefined::neutrinic::electron_bremsstrahlung_emissivity(
+        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi);
 
     auto Q_nu = [&](double r, double t, double T)
     {
         using namespace constants::scientific;
         double result = 0;
+
         for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
         {
             auto key = it->first;
@@ -159,6 +184,8 @@ int main()
             }
         }
         result += hadron_bremsstrahlung_emissivity(r, t, T);
+        result += quark_durca_emissivity(r, t, T) + quark_murca_emissivity(r, t, T) + quark_bremsstrahlung_emissivity(r, t, T);
+        result += electron_bremsstrahlung_emissivity(r, t, T);
         return result * exp_phi(r) * exp_phi(r);
     };
 
@@ -168,7 +195,8 @@ int main()
     // specific heat
     auto fermi_specific_heat_dens = cooling::predefined::auxiliary::fermi_specific_heat_density(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, exp_phi, superfluid_n_1s0,
-        superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp);
+        superfluid_p_1s0, superfluid_n_3p2, superconduct_u, superconduct_d, superconduct_s, 
+        superfluid_p_temp, superfluid_n_temp, superconduct_u_temp, superconduct_d_temp, superconduct_s_temp);
 
     auto heat_capacity = auxiliaries::integrate_volume<double, double>(
         std::function<double(double, double, double)>(fermi_specific_heat_dens), 0, r_ns, exp_lambda, auxiliaries::IntegrationMode::kGaussLegendre_12p, radius_step);
@@ -191,7 +219,7 @@ int main()
     // invoke the solver once to cache the solution
     cooling_solver(t_end - t_init, cooling_rhs, T_init, base_t_step, exp_rate_estim, cooling_interpolator);
 
-    // plot the solution
+    // plot the solution (assumes exp_rate_estim > 1)
     std::vector<double> x(cooling_n_points_estimate, 0);
     std::vector<double> y(cooling_n_points_estimate, 0);
     std::cout << "M/Msol " << m_ns * constants::conversion::gev_over_msol << std::endl;

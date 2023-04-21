@@ -32,6 +32,8 @@ double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double
             auto temp_step = time_step / (t + time_step) * T_new;
             F_shift = cooling_rhs(t + time_step, T_new + temp_step) - F;
             T_new -= (T_new - T - time_step * F) / (1 - time_step * F_shift / temp_step);
+            if (T_new < 0)
+                throw std::runtime_error("Reached negative temperature with current method; Encountered in stationary_cooling_cached");
             if (iter > max_iter)
                 break;
         } while (std::abs(T_new - T - time_step * F) > eps * T);
@@ -61,10 +63,11 @@ double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double
 }
 
 std::function<double(double, double, double)> cooling::predefined::auxiliary::fermi_specific_heat_density(
-                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-                double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
-                const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
+    const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+    bool superconduct_u, bool superconduct_d, bool superconduct_s, const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp,
+    const std::function<double(double)> &superconduct_u_temp, const std::function<double(double)> &superconduct_d_temp, const std::function<double(double)> &superconduct_s_temp)
 {
     return [=](double r, double t, double T)
     {
@@ -118,6 +121,36 @@ std::function<double(double, double, double)> cooling::predefined::auxiliary::fe
                     // 1S0 only
                     else
                         diff *= r_A(superfluid_gap_1s0(tau));
+                }
+            }
+            // u quark superconductivity?
+            else if (key == uquark && superconduct_u)
+            {
+                double tau = T_loc / superconduct_u_temp(k_fermi);
+                if (tau < 1.0)
+                {
+                    using namespace cooling::predefined::auxiliary;
+                    diff *= 3.1 / pow(tau, 2.5) * exp(-1.76 / tau * sqrt(1.0 - tau));
+                }
+            }
+            // d quark superconductivity?
+            else if (key == dquark && superconduct_d)
+            {
+                double tau = T_loc / superconduct_d_temp(k_fermi);
+                if (tau < 1.0)
+                {
+                    using namespace cooling::predefined::auxiliary;
+                    diff *= 3.1 / pow(tau, 2.5) * exp(-1.76 / tau * sqrt(1.0 - tau));
+                }
+            }
+            // s quark superconductivity?
+            else if (key == squark && superconduct_s)
+            {
+                double tau = T_loc / superconduct_s_temp(k_fermi);
+                if (tau < 1.0)
+                {
+                    using namespace cooling::predefined::auxiliary;
+                    diff *= 3.1 / pow(tau, 2.5) * exp(-1.76 / tau * sqrt(1.0 - tau));
                 }
             }
             cv_dens += diff;
@@ -565,10 +598,10 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
 }
 
 std::function<double(double, const auxiliaries::Species &, double, double)> cooling::predefined::neutrinic::hadron_pbf_emissivity(
-                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-                double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
-                const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
+    const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+    const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
     return [=](double r, const auxiliaries::Species &hadron, double t, double T)
     {
@@ -650,5 +683,186 @@ std::function<double(double, const auxiliaries::Species &, double, double)> cool
             }
         }
         return 0.0;
+    };
+}
+
+std::function<double(double, double, double)> cooling::predefined::neutrinic::quark_durca_emissivity(
+    const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    const std::function<double(double)> &exp_phi, bool superconduct_u, bool superconduct_d, bool superconduct_s,
+    const std::function<double(double)> &superconduct_u_temp, const std::function<double(double)> &superconduct_d_temp, const std::function<double(double)> &superconduct_s_temp)
+{
+    return [=](double r, double t, double T)
+    {
+        using namespace constants::scientific;
+        using namespace constants::conversion;
+
+        double nbar_val = nbar_of_r(r);
+        double pf_u = k_fermi_of_nbar.at(uquark)(nbar_val),
+               pf_d = k_fermi_of_nbar.at(dquark)(nbar_val),
+               pf_s = k_fermi_of_nbar.at(squark)(nbar_val);
+        double pf_l = 0.0,
+               pf_l_mult_onemincos = 0.0;
+        double alpha_c = 1.0, m_s = 0.01;
+        double T_loc = T / exp_phi(r);
+
+        double dens_ud = 3.74E-10 * alpha_c * pf_u * pf_d * pow(T_loc, 6);
+        for (auto it = k_fermi_of_nbar.begin(); it != k_fermi_of_nbar.end(); ++it)
+        {
+            if (it->first.classify() == auxiliaries::Species::ParticleClassification::kLepton)
+                pf_l += it->second(nbar_val);
+        }
+        dens_ud *= pf_l;
+
+        double x = pf_s / m_s, eta = sqrt(1 + x * x);
+        double mu_s = (x > 0.001) ? (eta / x + 8 * alpha_c / (3 * Pi) * (1 - 3 / (eta * x) * log(x + eta))) * pf_s : m_s;
+        double dens_us = 1.208E-11 * mu_s * pf_u * pow(T_loc, 6);
+        for (auto it = k_fermi_of_nbar.begin(); it != k_fermi_of_nbar.end(); ++it)
+        {
+            if (it->first.classify() == auxiliaries::Species::ParticleClassification::kLepton)
+            {
+                double pf_l = it->second(nbar_val);
+                if (fabs(pf_s - pf_u) > pf_l)
+                    continue;
+                if (pf_s * pf_u * pf_l == 0.0)
+                    continue;
+                // Hopefully this is an enough contraint
+
+                double theta_14 = acos((pf_s * pf_s + pf_l * pf_l - pf_u * pf_u) / (2.0 * pf_s * pf_l)),
+                       theta_13 = acos((pf_s * pf_s + pf_u * pf_u - pf_l * pf_l) / (2.0 * pf_s * pf_u));
+                pf_l_mult_onemincos += pf_l * (1.0 - cos(theta_14 + theta_13));
+            }
+        }
+        dens_us *= pf_l_mult_onemincos;
+
+        double dens = dens_ud + dens_us;
+
+        // superconductivity?
+        if (superconduct_u)
+        {
+            double tau = T_loc / superconduct_u_temp(pf_u);
+            if (tau < 1.0)
+            {
+                using namespace cooling::predefined::auxiliary;
+                dens *= exp(-1.76 / tau * sqrt(1.0 - tau));
+            }
+        }
+        return dens;
+    };
+}
+
+std::function<double(double, double, double)> cooling::predefined::neutrinic::quark_murca_emissivity(
+    const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    const std::function<double(double)> &exp_phi, bool superconduct_u, bool superconduct_d, bool superconduct_s,
+    const std::function<double(double)> &superconduct_u_temp, const std::function<double(double)> &superconduct_d_temp, const std::function<double(double)> &superconduct_s_temp)
+{
+    return [=](double r, double t, double T)
+    {
+        using namespace constants::scientific;
+        using namespace constants::conversion;
+
+        double nbar_val = nbar_of_r(r);
+        double pf_u = k_fermi_of_nbar.at(uquark)(nbar_val),
+               pf_d = k_fermi_of_nbar.at(dquark)(nbar_val);
+        double alpha_c = 1.0;
+        double T_loc = T / exp_phi(r);
+
+        // Estimates
+        double dens = alpha_c * alpha_c * 1.29E-10 * (pf_u + pf_d) * pow(T_loc, 8);
+
+        // superconductivity?
+        if (superconduct_u || superconduct_d)
+        {
+            double tau_u_inv = superconduct_u_temp(pf_u)/T_loc,
+                     tau_d_inv = superconduct_d_temp(pf_d)/T_loc;
+            if (tau_u_inv > 1.0 && tau_d_inv < 1.0)
+            {
+                using namespace cooling::predefined::auxiliary;
+                auto tau = 1 / tau_u_inv;
+                dens *= exp(- 2.0 * 1.76 / tau * sqrt(1.0 - tau));
+            }
+            else if (tau_u_inv < 1.0 && tau_d_inv > 1.0)
+            {
+                using namespace cooling::predefined::auxiliary;
+                auto tau = 1 / tau_d_inv;
+                dens *= exp(- 2.0 * 1.76 / tau * sqrt(1.0 - tau));
+            }
+            else if (tau_u_inv > 1.0 && tau_d_inv > 1.0)
+            {
+                using namespace cooling::predefined::auxiliary;
+                auto tau = 1 / tau_u_inv;
+                dens *= exp(- 1.76 / tau * sqrt(1.0 - tau));
+                tau = 1 / tau_d_inv;
+                dens *= exp(- 1.76 / tau * sqrt(1.0 - tau));
+            }
+        }
+        return dens;
+    };
+}
+
+std::function<double(double, double, double)> cooling::predefined::neutrinic::quark_bremsstrahlung_emissivity(
+    const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    const std::function<double(double)> &exp_phi, bool superconduct_u, bool superconduct_d, bool superconduct_s,
+    const std::function<double(double)> &superconduct_u_temp, const std::function<double(double)> &superconduct_d_temp, const std::function<double(double)> &superconduct_s_temp)
+{
+    return [=](double r, double t, double T)
+    {
+        using namespace constants::scientific;
+        using namespace constants::conversion;
+
+        double nbar_val = nbar_of_r(r);
+        double pf_u = k_fermi_of_nbar.at(uquark)(nbar_val),
+               pf_d = k_fermi_of_nbar.at(dquark)(nbar_val);
+        double alpha_c = 1.0;
+        double T_loc = T / exp_phi(r);
+
+        // Estimates
+        double dens_u = 1.36E-10 * pf_u * pow(T_loc, 8),
+                dens_d = 1.36E-10 * pf_d * pow(T_loc, 8);
+
+        // superconductivity?
+        if (superconduct_u)
+        {
+            auto tau = T_loc / superconduct_u_temp(pf_u);
+            if (tau < 1.0)
+            {
+                using namespace cooling::predefined::auxiliary;
+                dens_u *= exp(- 2.0 * 1.76 / tau * sqrt(1.0 - tau));
+            }
+        }
+        if (superconduct_d)
+        {
+            auto tau = T_loc / superconduct_d_temp(pf_d);
+            if (tau < 1.0)
+            {
+                using namespace cooling::predefined::auxiliary;
+                dens_d *= exp(- 2.0 * 1.76 / tau * sqrt(1.0 - tau));
+            }
+        }
+        return dens_u + dens_d;
+    };
+}
+
+std::function<double(double, double, double)> cooling::predefined::neutrinic::electron_bremsstrahlung_emissivity(
+                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+                const std::function<double(double)> &exp_phi)
+{
+    return [=](double r, double t, double T)
+    {
+        using namespace constants::scientific;
+        using namespace constants::conversion;
+
+        double nbar_val = nbar_of_r(r);
+        double pf_e = k_fermi_of_nbar.at(electron)(nbar_val);
+        double T_loc = T / exp_phi(r);
+
+        // Ignore superfluidity, since the reaction is not relevant in hadronic phase
+        double dens = (2.427E16 / 1.0E72) * pf_e * pow(T_loc, 8) *
+                        pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3);
+
+        return dens;
     };
 }

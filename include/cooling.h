@@ -35,11 +35,30 @@ namespace cooling
         /// @brief Auxiliary physics related to cooling
         namespace auxiliary
         {
+            /// @brief Specific heat of substance, based on Fermi gas model
+            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [data units]
+            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [data units]
+            /// @param nbar_of_r baryon density [data units] as a function of radius [GeV^{-1}]
+            /// @param nbar_core_limit baryon density [data units] at the core
+            /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
+            /// @param superfluid_n_1s0 allow/forbid superfluidity in 1S0 state for neutrons
+            /// @param superfluid_p_1s0 allow/forbid superfluidity in 1S0 state for protons
+            /// @param superfluid_n_3p2 allow/forbid superfluidity in 3P2 state for neutrons
+            /// @param superconduct_u allow/forbid superconductivity for up quarks
+            /// @param superconduct_d allow/forbid superconductivity for down quarks
+            /// @param superconduct_s allow/forbid superconductivity for strange quarks
+            /// @param superfluid_p_temp temperature of superfluid protons [GeV]
+            /// @param superfluid_n_temp temperature of superfluid neutrons [GeV]
+            /// @param superconduct_u_temp temperature of superconducting up quarks [GeV]
+            /// @param superconduct_d_temp temperature of superconducting down quarks [GeV]
+            /// @param superconduct_s_temp temperature of superconducting strange quarks [GeV]
+            /// @return 
             std::function<double(double, double, double)> fermi_specific_heat_density(
                 const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
                 const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
                 double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
-                const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp);
+                bool superconduct_u, bool superconduct_d, bool superconduct_s, const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp, 
+                const std::function<double(double)> &superconduct_u_temp, const std::function<double(double)> &superconduct_d_temp, const std::function<double(double)> &superconduct_s_temp);
 
             /// @brief Te-Tb relation, based on Keisure thesis
             /// @param Tb internal temperature [GeV], measured by distant observer (inf)
@@ -170,6 +189,71 @@ namespace cooling
                 const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
                 double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
                 const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp);
+
+            /// @brief Emissivity of neutrinos from quark DUrca reactions
+            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [data units]
+            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [data units]
+            /// @param nbar_of_r baryon density [data units] as a function of radius [GeV^{-1}]
+            /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
+            /// @param superconduct_u allow/forbid superconductivity for up quarks
+            /// @param superconduct_d allow/forbid superconductivity for down quarks
+            /// @param superconduct_s allow/forbid superconductivity for strange quarks
+            /// @param superconduct_u_temp temperature of superconducting up quarks [GeV]
+            /// @param superconduct_d_temp temperature of superconducting down quarks [GeV]
+            /// @param superconduct_s_temp temperature of superconducting strange quarks [GeV]
+            /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
+            std::function<double(double, double, double)> quark_durca_emissivity(
+                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+                const std::function<double(double)> &exp_phi, bool superconduct_u, bool superconduct_d, bool superconduct_s,
+                const std::function<double(double)> &superconduct_u_temp, const std::function<double(double)> &superconduct_d_temp, const std::function<double(double)> &superconduct_s_temp);
+
+            /// @brief Emissivity of neutrinos from quark MUrca reactions
+            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [data units]
+            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [data units]
+            /// @param nbar_of_r baryon density [data units] as a function of radius [GeV^{-1}]
+            /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
+            /// @param superconduct_u allow/forbid superconductivity for up quarks
+            /// @param superconduct_d allow/forbid superconductivity for down quarks
+            /// @param superconduct_s allow/forbid superconductivity for strange quarks
+            /// @param superconduct_u_temp temperature of superconducting up quarks [GeV]
+            /// @param superconduct_d_temp temperature of superconducting down quarks [GeV]
+            /// @param superconduct_s_temp temperature of superconducting strange quarks [GeV]
+            /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
+            std::function<double(double, double, double)> quark_murca_emissivity(
+                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+                const std::function<double(double)> &exp_phi, bool superconduct_u, bool superconduct_d, bool superconduct_s,
+                const std::function<double(double)> &superconduct_u_temp, const std::function<double(double)> &superconduct_d_temp, const std::function<double(double)> &superconduct_s_temp);
+
+            /// @brief Emissivity of neutrinos from quark Bremsstrahlung reactions
+            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [data units]
+            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [data units]
+            /// @param nbar_of_r baryon density [data units] as a function of radius [GeV^{-1}]
+            /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
+            /// @param superconduct_u allow/forbid superconductivity for up quarks
+            /// @param superconduct_d allow/forbid superconductivity for down quarks
+            /// @param superconduct_s allow/forbid superconductivity for strange quarks
+            /// @param superconduct_u_temp temperature of superconducting up quarks [GeV]
+            /// @param superconduct_d_temp temperature of superconducting down quarks [GeV]
+            /// @param superconduct_s_temp temperature of superconducting strange quarks [GeV]
+            /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
+            std::function<double(double, double, double)> quark_bremsstrahlung_emissivity(
+                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+                const std::function<double(double)> &exp_phi, bool superconduct_u, bool superconduct_d, bool superconduct_s,
+                const std::function<double(double)> &superconduct_u_temp, const std::function<double(double)> &superconduct_d_temp, const std::function<double(double)> &superconduct_s_temp);
+
+            /// @brief Emissivity of neutrinos from electron bremsstrahlung reaction (important in highly supressed quark phase)
+            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [data units]
+            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [data units]
+            /// @param nbar_of_r baryon density [data units] as a function of radius [GeV^{-1}]
+            /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
+            /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
+            std::function<double(double, double, double)> electron_bremsstrahlung_emissivity(
+                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+                const std::function<double(double)> &exp_phi);
         }
     }
 }
