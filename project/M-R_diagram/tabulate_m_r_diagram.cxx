@@ -13,11 +13,6 @@
 #include <sstream>
 #include <fstream>
 
-#include <TCanvas.h>
-#include <TGraph.h>
-#include <TAxis.h>
-#include <TLegend.h>
-
 int main()
 {
     using namespace inputfile;
@@ -87,26 +82,4 @@ int main()
         y.push_back(point[1] * gev_over_msol);
         std::cout << "At " << count << " out of " << n << " cycles. M = " << y.back() << " Ms, R = " << x.back() << " km\n";
     }
-
-    // draw
-    TCanvas *c1 = new TCanvas("c1", "c1");
-    auto gr = new TGraph(x.size(), x.data(), y.data());
-    gr->SetLineColor(kBlue);
-    gr->Draw("AL");
-    // title offset
-    gr->GetYaxis()->SetTitleOffset(1.5);
-    gr->GetXaxis()->SetLimits(0, 20.0);
-    gr->GetYaxis()->SetRangeUser(0, 3.0);
-    // gPad->SetLogx();
-    // gPad->SetLogy();
-
-    gr->GetXaxis()->SetTitle("R [km]");
-    gr->GetYaxis()->SetTitle("M [Ms]");
-
-    //auto legend = new TLegend(0.1, 0.1, 0.38, 0.38);
-    //legend->AddEntry(gr, "RH Manager", "l");
-
-    //legend->Draw();
-
-    c1->SaveAs("M-R-diagram.pdf");
 }

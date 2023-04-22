@@ -14,11 +14,6 @@
 #include <sstream>
 #include <fstream>
 
-#include <TCanvas.h>
-#include <TGraph.h>
-#include <TAxis.h>
-#include <TLegend.h>
-
 int main()
 {
     using namespace inputfile;
@@ -240,24 +235,4 @@ int main()
         x[i] *= 1.0E6 / (constants::conversion::myr_over_s * constants::conversion::gev_s);
         y[i] = cooling::predefined::auxiliary::te_tb_relation(y[i], r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k;
     }
-
-    //draw
-    TCanvas *c1 = new TCanvas("c1", "c1");
-    auto gr = new TGraph(x.size(), x.data(), y.data());
-    gr->SetLineColor(kBlue);
-    gr->Draw("AL");
-    // title offset
-    gr->GetYaxis()->SetTitleOffset(1.5);
-    gPad->SetLogx();
-    gPad->SetLogy();
-
-    gr->GetXaxis()->SetTitle("t [yr]");
-    gr->GetYaxis()->SetTitle("T [K]");
-
-    auto legend = new TLegend(0.1, 0.1, 0.38, 0.38);
-    legend->AddEntry(gr, "RH Manager", "l");
-
-    legend->Draw();
-
-    c1->SaveAs("cooling.pdf");
 }
