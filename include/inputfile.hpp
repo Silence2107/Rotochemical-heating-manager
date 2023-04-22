@@ -3,6 +3,7 @@
 
 #include "../include/auxiliaries.h"
 #include "../include/constants.h"
+#include "../include/cooling.h"
 
 #include <fstream>
 #include <functional>
@@ -46,7 +47,7 @@ namespace inputfile
         [](std::vector<std::vector<double>> &cache, const std::vector<double> &input, std::ifstream &fstr, const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &interpolator)
         {
             /// (barionic density &gt; 0.055 fm-3) -> (energy density g/cm3, pressure dyne/cm2, barionic density fm-3, electron fraction, muon -//-, neutron -//-, proton -//-, lambda -//-, sigma- -//-, sigma0 -//-, sigma+ -//-, m star proton -//-, m star neutron -//-, m star lambda -//-, m star sigma- -//-, m star sigma0 -//-, m star sigma+ -//-)
-		    ///	(barionic density &lt; 0.055 fm-3) -> (energy density g/cm3, pressure dyne/cm2, barionic density fm-3, Acell, Aion, Z, [empty])
+            ///	(barionic density &lt; 0.055 fm-3) -> (energy density g/cm3, pressure dyne/cm2, barionic density fm-3, Acell, Aion, Z, [empty])
             if (cache.empty())
             {
                 std::string nextline;

@@ -8,11 +8,10 @@
 #include <iomanip>
 #include <cmath>
 
-#include "../include/eos_reader.h"  // allows to read EoS datafiles
-#include "../include/tov_solver.h"  // contains TOV solver
-#include "../include/constants.h"   // contains constants
-#include "../include/auxiliaries.h" // contains auxiliary functionality
-#include "../include/inputfile.hpp" // inputfile
+#include "../../include/tov_solver.h"  // contains TOV solver
+#include "../../include/constants.h"   // contains constants
+#include "../../include/auxiliaries.h" // contains auxiliary functionality
+#include "../../include/inputfile.hpp" // inputfile
 
 int main(int argc, char **argv)
 {
@@ -118,12 +117,18 @@ int main(int argc, char **argv)
             return std::vector<double>({nbar_interpolator(cache[0], cache[1], r), cache[0].back()});
         });
 
-    // ready to calculate
+    // run
 
     double r_ns = tov(0.0)[4];
     double r_crust = nbar(0.0)[1];
     double m_ns = tov(r_ns)[0];
+
     std::cout << m_ns * constants::conversion::gev_over_msol << " ";
+
+    auto exp_lambda = [&tov](double r)
+    {
+        return pow(1 - 2 * constants::scientific::G * tov(r)[0] / r, -0.5);
+    };
     for (auto species = Y_i_functions_of_nbar.begin(); species != Y_i_functions_of_nbar.end(); ++species)
     {
         double I_i = 0.0;
@@ -131,10 +136,9 @@ int main(int argc, char **argv)
         double omega_k_sqr = pow(2.0 / 3, 3.0) * constants::scientific::G * m_ns / (r_ns * r_ns * r_ns);
         auto integrand = [&](double r)
         {
-            return -4.0 * M_PI * r * r * nbar_conversion * nbar(r)[0] * 1.0 / omega_k_sqr * (Y_i(nbar(r + radius_step)[0]) - Y_i(nbar(r)[0])) / (tov(r + radius_step)[3] / tov(r)[3] - 1);
+            return -nbar_conversion * nbar(r)[0] * 1.0 / omega_k_sqr * (Y_i(nbar(r + radius_step)[0]) - Y_i(nbar(r)[0])) / (tov(r + radius_step)[3] / tov(r)[3] - 1);
         };
-        for (double r = 0; r < r_crust - radius_step; r += radius_step)
-            I_i += integrand(r);
-        std::cout << I_i * radius_step / (constants::conversion::gev_s * constants::conversion::gev_s) << " ";
+        I_i = auxiliaries::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_crust, exp_lambda, auxiliaries::IntegrationMode::kGaussLegendre_12p)();
+        std::cout << I_i / (constants::conversion::gev_s * constants::conversion::gev_s) << " ";
     }
 }
