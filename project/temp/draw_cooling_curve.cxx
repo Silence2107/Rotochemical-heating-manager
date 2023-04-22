@@ -151,16 +151,13 @@ int main()
     }
 
     auto quark_durca_emissivity = (has_quarks ? cooling::predefined::neutrinic::quark_durca_emissivity(
-        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_u, superconduct_d, superconduct_s,
-        superconduct_u_temp, superconduct_d_temp, superconduct_s_temp) : [](double, double, double) { return 0.0; });
+        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap) : [](double, double, double) { return 0.0; });
 
     auto quark_murca_emissivity = (has_quarks ? cooling::predefined::neutrinic::quark_murca_emissivity(
-        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_u, superconduct_d, superconduct_s,
-        superconduct_u_temp, superconduct_d_temp, superconduct_s_temp) : [](double, double, double) { return 0.0; });
+        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap) : [](double, double, double) { return 0.0; });
 
     auto quark_bremsstrahlung_emissivity = (has_quarks ? cooling::predefined::neutrinic::quark_bremsstrahlung_emissivity(
-        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_u, superconduct_d, superconduct_s,
-        superconduct_u_temp, superconduct_d_temp, superconduct_s_temp) : [](double, double, double) { return 0.0; });
+        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap) : [](double, double, double) { return 0.0; });
 
     auto electron_bremsstrahlung_emissivity = cooling::predefined::neutrinic::electron_bremsstrahlung_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi);
@@ -195,8 +192,7 @@ int main()
     // specific heat
     auto fermi_specific_heat_dens = cooling::predefined::auxiliary::fermi_specific_heat_density(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, exp_phi, superfluid_n_1s0,
-        superfluid_p_1s0, superfluid_n_3p2, superconduct_u, superconduct_d, superconduct_s, 
-        superfluid_p_temp, superfluid_n_temp, superconduct_u_temp, superconduct_d_temp, superconduct_s_temp);
+        superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp, superconduct_q_gap);
 
     auto heat_capacity = auxiliaries::integrate_volume<double, double>(
         std::function<double(double, double, double)>(fermi_specific_heat_dens), 0, r_ns, exp_lambda, auxiliaries::IntegrationMode::kGaussLegendre_12p, radius_step);

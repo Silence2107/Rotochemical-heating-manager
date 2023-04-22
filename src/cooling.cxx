@@ -63,11 +63,10 @@ double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double
 }
 
 std::function<double(double, double, double)> cooling::predefined::auxiliary::fermi_specific_heat_density(
-    const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-    const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-    double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
-    bool superconduct_u, bool superconduct_d, bool superconduct_s, const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp,
-    const std::function<double(double)> &superconduct_u_temp, const std::function<double(double)> &superconduct_d_temp, const std::function<double(double)> &superconduct_s_temp)
+                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+                double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+                const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp, const std::function<double(double)> &superconduct_q_gap)
 {
     return [=](double r, double t, double T)
     {
@@ -123,35 +122,13 @@ std::function<double(double, double, double)> cooling::predefined::auxiliary::fe
                         diff *= r_A(superfluid_gap_1s0(tau));
                 }
             }
-            // u quark superconductivity?
-            else if (key == uquark && superconduct_u)
+            // quark superconductivity?
+            else if (key.classify() == auxiliaries::Species::ParticleClassification::kQuark)
             {
-                double tau = T_loc / superconduct_u_temp(k_fermi);
-                if (tau < 1.0)
-                {
-                    using namespace cooling::predefined::auxiliary;
-                    diff *= 3.1 / pow(tau, 2.5) * exp(-1.76 / tau * sqrt(1.0 - tau));
-                }
-            }
-            // d quark superconductivity?
-            else if (key == dquark && superconduct_d)
-            {
-                double tau = T_loc / superconduct_d_temp(k_fermi);
-                if (tau < 1.0)
-                {
-                    using namespace cooling::predefined::auxiliary;
-                    diff *= 3.1 / pow(tau, 2.5) * exp(-1.76 / tau * sqrt(1.0 - tau));
-                }
-            }
-            // s quark superconductivity?
-            else if (key == squark && superconduct_s)
-            {
-                double tau = T_loc / superconduct_s_temp(k_fermi);
-                if (tau < 1.0)
-                {
-                    using namespace cooling::predefined::auxiliary;
-                    diff *= 3.1 / pow(tau, 2.5) * exp(-1.76 / tau * sqrt(1.0 - tau));
-                }
+                // kinda following Blashke..
+                auto tau_est_inv = superconduct_q_gap(nbar_val)/T_loc;
+                if(tau_est_inv > 1.0)
+                    diff *= 3.1 * pow(tau_est_inv, 2.5) * exp(-tau_est_inv);
             }
             cv_dens += diff;
         }
@@ -689,8 +666,7 @@ std::function<double(double, const auxiliaries::Species &, double, double)> cool
 std::function<double(double, double, double)> cooling::predefined::neutrinic::quark_durca_emissivity(
     const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
     const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-    const std::function<double(double)> &exp_phi, bool superconduct_u, bool superconduct_d, bool superconduct_s,
-    const std::function<double(double)> &superconduct_u_temp, const std::function<double(double)> &superconduct_d_temp, const std::function<double(double)> &superconduct_s_temp)
+    const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap)
 {
     return [=](double r, double t, double T)
     {
@@ -737,16 +713,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
 
         double dens = dens_ud + dens_us;
 
-        // superconductivity?
-        if (superconduct_u)
-        {
-            double tau = T_loc / superconduct_u_temp(pf_u);
-            if (tau < 1.0)
-            {
-                using namespace cooling::predefined::auxiliary;
-                dens *= exp(-1.76 / tau * sqrt(1.0 - tau));
-            }
-        }
+        // q superconductivity?
+        dens *= exp(-superconduct_q_gap(nbar_val) / T_loc);
         return dens;
     };
 }
@@ -754,8 +722,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
 std::function<double(double, double, double)> cooling::predefined::neutrinic::quark_murca_emissivity(
     const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
     const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-    const std::function<double(double)> &exp_phi, bool superconduct_u, bool superconduct_d, bool superconduct_s,
-    const std::function<double(double)> &superconduct_u_temp, const std::function<double(double)> &superconduct_d_temp, const std::function<double(double)> &superconduct_s_temp)
+    const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap)
 {
     return [=](double r, double t, double T)
     {
@@ -771,32 +738,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         // Estimates
         double dens = alpha_c * alpha_c * 1.29E-10 * (pf_u + pf_d) * pow(T_loc, 8);
 
-        // superconductivity?
-        if (superconduct_u || superconduct_d)
-        {
-            double tau_u_inv = superconduct_u_temp(pf_u)/T_loc,
-                     tau_d_inv = superconduct_d_temp(pf_d)/T_loc;
-            if (tau_u_inv > 1.0 && tau_d_inv < 1.0)
-            {
-                using namespace cooling::predefined::auxiliary;
-                auto tau = 1 / tau_u_inv;
-                dens *= exp(- 2.0 * 1.76 / tau * sqrt(1.0 - tau));
-            }
-            else if (tau_u_inv < 1.0 && tau_d_inv > 1.0)
-            {
-                using namespace cooling::predefined::auxiliary;
-                auto tau = 1 / tau_d_inv;
-                dens *= exp(- 2.0 * 1.76 / tau * sqrt(1.0 - tau));
-            }
-            else if (tau_u_inv > 1.0 && tau_d_inv > 1.0)
-            {
-                using namespace cooling::predefined::auxiliary;
-                auto tau = 1 / tau_u_inv;
-                dens *= exp(- 1.76 / tau * sqrt(1.0 - tau));
-                tau = 1 / tau_d_inv;
-                dens *= exp(- 1.76 / tau * sqrt(1.0 - tau));
-            }
-        }
+        // q superconductivity?
+        dens *= exp(-2.0 * superconduct_q_gap(nbar_val) / T_loc);
         return dens;
     };
 }
@@ -804,8 +747,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
 std::function<double(double, double, double)> cooling::predefined::neutrinic::quark_bremsstrahlung_emissivity(
     const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
     const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-    const std::function<double(double)> &exp_phi, bool superconduct_u, bool superconduct_d, bool superconduct_s,
-    const std::function<double(double)> &superconduct_u_temp, const std::function<double(double)> &superconduct_d_temp, const std::function<double(double)> &superconduct_s_temp)
+    const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap)
 {
     return [=](double r, double t, double T)
     {
@@ -822,26 +764,9 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         double dens_u = 1.36E-10 * pf_u * pow(T_loc, 8),
                 dens_d = 1.36E-10 * pf_d * pow(T_loc, 8);
 
-        // superconductivity?
-        if (superconduct_u)
-        {
-            auto tau = T_loc / superconduct_u_temp(pf_u);
-            if (tau < 1.0)
-            {
-                using namespace cooling::predefined::auxiliary;
-                dens_u *= exp(- 2.0 * 1.76 / tau * sqrt(1.0 - tau));
-            }
-        }
-        if (superconduct_d)
-        {
-            auto tau = T_loc / superconduct_d_temp(pf_d);
-            if (tau < 1.0)
-            {
-                using namespace cooling::predefined::auxiliary;
-                dens_d *= exp(- 2.0 * 1.76 / tau * sqrt(1.0 - tau));
-            }
-        }
-        return dens_u + dens_d;
+        // q superconductivity?
+        auto dens = (dens_u + dens_d) * exp(-2.0 * superconduct_q_gap(nbar_val) / T_loc);
+        return dens;
     };
 }
 

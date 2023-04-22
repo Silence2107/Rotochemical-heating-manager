@@ -222,10 +222,7 @@ namespace inputfile
 
     bool superfluid_p_1s0 = false,
          superfluid_n_3p2 = false,
-         superfluid_n_1s0 = false,
-         superconduct_u = false,
-         superconduct_d = false,
-         superconduct_s = false;
+         superfluid_n_1s0 = false;
 
     std::function<double(double)> superfluid_p_temp = [](double k_fermi)
     {
@@ -245,31 +242,8 @@ namespace inputfile
         }
         return 0.0;
     };
-    std::function<double(double)> superconduct_u_temp = [](double k_fermi)
+    std::function<double(double)> superconduct_q_gap = [](double nbar)
     {
-        if (superconduct_u)
-        {
-            using namespace cooling::predefined::auxiliary;
-            return 0.001;
-        }
-        return 0.0;
-    };
-    std::function<double(double)> superconduct_d_temp = [](double k_fermi)
-    {
-        if (superconduct_d)
-        {
-            using namespace cooling::predefined::auxiliary;
-            return 0.001;
-        }
-        return 0.0;
-    };
-    std::function<double(double)> superconduct_s_temp = [](double k_fermi)
-    {
-        if (superconduct_s)
-        {
-            using namespace cooling::predefined::auxiliary;
-            return 0.001;
-        }
         return 0.0;
     };
 
