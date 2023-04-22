@@ -594,11 +594,15 @@ std::function<double(double, const auxiliaries::Species &, double, double)> cool
         double a_s, a_t;
         if (hadron == neutron)
         {
+            if (mst == 0.0)
+                return 0.0;
             a_s = 1.0 + 1.588 * pow(pf / M_N, 2.0) * (1.0 + 0.262 * pow(mst / M_N, -2.0));
             a_t = 4.17;
         }
         else if (hadron == proton)
         {
+            if (mst == 0.0)
+                return 0.0;
             a_s = 0.0064 + 1.588 * pow(pf / M_N, 2.0) * (1.0 + 0.262 * pow(mst / M_N, -2.0));
             a_t = 0.0;
         }
