@@ -126,9 +126,10 @@ std::function<double(double, double, double)> cooling::predefined::auxiliary::fe
             else if (key.classify() == auxiliaries::Species::ParticleClassification::kQuark)
             {
                 // kinda following Blashke..
-                auto tau_est_inv = superconduct_q_gap(nbar_val)/T_loc;
-                if(tau_est_inv > 1.0)
-                    diff *= 3.1 * pow(tau_est_inv, 2.5) * exp(-tau_est_inv);
+                auto exp_factor = superconduct_q_gap(nbar_val)/T_loc;
+                // estimate critical temperature as 0.15 GeV (consider later if we need Tc(nbar))
+                if(exp_factor > 1.0)
+                    diff *= 3.1 * pow(critical_temperature(0.0, CriticalTemperatureModel::kHadronToQGP) / T_loc, 2.5) * exp(-exp_factor);
             }
             cv_dens += diff;
         }
@@ -214,6 +215,8 @@ double cooling::predefined::auxiliary::critical_temperature(double k_fermi, cool
     case CriticalTemperatureModel::kAO:
         return critical_temperature_smeared_guassian(
             k_fermi, 2.35E9 / gev_over_k, 0.49 / (1.0E-18 * km_gev), 0.31 / (1.0E-18 * km_gev), 0.0);
+    case CriticalTemperatureModel::kHadronToQGP:
+        return 0.15;
     default:
         throw std::runtime_error("Unknown critical temperature model");
     }

@@ -78,7 +78,8 @@ namespace cooling
                 kA,
                 kB,
                 kC,
-                kA2
+                kA2,
+                kHadronToQGP
             };
 
             /// @brief Critical temperature in given model
