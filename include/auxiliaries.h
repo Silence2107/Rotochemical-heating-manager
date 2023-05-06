@@ -141,7 +141,7 @@ namespace auxiliaries
                 {
                     return function(r, args...) * 4 * pi * r * r * exp_lambda(r);
                 };
-                for (int i = 0; i < weights.size(); i++)
+                for (size_t i = 0; i < weights.size(); i++)
                 {
                     result += (rmax - rmin) / 2 * weights[i] * integrand((rmax - rmin) / 2 * points[i] + (rmax + rmin) / 2);
                 }
@@ -156,7 +156,7 @@ namespace auxiliaries
                 {
                     return function(r, args...) * 4 * pi * r * r * exp_lambda(r);
                 };
-                for (int i = 0; i < weights.size(); i++)
+                for (size_t i = 0; i < weights.size(); i++)
                 {
                     result += (rmax - rmin) / 2 * weights[i] * integrand((rmax - rmin) / 2 * points[i] + (rmax + rmin) / 2);
                 }

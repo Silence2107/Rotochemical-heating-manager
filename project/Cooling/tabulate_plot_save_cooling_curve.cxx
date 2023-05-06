@@ -24,9 +24,9 @@ int main(int argc, char **argv)
 {
     if (argc == 1)
     {
-        std::cout << "Usage: " << argv[0] << " <pdf_path=M-R-diagram.pdf> <rootfile_path=None>" << std::endl;
+        std::cout << "Usage: " << argv[0] << " <pdf_path=Cooling.pdf> <rootfile_path=None>" << std::endl;
     }
-    std::string pdf_path = (argc > 1) ? argv[1] : "M-R-diagram.pdf";
+    std::string pdf_path = (argc > 1) ? argv[1] : "Cooling.pdf";
     bool rootfile_creation = (argc > 2);
     using namespace inputfile;
 
