@@ -1,10 +1,9 @@
 
-#include "../include/auxiliaries.h"
-#include "../include/cooling.h"
-#include "../include/eos_reader.h"
-#include "../include/constants.h"
-#include "../include/tov_solver.h"
-#include "../include/inputfile.hpp"
+#include "../../include/auxiliaries.h"
+#include "../../include/cooling.h"
+#include "../../include/constants.h"
+#include "../../include/tov_solver.h"
+#include "../../include/inputfile.hpp"
 
 #include <vector>
 #include <functional>
@@ -19,6 +18,7 @@
 #include <TGraph.h>
 #include <TAxis.h>
 #include <TLegend.h>
+#include <TStyle.h>
 
 int main()
 {
@@ -126,11 +126,11 @@ int main()
 
     // neutrino luminosity
     auto hadron_durca_emissivity = cooling::predefined::neutrinic::hadron_durca_emissivity(
-        k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, exp_phi, superfluid_n_1s0, 
+        k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, exp_phi, superfluid_n_1s0,
         superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp);
 
     auto hadron_murca_emissivity = cooling::predefined::neutrinic::hadron_murca_emissivity(
-        k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, nbar_conversion, exp_phi, superfluid_n_1s0, 
+        k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, nbar_conversion, exp_phi, superfluid_n_1s0,
         superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp);
 
     auto hadron_bremsstrahlung_emissivity = cooling::predefined::neutrinic::hadron_bremsstrahlung_emissivity(
@@ -141,10 +141,39 @@ int main()
         k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, exp_phi, superfluid_n_1s0,
         superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp);
 
+    bool has_quarks = false;
+    for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
+    {
+        if (it->first.classify() == auxiliaries::Species::ParticleClassification::kQuark)
+        {
+            has_quarks = true;
+            break;
+        }
+    }
+
+    auto quark_durca_emissivity = (has_quarks ? cooling::predefined::neutrinic::quark_durca_emissivity(
+                                                    k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap)
+                                              : [](double, double, double)
+                                       { return 0.0; });
+
+    auto quark_murca_emissivity = (has_quarks ? cooling::predefined::neutrinic::quark_murca_emissivity(
+                                                    k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap)
+                                              : [](double, double, double)
+                                       { return 0.0; });
+
+    auto quark_bremsstrahlung_emissivity = (has_quarks ? cooling::predefined::neutrinic::quark_bremsstrahlung_emissivity(
+                                                             k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap)
+                                                       : [](double, double, double)
+                                                { return 0.0; });
+
+    auto electron_bremsstrahlung_emissivity = cooling::predefined::neutrinic::electron_bremsstrahlung_emissivity(
+        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi);
+
     auto Q_nu = [&](double r, double t, double T)
     {
         using namespace constants::scientific;
         double result = 0;
+
         for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
         {
             auto key = it->first;
@@ -159,19 +188,21 @@ int main()
             }
         }
         result += hadron_bremsstrahlung_emissivity(r, t, T);
+        result += quark_durca_emissivity(r, t, T) + quark_murca_emissivity(r, t, T) + quark_bremsstrahlung_emissivity(r, t, T);
+        result += electron_bremsstrahlung_emissivity(r, t, T);
         return result * exp_phi(r) * exp_phi(r);
     };
 
     auto neutrino_luminosity = auxiliaries::integrate_volume<double, double>(
-        std::function<double(double, double, double)>(Q_nu), 0, r_ns, exp_lambda, auxiliaries::IntegrationMode::kGaussLegendre_6p, radius_step);
+        std::function<double(double, double, double)>(Q_nu), 0, r_ns, exp_lambda, auxiliaries::IntegrationMode::kGaussLegendre_12p, radius_step);
 
     // specific heat
     auto fermi_specific_heat_dens = cooling::predefined::auxiliary::fermi_specific_heat_density(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, exp_phi, superfluid_n_1s0,
-        superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp);
+        superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp, superconduct_q_gap);
 
     auto heat_capacity = auxiliaries::integrate_volume<double, double>(
-        std::function<double(double, double, double)>(fermi_specific_heat_dens), 0, r_ns, exp_lambda, auxiliaries::IntegrationMode::kGaussLegendre_6p, radius_step);
+        std::function<double(double, double, double)>(fermi_specific_heat_dens), 0, r_ns, exp_lambda, auxiliaries::IntegrationMode::kGaussLegendre_12p, radius_step);
 
     auto cooling_rhs = [&heat_capacity, &photon_luminosity, &neutrino_luminosity](double t, double T)
     {
@@ -191,7 +222,7 @@ int main()
     // invoke the solver once to cache the solution
     cooling_solver(t_end - t_init, cooling_rhs, T_init, base_t_step, exp_rate_estim, cooling_interpolator);
 
-    // plot the solution
+    // plot the solution (assumes exp_rate_estim > 1)
     std::vector<double> x(cooling_n_points_estimate, 0);
     std::vector<double> y(cooling_n_points_estimate, 0);
     std::cout << "M/Msol " << m_ns * constants::conversion::gev_over_msol << std::endl;
@@ -218,7 +249,7 @@ int main()
     }
 
     // compare with nscool
-    std::ifstream apr_nscool("../../data/Teff_2.0_nopairing.dat");
+    std::ifstream apr_nscool("../../data/Teff_2.0_pairing.dat");
     std::vector<double> x_nscool, y_nscool;
     // iterate over file, but skip 26 lines
     for (int i = 0; i < 26; ++i)
@@ -239,24 +270,51 @@ int main()
     }
 
     TCanvas *c1 = new TCanvas("c1", "c1");
+    gPad->SetLogy();
+    gPad->SetLogx();
+    gPad->SetTicks();
+    gPad->SetTopMargin(0.05);
+    gPad->SetLeftMargin(0.11);
+    gPad->SetRightMargin(0.05);
+    gPad->SetBottomMargin(0.1);
+    gStyle->SetOptStat(0);
+    gStyle->SetOptTitle(0);
+
     auto gr = new TGraph(x.size(), x.data(), y.data());
     gr->SetLineColor(kBlue);
+    gr->SetLineWidth(2);
+    gr->SetLineStyle(1);
     gr->Draw("AL");
-    // title offset
     gr->GetYaxis()->SetTitleOffset(1.5);
-    gPad->SetLogx();
-    gPad->SetLogy();
-
     gr->GetXaxis()->SetTitle("t [yr]");
-    gr->GetYaxis()->SetTitle("T [K]");
+    gr->GetYaxis()->SetTitle("T^{#infty}_{s} [K]");
+    gr->GetYaxis()->SetLabelFont(43);
+    gr->GetYaxis()->SetLabelSize(22);
+    gr->GetYaxis()->SetTitleFont(43);
+    gr->GetYaxis()->SetTitleSize(26);
+    gr->GetYaxis()->SetTitleOffset(0.5);
+    gr->GetXaxis()->SetLabelFont(43);
+    gr->GetXaxis()->SetLabelSize(22);
+    gr->GetXaxis()->SetTitleFont(43);
+    gr->GetXaxis()->SetTitleSize(26);
+    gr->GetXaxis()->SetTitleOffset(0.9);
+    gr->GetYaxis()->SetRangeUser(7e2, 7e6);
+    gr->GetXaxis()->SetLimits(1e-12, 1e7);
 
     auto gr_ns_cool = new TGraph(x_nscool.size(), x_nscool.data(), y_nscool.data());
     gr_ns_cool->SetLineColor(kRed);
+    gr_ns_cool->SetLineWidth(2);
+    gr_ns_cool->SetLineStyle(9);
     gr_ns_cool->Draw("L");
 
-    auto legend = new TLegend(0.1, 0.1, 0.38, 0.38);
+    auto legend = new TLegend(0.15, 0.1, 0.43, 0.38);
     legend->AddEntry(gr, "RH Manager", "l");
     legend->AddEntry(gr_ns_cool, "NSCool", "l");
+    legend->SetBorderSize(0);
+    legend->SetTextFont(43);
+    legend->SetTextSize(27);
+    legend->SetFillStyle(0);
+    legend->SetMargin(0.35);
 
     legend->Draw();
 
