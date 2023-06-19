@@ -203,7 +203,7 @@ namespace inputfile
     double density_step = 1E-8 * edensity_upp * energy_density_conversion;
 
     // TOV solver center density in GeV^4
-    double center_density = 1.6 / 7.44 * edensity_upp * energy_density_conversion;
+    double center_density = 108.3 / 500.0 * edensity_upp * energy_density_conversion;
 
     // (3) Cooling solver
 
@@ -221,9 +221,9 @@ namespace inputfile
 
     // Critical phenomena settings
 
-    bool superfluid_p_1s0 = false,
-         superfluid_n_3p2 = false,
-         superfluid_n_1s0 = false;
+    bool superfluid_p_1s0 = true,
+         superfluid_n_3p2 = true,
+         superfluid_n_1s0 = true;
 
     std::function<double(double)> superfluid_p_temp = [](double k_fermi)
     {
