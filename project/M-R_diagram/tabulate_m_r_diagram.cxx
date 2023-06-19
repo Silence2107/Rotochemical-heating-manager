@@ -71,9 +71,10 @@ int main()
     };
 
     size_t n = 500;
+    size_t offset = 15;
     std::vector<double> x, y;
     // assemble data for different center densities
-    for(size_t count = 1; count < n; ++count)
+    for(size_t count = offset; count < n - offset + 1; ++count)
     {
         using namespace constants::conversion;
         double edensity = (count * edensity_upp * energy_density_conversion) / n;
