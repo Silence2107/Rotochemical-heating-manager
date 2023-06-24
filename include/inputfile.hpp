@@ -37,85 +37,26 @@ namespace inputfile
            nbar_core_limit = 9E-2,
            nbar_crust_limit = 2.096E-2;
 
-    // datafile with EoS data
-    std::ifstream fstr("/mnt/d/VSProjects/Rotochemical-heating-manager/data/APR_EOS_Acc_Fe.dat");
-
-    // Cached file reader. Only use it if you want to erase cache
-    auto reader_cached = auxiliaries::CachedFunc<std::vector<std::vector<double>>,
-                                                 std::vector<double>, const std::vector<double> &, std::ifstream &,
-                                                 const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &>(
-        [](std::vector<std::vector<double>> &cache, const std::vector<double> &input, std::ifstream &fstr, const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &interpolator)
+    // data_reader takes input vector and outputs vector of outputs from EoS datafile
+    auto data_reader = auxiliaries::CachedFunc<std::vector<std::vector<double>>,
+                                                 std::vector<double>, const std::vector<double> &>(
+        [](std::vector<std::vector<double>> &cache, const std::vector<double> &input)
         {
             /// (barionic density &gt; 0.055 fm-3) -> (energy density g/cm3, pressure dyne/cm2, barionic density fm-3, electron fraction, muon -//-, neutron -//-, proton -//-, lambda -//-, sigma- -//-, sigma0 -//-, sigma+ -//-, m star proton -//-, m star neutron -//-, m star lambda -//-, m star sigma- -//-, m star sigma0 -//-, m star sigma+ -//-)
             ///	(barionic density &lt; 0.055 fm-3) -> (energy density g/cm3, pressure dyne/cm2, barionic density fm-3, Acell, Aion, Z, [empty])
             if (cache.empty())
             {
-                std::string nextline;
-                size_t line_number = 0;
-                cache.resize(17); // 17 columns (expected max amount)
-                for (size_t cols = 0; cols < cache.size(); ++cols)
-                    cache[cols].resize(229); // 229 rows (expected amount)
-                for (; std::getline(fstr, nextline) && line_number < 6; ++line_number)
-                    ; // skip 6 lines
-                while (std::getline(fstr >> std::ws, nextline) && line_number < 235)
-                {
-                    nextline = auxiliaries::retrieve_cleared_line(nextline); // clear line
-                    std::stringstream strstr(nextline);
-                    std::string word;
-                    for (int i = 0; std::getline(strstr, word, ' '); ++i)
-                        cache[i][line_number - 6] = std::stod(word);
-                    ++line_number;
-                } // read all important data into cache
+                cache = auxiliaries::read_tabulated_file("/mnt/d/VSProjects/Rotochemical-heating-manager/data/APR_EOS_Acc_Fe.dat", {0, 0}, {7, 236});
             }
             std::vector<double> output;
             double nbar = input[0];                 // barionic density (input[0])
             if (nbar > nbar_upp || nbar < nbar_low) // we do not have data beyond these values
                 throw std::runtime_error("Data request out of range; Encountered in eos_reader::reader_cached");
             output.resize(cache.size()); // output size
-            if (nbar > nbar_core_limit)
-            {
-                for (int i = 0; i < cache.size(); ++i)
-                    output[i] = interpolator(cache[2], cache[i], nbar);
-            }
-            else if (nbar < nbar_crust_limit)
-            {
-                for (int i = 0; i < cache.size(); ++i)
-                    output[i] = interpolator(cache[2], cache[i], nbar);
-            }
-            else
-            {
-                // extract data between i.e. at phase transition;
-                // for densities, pressure and baryonic density, we introduce slight slope for monotony; other entries get copypasted depending on nbar
-                if (nbar > (nbar_core_limit + nbar_crust_limit) / 2.0)
-                {
-                    output = std::vector<double>({1.5197E+14, 9.2819E+32, 9.0000E-02, 3.1606E-02, 0.0000E+00, 9.6839E-01, 3.1606E-02, 0, 0, 0, 0, 7.3203E-01, 8.8003E-01, 0, 0, 0, 0});
-                    // I choose slopes by hand : split 10%/80%/10%
-                    output[0] -= 2.0 * (nbar_core_limit - nbar) / (nbar_core_limit - nbar_crust_limit) * (1.5197E+14 - 3.493E+13) / 10.0;
-                    output[1] -= 2.0 * (nbar_core_limit - nbar) / (nbar_core_limit - nbar_crust_limit) * (9.2819E+32 - 7.311E+31) / 10.0;
-                    output[2] -= 2.0 * (nbar_core_limit - nbar) / (nbar_core_limit - nbar_crust_limit) * (9.0000E-02 - 2.096E-02) / 10.0;
-                }
-                else
-                {
-                    output = std::vector<double>({3.493E+13, 7.311E+31, 2.096E-02, 1127., 124., 26., 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
-                    // I choose slopes by hand : split 10%/80%/10%
-                    output[0] += 2.0 * (nbar - nbar_crust_limit) / (nbar_core_limit - nbar_crust_limit) * (1.5197E+14 - 3.493E+13) / 10.0;
-                    output[1] += 2.0 * (nbar - nbar_crust_limit) / (nbar_core_limit - nbar_crust_limit) * (9.2819E+32 - 7.311E+31) / 10.0;
-                    output[2] += 2.0 * (nbar - nbar_crust_limit) / (nbar_core_limit - nbar_crust_limit) * (9.0000E-02 - 2.096E-02) / 10.0;
-                }
-            }
+            for (int i = 0; i < cache.size(); ++i)
+                output[i] = auxiliaries::interpolate(cache[2], cache[i], auxiliaries::InterpolationMode::kLinear, nbar, false);
             return output;
         });
-
-    // data_reader takes input vector and outputs vector of outputs from EoS datafile
-    auto data_reader = [](const std::vector<double> &input)
-    {
-        // linearly interpolated EOS
-        return auxiliaries::eos_data(
-            input, [&](const std::vector<double> &input, std::ifstream &fstr)
-            { return reader_cached(input, fstr, [&](const std::vector<double> &input, const std::vector<double> &output, double val)
-                                   { return auxiliaries::interpolate(input, output, auxiliaries::InterpolationMode::kLinear, val, false); }); },
-            fstr);
-    };
 
     // energy density function of baryonic density (units are given by datafile)
     std::function<double(double)> energy_density_of_nbar = [](double nbar)

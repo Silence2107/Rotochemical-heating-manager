@@ -6,16 +6,63 @@
 #include <vector>
 #include <functional>
 #include <fstream>
+#include <sstream>
 
-std::vector<double> auxiliaries::eos_data(const std::vector<double> &input, const std::function<std::vector<double>(const std::vector<double> &, std::ifstream &)> &eos, std::ifstream &fstr)
+std::vector<std::vector<double>> auxiliaries::read_tabulated_file(const std::string &path, std::pair<size_t, size_t> columns, std::pair<size_t, size_t> rows, double empty_value)
 {
-	std::vector<double> result; // empty placeholder for output array
-
-	result = eos(input, fstr);
-
-	fstr.clear();
-	fstr.seekg(0, std::ios::beg); // reset fstream to initial state for further usage
-	return result;				  // output
+    std::ifstream fstr(path);
+    if (!fstr.is_open())
+        throw std::runtime_error("Cannot open file " + path + ". Encountered in auxiliaries::read_tabulated_file");
+    std::vector<std::vector<double>> table;
+    std::vector<std::string> lines;
+    std::string line;
+    while (std::getline(fstr, line))
+        lines.push_back(line);
+    if (rows.second == 0)
+        rows.second = lines.size();
+    if (columns.second == 0)
+    {
+        std::string cleared_line = auxiliaries::retrieve_cleared_line(lines[rows.first]);
+        std::stringstream ss(cleared_line);
+        std::string str;
+        while (ss >> str)
+            ++columns.second;
+    }
+    if (rows.second <= rows.first || columns.second <= columns.first)
+        throw std::runtime_error("Invalid rows or columns count extracted from input file. Encountered in auxiliaries::read_tabulated_file");
+    std::vector<std::vector<std::string>> str_data(rows.second - rows.first, std::vector<std::string>(columns.second - columns.first));
+    for (size_t i = rows.first; i < rows.second; ++i)
+    {
+        std::string cleared_line = auxiliaries::retrieve_cleared_line(lines[i]);
+        std::stringstream ss(cleared_line);
+        for (size_t j = columns.first; j < columns.second; ++j)
+        {
+            std::string str;
+            if (!(ss >> str))
+                str = std::to_string(empty_value);
+            // skip columns before the first one
+            if (j < columns.first)
+                continue;
+            str_data[i - rows.first][j - columns.first] = str;
+        }
+    }
+    for (size_t i = columns.first; i < columns.second; ++i)
+    {
+        std::vector<double> column(rows.second - rows.first);
+        for (size_t j = rows.first; j < rows.second; ++j)
+        {
+            try
+            {
+                column[j - rows.first] = std::stod(str_data[j - rows.first][i - columns.first]);
+            }
+            catch (const std::invalid_argument &e)
+            {
+                throw std::runtime_error("Intractable argument: " + std::string(e.what()) + ". Encountered in auxiliaries::read_tabulated_file");
+            }
+        }
+        table.push_back(column);
+    }
+    return table;
 }
 
 std::string auxiliaries::retrieve_cleared_line(const std::string &line)
@@ -273,7 +320,7 @@ auxiliaries::Species::Species(auxiliaries::Species::ParticleType type, auxiliari
 {
 }
 
-bool auxiliaries::Species::operator==(const auxiliaries::Species& other) const
+bool auxiliaries::Species::operator==(const auxiliaries::Species &other) const
 {
     return m_type == other.m_type;
 }
