@@ -37,22 +37,36 @@ namespace inputfile
            nbar_core_limit = 9E-2,
            nbar_crust_limit = 2.096E-2;
 
+    // read datafile
+    auto table = auxiliaries::read_tabulated_file("/mnt/d/VSProjects/Rotochemical-heating-manager/data/APR_EOS_Acc_Fe.dat", {0, 0}, {7, 236});
+
     // data_reader takes input vector and outputs vector of outputs from EoS datafile
-    auto data_reader = auxiliaries::CachedFunc<std::vector<std::vector<double>>,
-                                                 double, const std::vector<double> &, size_t>(
-        [](std::vector<std::vector<double>> &cache, const std::vector<double> &input, size_t index)
+    auto data_reader = auxiliaries::CachedFunc<std::vector<auxiliaries::CachedFunc<std::function<double(double)>,
+                                                                                   double, const std::vector<double> &, const std::vector<double> &,
+                                                                                   auxiliaries::InterpolationMode, double, bool>>,
+                                               double, const std::vector<double> &, size_t>(
+        [](std::vector<auxiliaries::CachedFunc<std::function<double(double)>,
+                                               double, const std::vector<double> &, const std::vector<double> &,
+                                               auxiliaries::InterpolationMode, double, bool>> &cache,
+           const std::vector<double> &input, size_t index)
         {
             /// (barionic density &gt; 0.055 fm-3) -> (energy density g/cm3, pressure dyne/cm2, barionic density fm-3, electron fraction, muon -//-, neutron -//-, proton -//-, lambda -//-, sigma- -//-, sigma0 -//-, sigma+ -//-, m star proton -//-, m star neutron -//-, m star lambda -//-, m star sigma- -//-, m star sigma0 -//-, m star sigma+ -//-)
             ///	(barionic density &lt; 0.055 fm-3) -> (energy density g/cm3, pressure dyne/cm2, barionic density fm-3, Acell, Aion, Z, [empty])
             if (cache.empty())
             {
-                cache = auxiliaries::read_tabulated_file("/mnt/d/VSProjects/Rotochemical-heating-manager/data/APR_EOS_Acc_Fe.dat", {0, 0}, {7, 236});
+                // fill cache with cached interpolation functions for each column
+                for (size_t i = 0; i < table.size(); ++i)
+                {
+                    auto interpolator_cached = auxiliaries::CachedFunc<std::function<double(double)>,
+                                                                       double, const std::vector<double> &, const std::vector<double> &,
+                                                                       auxiliaries::InterpolationMode, double, bool>(auxiliaries::interpolate_cached);
+                    cache.push_back(interpolator_cached);
+                }
             }
-            std::vector<double> output;
             double nbar = input[0];                 // barionic density (input[0])
             if (nbar > nbar_upp || nbar < nbar_low) // we do not have data beyond these values
                 throw std::runtime_error("Data request out of range; Encountered in inputfile::data_reader");
-            return auxiliaries::interpolate(cache[2], cache[index], auxiliaries::InterpolationMode::kLinear, nbar, false);
+            return cache[index](table[2], table[index], auxiliaries::InterpolationMode::kLinear, nbar, false);
         });
 
     // energy density function of baryonic density (units are given by datafile)
