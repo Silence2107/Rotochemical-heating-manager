@@ -51,7 +51,7 @@ namespace inputfile
             std::vector<double> output;
             double nbar = input[0];                 // barionic density (input[0])
             if (nbar > nbar_upp || nbar < nbar_low) // we do not have data beyond these values
-                throw std::runtime_error("Data request out of range; Encountered in eos_reader::reader_cached");
+                throw std::runtime_error("Data request out of range; Encountered in inputfile::data_reader");
             return auxiliaries::interpolate(cache[2], cache[index], auxiliaries::InterpolationMode::kLinear, nbar, false);
         });
 
