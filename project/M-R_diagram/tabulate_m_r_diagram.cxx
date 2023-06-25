@@ -27,9 +27,9 @@ int main()
         auto eos_cached = auxiliaries::CachedFunc<std::vector<std::vector<double>>, double, double>(
             [&](std::vector<std::vector<double>> &cache, double rho)
             {
-                if (rho < 0 || rho > edensity_upp * energy_density_conversion)
+                if (rho < 0 || rho > edensity_upp)
                     throw std::runtime_error("Data request out of range; Encountered in main::eos_cached");
-                if (rho <= edensity_low * energy_density_conversion)
+                if (rho <= edensity_low)
                     return 0.0;
                 if (cache.empty() || cache[0].size() != discr_size_EoS)
                 {                                                                                        // then fill/refill cache
@@ -38,15 +38,15 @@ int main()
                     for (int i = 1; i < discr_size_EoS - 1; ++i)
                     { // cache EoS for further efficiency
                         x[i] = i * (nbar_upp - nbar_low) / discr_size_EoS + nbar_low;
-                        cache[0][i] = energy_density_conversion * energy_density_of_nbar(x[i]);
-                        cache[1][i] = pressure_conversion * pressure_of_nbar(x[i]);
+                        cache[0][i] = energy_density_of_nbar(x[i]);
+                        cache[1][i] = pressure_of_nbar(x[i]);
                     }
                     x[0] = nbar_low;
                     x[x.size() - 1] = nbar_upp;
-                    cache[0][0] = energy_density_conversion * edensity_low;
-                    cache[0][cache[0].size() - 1] = energy_density_conversion * edensity_upp;
-                    cache[1][0] = pressure_conversion * pressure_low;
-                    cache[1][cache[1].size() - 1] = pressure_conversion * pressure_upp;
+                    cache[0][0] = edensity_low;
+                    cache[0][cache[0].size() - 1] = edensity_upp;
+                    cache[1][0] = pressure_low;
+                    cache[1][cache[1].size() - 1] = pressure_upp;
                     eos_interpolator_cached.erase(); // clean up cached interpolator
                 }
                 return eos_interpolator(cache[0], cache[1], rho);
@@ -77,7 +77,7 @@ int main()
     for(size_t count = offset; count < n - offset + 1; ++count)
     {
         using namespace constants::conversion;
-        double edensity = (count * edensity_upp * energy_density_conversion) / n;
+        double edensity = (count * edensity_upp) / n;
         auto point = get_m_r_at_density(edensity);
         x.push_back(point[0] / km_gev);
         y.push_back(point[1] * gev_over_msol);

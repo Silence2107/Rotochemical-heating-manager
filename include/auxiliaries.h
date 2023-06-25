@@ -63,6 +63,10 @@ namespace auxiliaries
         }
     };
 
+    /// @brief Deduction guide for CachedFunc; couldn't put it to work so far
+    // template <class Cache, class Foutput, class... Args>
+    // CachedFunc(const std::function<Foutput(Cache &, Args...)> &func) -> CachedFunc<Cache, Foutput, Args...>;
+
     /// @brief Interpolation modes for arrays
     enum class InterpolationMode
     {
@@ -80,9 +84,10 @@ namespace auxiliaries
     /// @param output output array to interpolate
     /// @param mode interpolation mode
     /// @param x x-coordinate of point to interpolate
-    /// @param disable_checks false by default. If true, no checks are performed. For performance reasons.
+    /// @param extrapolate false by default; if true, extrapolation beyond input bounds is allowed
+    /// @param enable_checks true by default. If false, no checks are performed. Performance gain is not significant, but present.
     /// @return interpolated value
-    double interpolate(const std::vector<double> &input, const std::vector<double> &output, InterpolationMode mode, double x, bool disable_checks = false);
+    double interpolate(const std::vector<double> &input, const std::vector<double> &output, InterpolationMode mode, double x, bool extrapolate = false, bool enable_checks = true);
 
     /// @brief function that interpolates array based on mode provided;
     /// Make sure to have sufficient amount of points when choosing mode;
@@ -93,9 +98,10 @@ namespace auxiliaries
     /// @param output output array to interpolate
     /// @param mode interpolation mode
     /// @param x x-coordinate of point to interpolate
-    /// @param disable_checks false by default. If true, no checks are performed. For performance reasons.
+    /// @param extrapolate false by default; if true, extrapolation beyond input bounds is allowed
+    /// @param enable_checks true by default. If false, no checks are performed. Performance gain is not significant, but present.
     /// @return interpolated value
-    double interpolate_cached(std::function<double(double)> &cache, const std::vector<double> &input, const std::vector<double> &output, InterpolationMode mode, double x, bool disable_checks = false);
+    double interpolate_cached(std::function<double(double)> &cache, const std::vector<double> &input, const std::vector<double> &output, InterpolationMode mode, double x, bool extrapolate = false, bool enable_checks = true);
 
     /// @brief Integration modes
     enum class IntegrationMode

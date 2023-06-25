@@ -25,9 +25,9 @@ int main()
     auto eos_cached = auxiliaries::CachedFunc<std::vector<std::vector<double>>, double, double>(
         [&](std::vector<std::vector<double>> &cache, double rho)
         {
-            if (rho < 0 || rho > edensity_upp * energy_density_conversion)
+            if (rho < 0 || rho > edensity_upp)
                 throw std::runtime_error("Data request out of range; Encountered in main::eos_cached");
-            if (rho <= edensity_low * energy_density_conversion)
+            if (rho <= edensity_low)
                 return 0.0;
             if (cache.empty() || cache[0].size() != discr_size_EoS)
             {                                                                                        // then fill/refill cache
@@ -36,15 +36,15 @@ int main()
                 for (int i = 1; i < discr_size_EoS - 1; ++i)
                 { // cache EoS for further efficiency
                     x[i] = i * (nbar_upp - nbar_low) / discr_size_EoS + nbar_low;
-                    cache[0][i] = energy_density_conversion * energy_density_of_nbar(x[i]);
-                    cache[1][i] = pressure_conversion * pressure_of_nbar(x[i]);
+                    cache[0][i] = energy_density_of_nbar(x[i]);
+                    cache[1][i] = pressure_of_nbar(x[i]);
                 }
                 x[0] = nbar_low;
                 x[x.size() - 1] = nbar_upp;
-                cache[0][0] = energy_density_conversion * edensity_low;
-                cache[0][cache[0].size() - 1] = energy_density_conversion * edensity_upp;
-                cache[1][0] = pressure_conversion * pressure_low;
-                cache[1][cache[1].size() - 1] = pressure_conversion * pressure_upp;
+                cache[0][0] = edensity_low;
+                cache[0][cache[0].size() - 1] = edensity_upp;
+                cache[1][0] = pressure_low;
+                cache[1][cache[1].size() - 1] = pressure_upp;
                 eos_interpolator_cached.erase(); // clean up cached interpolator
             }
             return eos_interpolator(cache[0], cache[1], rho);
@@ -64,7 +64,7 @@ int main()
         [&](std::vector<std::vector<double>> &cache, double r)
         {
             // cache contains {r, n_B(r)} arrays; recaching is not supported at the moment, call ::erase instead
-            // return nbar(r) for given r (in datafile units)
+            // return nbar(r) for given r
 
             if (cache.empty())
             {
@@ -80,14 +80,14 @@ int main()
                     // let's stick to densities
                     double density_at_r = tov(r_current)[1];
 
-                    double nbar_left = nbar_low, nbar_right = nbar_upp; // we need these for bisection search; in fm-3 units for now
+                    double nbar_left = nbar_low, nbar_right = nbar_upp; // we need these for bisection search;
                     double nbar_mid = (nbar_left + nbar_right) / 2.0;
                     while (fabs(nbar_right - nbar_left) > nbar_low)
                     {
                         // while we are too far from appropriate precision for nbar estimate
                         // recalculate via bisection method
                         nbar_mid = (nbar_left + nbar_right) / 2.0;
-                        if (energy_density_conversion * energy_density_of_nbar(nbar_mid) > density_at_r)
+                        if (energy_density_of_nbar(nbar_mid) > density_at_r)
                             nbar_right = nbar_mid;
                         else
                             nbar_left = nbar_mid;
@@ -124,7 +124,7 @@ int main()
         superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp);
 
     auto hadron_murca_emissivity = cooling::predefined::neutrinic::hadron_murca_emissivity(
-        k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, nbar_conversion, exp_phi, superfluid_n_1s0,
+        k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, exp_phi, superfluid_n_1s0,
         superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp);
 
     auto hadron_bremsstrahlung_emissivity = cooling::predefined::neutrinic::hadron_bremsstrahlung_emissivity(
@@ -134,7 +134,7 @@ int main()
     auto hadron_PBF_emissivity = cooling::predefined::neutrinic::hadron_pbf_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, exp_phi, superfluid_n_1s0,
         superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp);
-    
+
     bool has_quarks = false;
     for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
     {
@@ -146,13 +146,19 @@ int main()
     }
 
     auto quark_durca_emissivity = (has_quarks ? cooling::predefined::neutrinic::quark_durca_emissivity(
-        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap) : [](double, double, double) { return 0.0; });
+                                                    k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap)
+                                              : [](double, double, double)
+                                       { return 0.0; });
 
     auto quark_murca_emissivity = (has_quarks ? cooling::predefined::neutrinic::quark_murca_emissivity(
-        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap) : [](double, double, double) { return 0.0; });
+                                                    k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap)
+                                              : [](double, double, double)
+                                       { return 0.0; });
 
     auto quark_bremsstrahlung_emissivity = (has_quarks ? cooling::predefined::neutrinic::quark_bremsstrahlung_emissivity(
-        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap) : [](double, double, double) { return 0.0; });
+                                                             k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap)
+                                                       : [](double, double, double)
+                                                { return 0.0; });
 
     auto electron_bremsstrahlung_emissivity = cooling::predefined::neutrinic::electron_bremsstrahlung_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi);

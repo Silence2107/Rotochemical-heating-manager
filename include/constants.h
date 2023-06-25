@@ -61,15 +61,15 @@ namespace constants
 		const double km_gev = 5.06E18;
 		/// @brief Conversion from GeV to M_sol in natural units
 		const double gev_over_msol = 8.951E-58;
-		/// @brief Conversion from GeV to MeV
+		/// @brief Conversion from GeV to MeV in natural units
 		const double gev_over_mev = 1E3;
-		/// @brief Conversion from GeV^-1 to s
+		/// @brief Conversion from GeV^-1 to s in natural units
 		const double gev_s = 1.5192E24;
-		/// @brief Conversion from GeV to K
+		/// @brief Conversion from GeV to K in natural units
 		const double gev_over_k = 1.1604E13;
-		/// @brief Conversion from erg to GeV
+		/// @brief Conversion from erg to GeV in natural units
 		const double erg_over_gev = 6.2415E2;
-		/// @brief Conversion from Myr to s
+		/// @brief Conversion from Myr to s in natural units
 		const double myr_over_s = 3.1536E13;
 	}
 }

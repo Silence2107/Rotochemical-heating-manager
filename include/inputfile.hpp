@@ -22,20 +22,6 @@ namespace inputfile
     double energy_density_conversion = constants::conversion::g_over_cm3_gev4,
            pressure_conversion = constants::conversion::dyne_over_cm2_gev4,
            nbar_conversion = 1.0 / constants::conversion::fm3_gev3;
-    /// @brief energy density limits in datafile units. _low and _upp represent limits of EoS itself <para></para>
-    /// while _core_limit represents phase transition boundary
-    double edensity_low = 1.000E3,
-           edensity_core_limit = 1.5197E14,
-           edensity_upp = 7.4456E15;
-    /// @brief pressure limits in datafile units. _low and _upp represent limits of EoS itself
-    double pressure_low = 1.003E17,
-           pressure_upp = 8.3308E36;
-    /// @brief baryonic density limits in datafile units. _low and _upp represent limits of EoS itself
-    /// while _core_limit, _crust_limit represent phase transition boundaries
-    double nbar_low = 6.023E-13,
-           nbar_upp = 1.89,
-           nbar_core_limit = 9E-2,
-           nbar_crust_limit = 2.096E-2;
 
     // read datafile
     auto table = auxiliaries::read_tabulated_file("/mnt/d/VSProjects/Rotochemical-heating-manager/data/APR_EOS_Acc_Fe.dat", {0, 0}, {7, 236});
@@ -43,15 +29,13 @@ namespace inputfile
     // data_reader takes input vector and outputs vector of outputs from EoS datafile
     auto data_reader = auxiliaries::CachedFunc<std::vector<auxiliaries::CachedFunc<std::function<double(double)>,
                                                                                    double, const std::vector<double> &, const std::vector<double> &,
-                                                                                   auxiliaries::InterpolationMode, double, bool>>,
+                                                                                   auxiliaries::InterpolationMode, double, bool, bool>>,
                                                double, const std::vector<double> &, size_t>(
         [](std::vector<auxiliaries::CachedFunc<std::function<double(double)>,
                                                double, const std::vector<double> &, const std::vector<double> &,
-                                               auxiliaries::InterpolationMode, double, bool>> &cache,
+                                               auxiliaries::InterpolationMode, double, bool, bool>> &cache,
            const std::vector<double> &input, size_t index)
         {
-            /// (barionic density &gt; 0.055 fm-3) -> (energy density g/cm3, pressure dyne/cm2, barionic density fm-3, electron fraction, muon -//-, neutron -//-, proton -//-, lambda -//-, sigma- -//-, sigma0 -//-, sigma+ -//-, m star proton -//-, m star neutron -//-, m star lambda -//-, m star sigma- -//-, m star sigma0 -//-, m star sigma+ -//-)
-            ///	(barionic density &lt; 0.055 fm-3) -> (energy density g/cm3, pressure dyne/cm2, barionic density fm-3, Acell, Aion, Z, [empty])
             if (cache.empty())
             {
                 // fill cache with cached interpolation functions for each column
@@ -59,25 +43,40 @@ namespace inputfile
                 {
                     auto interpolator_cached = auxiliaries::CachedFunc<std::function<double(double)>,
                                                                        double, const std::vector<double> &, const std::vector<double> &,
-                                                                       auxiliaries::InterpolationMode, double, bool>(auxiliaries::interpolate_cached);
+                                                                       auxiliaries::InterpolationMode, double, bool, bool>(auxiliaries::interpolate_cached);
                     cache.push_back(interpolator_cached);
                 }
             }
-            double nbar = input[0];                 // barionic density (input[0])
-            if (nbar > nbar_upp || nbar < nbar_low) // we do not have data beyond these values
-                throw std::runtime_error("Data request out of range; Encountered in inputfile::data_reader");
-            return cache[index](table[2], table[index], auxiliaries::InterpolationMode::kLinear, nbar, false);
+            // unpack input and convert to datafile units
+            double nbar = input[0] / nbar_conversion;
+            // return cached interpolation functions, with extrapolation enabled for now
+            return cache[index](table[2], table[index], auxiliaries::InterpolationMode::kLinear, nbar, true, true);
         });
 
     // energy density function of baryonic density (units are given by datafile)
     std::function<double(double)> energy_density_of_nbar = [](double nbar)
-    { return data_reader({nbar}, 0); };
+    { return data_reader({nbar}, 0) * energy_density_conversion; };
 
     // pressure function of baryonic density (units are given by datafile)
     std::function<double(double)> pressure_of_nbar = [](double nbar)
-    { return data_reader({nbar}, 1); };
+    { return data_reader({nbar}, 1) * pressure_conversion; };
 
-    // baryonic density fraction functions of baryonic density (units are given by datafile)
+    /// @brief baryonic density limits in natural units. _low and _upp represent limits of EoS itself
+    /// while _core_limit, _crust_limit represent phase transition boundaries
+    double nbar_low = 6.023E-13 * nbar_conversion,
+           nbar_upp = 1.89 * nbar_conversion,
+           nbar_core_limit = 9E-2 * nbar_conversion,
+           nbar_crust_limit = 2.096E-2 * nbar_conversion;
+    /// @brief energy density limits in natural units. _low and _upp represent limits of EoS itself <para></para>
+    /// while _core_limit represents phase transition boundary
+    double edensity_low = energy_density_of_nbar(nbar_low),
+           edensity_core_limit = energy_density_of_nbar(nbar_core_limit),
+           edensity_upp = energy_density_of_nbar(nbar_upp);
+    /// @brief pressure limits in natural units. _low and _upp represent limits of EoS itself
+    double pressure_low = pressure_of_nbar(nbar_low),
+           pressure_upp = pressure_of_nbar(nbar_upp);
+
+    // baryonic density fraction functions of baryonic density (natural units)
     std::map<auxiliaries::Species, std::function<double(double)>> Y_i_functions_of_nbar =
         {
             {constants::scientific::electron, [](double nbar)
@@ -89,25 +88,25 @@ namespace inputfile
             {constants::scientific::proton, [](double nbar)
              { return (nbar >= nbar_core_limit) ? data_reader({nbar}, 6) : 0.0; }}};
 
-    // fermi momentum functions of baryonic density (GeV units)
+    // fermi momentum functions of baryonic density (natural units)
     std::map<auxiliaries::Species, std::function<double(double)>> k_fermi_of_nbar =
         {
             {constants::scientific::electron, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 3) * nbar * nbar_conversion, 1.0 / 3) : 0.0; }},
+             { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 3) * nbar, 1.0 / 3) : 0.0; }},
             {constants::scientific::muon, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 4) * nbar * nbar_conversion, 1.0 / 3) : 0.0; }},
+             { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 4) * nbar, 1.0 / 3) : 0.0; }},
             {constants::scientific::neutron, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 5) * nbar * nbar_conversion, 1.0 / 3) : pow(3 * constants::scientific::Pi * constants::scientific::Pi * nbar * nbar_conversion, 1.0 / 3); }},
+             { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 5) * nbar, 1.0 / 3) : pow(3 * constants::scientific::Pi * constants::scientific::Pi * nbar, 1.0 / 3); }},
             {constants::scientific::proton, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 6) * nbar * nbar_conversion, 1.0 / 3) : 0.0; }}};
+             { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 6) * nbar, 1.0 / 3) : 0.0; }}};
 
-    // effective mass functions of baryonic density (GeV units)
+    // effective mass functions of baryonic density (natural units)
     std::map<auxiliaries::Species, std::function<double(double)>> m_stars_of_nbar =
         {
             {constants::scientific::electron, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? sqrt(constants::scientific::M_e * constants::scientific::M_e + pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 3) * nbar * nbar_conversion, 2.0 / 3)) : constants::scientific::M_e; }},
+             { return (nbar >= nbar_core_limit) ? sqrt(constants::scientific::M_e * constants::scientific::M_e + pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 3) * nbar, 2.0 / 3)) : constants::scientific::M_e; }},
             {constants::scientific::muon, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? sqrt(constants::scientific::M_mu * constants::scientific::M_mu + pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 4) * nbar * nbar_conversion, 2.0 / 3)) : constants::scientific::M_mu; }},
+             { return (nbar >= nbar_core_limit) ? sqrt(constants::scientific::M_mu * constants::scientific::M_mu + pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 4) * nbar, 2.0 / 3)) : constants::scientific::M_mu; }},
             {constants::scientific::neutron, [](double nbar)
              { return (nbar >= nbar_core_limit) ? data_reader({nbar}, 12) * constants::scientific::M_N : constants::scientific::M_N; }},
             {constants::scientific::proton, [](double nbar)
@@ -128,21 +127,21 @@ namespace inputfile
     // Cached EoS interpolator. Only use it if you want to erase cache
     auto eos_interpolator_cached = auxiliaries::CachedFunc<std::function<double(double)>,
                                                            double, const std::vector<double> &, const std::vector<double> &,
-                                                           auxiliaries::InterpolationMode, double, bool>(auxiliaries::interpolate_cached);
+                                                           auxiliaries::InterpolationMode, double, bool, bool>(auxiliaries::interpolate_cached);
     // Interpolator used for EoS P(rho)
     auto eos_interpolator = [](const std::vector<double> &input, const std::vector<double> &output, double val)
     {
-        return eos_interpolator_cached(input, output, auxiliaries::InterpolationMode::kLinear, val, false);
+        return eos_interpolator_cached(input, output, auxiliaries::InterpolationMode::kLinear, val, false, true);
     };
 
     // nbar(r) cached interpolator. Only use it if you want to erase cache
     auto nbar_interpolator_cached = auxiliaries::CachedFunc<std::function<double(double)>,
                                                             double, const std::vector<double> &, const std::vector<double> &,
-                                                            auxiliaries::InterpolationMode, double, bool>(auxiliaries::interpolate_cached);
+                                                            auxiliaries::InterpolationMode, double, bool, bool>(auxiliaries::interpolate_cached);
     // Interpolator used for nbar(r)
     auto nbar_interpolator = [](const std::vector<double> &input, const std::vector<double> &output, double val)
     {
-        return nbar_interpolator_cached(input, output, auxiliaries::InterpolationMode::kLinear, val, false);
+        return nbar_interpolator_cached(input, output, auxiliaries::InterpolationMode::kLinear, val, false, true);
     };
 
     // EoS linspace discretization
@@ -152,20 +151,20 @@ namespace inputfile
     double radius_step = 0.001 * 5E19;
 
     // TOV solver density step size in GeV^4
-    double density_step = 1E-8 * edensity_upp * energy_density_conversion;
+    double density_step = 1E-8 * edensity_upp;
 
     // TOV solver center density in GeV^4
-    double center_density = 108.3 / 500.0 * edensity_upp * energy_density_conversion;
+    double center_density = 108.3 / 500.0 * edensity_upp;
 
     // (3) Cooling solver
 
     // Cooling solver setup
     auto cooling_interpolator_cached = auxiliaries::CachedFunc<std::function<double(double)>,
                                                                double, const std::vector<double> &, const std::vector<double> &,
-                                                               auxiliaries::InterpolationMode, double, bool>(auxiliaries::interpolate_cached);
+                                                               auxiliaries::InterpolationMode, double, bool, bool>(auxiliaries::interpolate_cached);
     auto cooling_interpolator = [](const std::vector<double> &x, const std::vector<double> &y, double val)
     {
-        return cooling_interpolator_cached(x, y, auxiliaries::InterpolationMode::kCubic, val, false);
+        return cooling_interpolator_cached(x, y, auxiliaries::InterpolationMode::kCubic, val, false, true);
     };
 
     // Cooling settings
