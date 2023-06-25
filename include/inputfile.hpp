@@ -53,11 +53,11 @@ namespace inputfile
             return cache[index](table[2], table[index], auxiliaries::InterpolationMode::kLinear, nbar, true, true);
         });
 
-    // energy density function of baryonic density (units are given by datafile)
+    // energy density function of baryonic density (natural units)
     std::function<double(double)> energy_density_of_nbar = [](double nbar)
     { return data_reader({nbar}, 0) * energy_density_conversion; };
 
-    // pressure function of baryonic density (units are given by datafile)
+    // pressure function of baryonic density (natural units)
     std::function<double(double)> pressure_of_nbar = [](double nbar)
     { return data_reader({nbar}, 1) * pressure_conversion; };
 

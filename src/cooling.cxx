@@ -381,7 +381,7 @@ std::function<double(double, const auxiliaries::Species &, double, double)> cool
 std::function<double(double, const auxiliaries::Species &, double, double)> cooling::predefined::neutrinic::hadron_murca_emissivity(
     const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
     const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-    double nbar_core_limit, double nbar_conversion, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+    double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
     return [=](double r, const auxiliaries::Species &lepton_flavour, double t, double T)
@@ -397,7 +397,7 @@ std::function<double(double, const auxiliaries::Species &, double, double)> cool
                mst_p = m_stars_of_nbar.at(proton)(nbar_val),
                mst_l = m_stars_of_nbar.at(lepton_flavour)(nbar_val);
         double T_loc = T / exp_phi(r);
-        double alpha = 1.76 - 0.63 * pow(N_sat / (nbar_val * nbar_conversion), 2.0 / 3), beta = 0.68,
+        double alpha = 1.76 - 0.63 * pow(N_sat / nbar_val, 2.0 / 3), beta = 0.68,
                v_fl = pf_l / mst_l;
         double dens_n = (8.05E21 / 1.68E72) * v_fl * pow(mst_n / M_N, 3) * (mst_p / M_N) * pf_p *
                         pow(T_loc, 8) * alpha * beta *
