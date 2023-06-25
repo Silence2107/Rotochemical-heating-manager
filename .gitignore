@@ -3,3 +3,6 @@ bin/
 bckp/
 .vscode/
 pictures/
+*.d
+*.o
+*.pdf
