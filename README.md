@@ -18,3 +18,7 @@ Any program that uses the libraries provided here, may be compiled in release/de
 make release/debug app=path/to/cxxfile_no_ext
 ```
 If successful, the binary will be put under `bin/path/to/cxxfile_no_ext.out`.
+
+### ROOT support
+
+The toolset heavily relies on ROOT framework for graphics. Wherever possible, we decouple the dependence on ROOT, however recentest code is not guaranteed to compile without it. To disable the compiler's attempts to compile against ROOT, comment the EXTRALIBS variable within the Makefile.
