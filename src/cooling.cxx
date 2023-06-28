@@ -86,6 +86,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
     {
         using namespace constants::scientific;
         using namespace constants::conversion;
+        using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
         double pf_l = k_fermi_of_nbar.at(lepton_flavour)(nbar_val),
@@ -242,6 +243,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
     {
         using namespace constants::scientific;
         using namespace constants::conversion;
+        using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
         double pf_l = k_fermi_of_nbar.at(lepton_flavour)(nbar_val),
@@ -335,6 +337,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
     {
         using namespace constants::scientific;
         using namespace constants::conversion;
+        using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
         double pf_n = k_fermi_of_nbar.at(neutron)(nbar_val),
@@ -444,6 +447,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
             return 0.0;
         using namespace constants::scientific;
         using namespace constants::conversion;
+        using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
         double pf = k_fermi_of_nbar.at(hadron)(nbar_val);
@@ -533,6 +537,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
     {
         using namespace constants::scientific;
         using namespace constants::conversion;
+        using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
         double pf_u = k_fermi_of_nbar.at(uquark)(nbar_val),
@@ -589,6 +594,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
     {
         using namespace constants::scientific;
         using namespace constants::conversion;
+        using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
         double pf_u = k_fermi_of_nbar.at(uquark)(nbar_val),
@@ -614,6 +620,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
     {
         using namespace constants::scientific;
         using namespace constants::conversion;
+        using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
         double pf_u = k_fermi_of_nbar.at(uquark)(nbar_val),
@@ -640,6 +647,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::el
     {
         using namespace constants::scientific;
         using namespace constants::conversion;
+        using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
         double pf_e = k_fermi_of_nbar.at(electron)(nbar_val);

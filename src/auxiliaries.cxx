@@ -364,6 +364,7 @@ std::function<double(double, double, double)> auxiliaries::phys::fermi_specific_
     return [=](double r, double t, double T)
     {
         using namespace constants::scientific;
+        using namespace constants::species;
 
         double cv_dens = 0;
         for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)

@@ -79,37 +79,37 @@ namespace inputfile
     // baryonic density fraction functions of baryonic density (natural units)
     std::map<auxiliaries::phys::Species, std::function<double(double)>> Y_i_functions_of_nbar =
         {
-            {constants::scientific::electron, [](double nbar)
+            {constants::species::electron, [](double nbar)
              { return (nbar >= nbar_core_limit) ? data_reader({nbar}, 3) : 0.0; }},
-            {constants::scientific::muon, [](double nbar)
+            {constants::species::muon, [](double nbar)
              { return (nbar >= nbar_core_limit) ? data_reader({nbar}, 4) : 0.0; }},
-            {constants::scientific::neutron, [](double nbar)
+            {constants::species::neutron, [](double nbar)
              { return (nbar >= nbar_core_limit) ? data_reader({nbar}, 5) : 1.0; }},
-            {constants::scientific::proton, [](double nbar)
+            {constants::species::proton, [](double nbar)
              { return (nbar >= nbar_core_limit) ? data_reader({nbar}, 6) : 0.0; }}};
 
     // fermi momentum functions of baryonic density (natural units)
     std::map<auxiliaries::phys::Species, std::function<double(double)>> k_fermi_of_nbar =
         {
-            {constants::scientific::electron, [](double nbar)
+            {constants::species::electron, [](double nbar)
              { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 3) * nbar, 1.0 / 3) : 0.0; }},
-            {constants::scientific::muon, [](double nbar)
+            {constants::species::muon, [](double nbar)
              { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 4) * nbar, 1.0 / 3) : 0.0; }},
-            {constants::scientific::neutron, [](double nbar)
+            {constants::species::neutron, [](double nbar)
              { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 5) * nbar, 1.0 / 3) : pow(3 * constants::scientific::Pi * constants::scientific::Pi * nbar, 1.0 / 3); }},
-            {constants::scientific::proton, [](double nbar)
+            {constants::species::proton, [](double nbar)
              { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 6) * nbar, 1.0 / 3) : 0.0; }}};
 
     // effective mass functions of baryonic density (natural units)
     std::map<auxiliaries::phys::Species, std::function<double(double)>> m_stars_of_nbar =
         {
-            {constants::scientific::electron, [](double nbar)
+            {constants::species::electron, [](double nbar)
              { return (nbar >= nbar_core_limit) ? sqrt(constants::scientific::M_e * constants::scientific::M_e + pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 3) * nbar, 2.0 / 3)) : constants::scientific::M_e; }},
-            {constants::scientific::muon, [](double nbar)
+            {constants::species::muon, [](double nbar)
              { return (nbar >= nbar_core_limit) ? sqrt(constants::scientific::M_mu * constants::scientific::M_mu + pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 4) * nbar, 2.0 / 3)) : constants::scientific::M_mu; }},
-            {constants::scientific::neutron, [](double nbar)
+            {constants::species::neutron, [](double nbar)
              { return (nbar >= nbar_core_limit) ? data_reader({nbar}, 12) * constants::scientific::M_N : constants::scientific::M_N; }},
-            {constants::scientific::proton, [](double nbar)
+            {constants::species::proton, [](double nbar)
              { return (nbar >= nbar_core_limit) ? data_reader({nbar}, 11) * constants::scientific::M_N : constants::scientific::M_N; }}};
 
     std::function<double(double)> ion_volume_fr = [](double nbar)

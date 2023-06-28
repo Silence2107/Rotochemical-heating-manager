@@ -145,7 +145,7 @@ int main(int argc, char **argv)
     double omega_k_sqr = pow(2.0 / 3, 3.0) * constants::scientific::G * m_ns / (r_ns * r_ns * r_ns);
     auto integrand = [&](double r)
     {
-        auto Y_e = Y_i_functions_of_nbar[constants::scientific::electron];
+        auto Y_e = Y_i_functions_of_nbar[constants::species::electron];
         return -nbar(r) * 1.0 / omega_k_sqr * (Y_e(nbar(r + radius_step)) - Y_e(nbar(r))) / (tov(r + radius_step)[3] / tov(r)[3] - 1);
     };
     // I_e is given by the following integral
@@ -237,7 +237,7 @@ int main(int argc, char **argv)
     // pure rotochemical heating rate with (incorrect) accounting for superfluid suppression
     auto rotochemical_heating_e = [&](double r, double t, double T, double eta_e)
     {
-        using namespace constants::scientific;
+        using namespace constants::species;
         double ratediff_durca = (hadron_durca_emissivity(r, electron, t, T) + quark_durca_emissivity(r, t, T)) / T * nonequilibrium_diff_func_durca(eta_e / T),
                ratediff_murca = (hadron_murca_emissivity(r, electron, t, T) + quark_murca_emissivity(r, t, T)) / T * nonequilibrium_diff_func_murca(eta_e / T);
         return eta_e * (ratediff_durca + ratediff_murca);
@@ -245,7 +245,7 @@ int main(int argc, char **argv)
 
     auto Q_nu = [&](double r, double t, double T, double eta_e)
     {
-        using namespace constants::scientific;
+        using namespace constants::species;
         double result = 0;
 
         // hadronic part with non-equilibrium corrections
@@ -300,7 +300,7 @@ int main(int argc, char **argv)
     // we also need rhs for eta_e evolution
     auto eta_e_evo_rhs = [&](double t, double T, double eta_e)
     {
-        using namespace constants::scientific;
+        using namespace constants::species;
         auto ratediff_local = [&](double r)
         {
             return ((hadron_durca_emissivity(r, electron, t, T) + quark_durca_emissivity(r, t, T)) / T * nonequilibrium_diff_func_durca(eta_e / T) +
