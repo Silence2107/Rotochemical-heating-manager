@@ -172,9 +172,9 @@ namespace inputfile
 
     // Critical phenomena settings
 
-    bool superfluid_p_1s0 = true,
-         superfluid_n_3p2 = true,
-         superfluid_n_1s0 = true;
+    bool superfluid_p_1s0 = false,
+         superfluid_n_3p2 = false,
+         superfluid_n_1s0 = false;
 
     std::function<double(double)> superfluid_p_temp = [](double k_fermi)
     {
