@@ -180,7 +180,7 @@ namespace inputfile
     {
         if (superfluid_p_1s0)
         {
-            using namespace cooling::predefined::auxiliary;
+            using namespace auxiliaries::phys;
             return critical_temperature(k_fermi, CriticalTemperatureModel::kCCDK);
         }
         return 0.0;
@@ -189,7 +189,7 @@ namespace inputfile
     {
         if (superfluid_n_3p2 || superfluid_n_1s0)
         {
-            using namespace cooling::predefined::auxiliary;
+            using namespace auxiliaries::phys;
             return critical_temperature(k_fermi, CriticalTemperatureModel::kCCDK);
         }
         return 0.0;

@@ -197,7 +197,7 @@ int main(int argc, char **argv)
         std::function<double(double, double, double)>(Q_nu), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p, radius_step);
 
     // specific heat
-    auto fermi_specific_heat_dens = cooling::predefined::auxiliary::fermi_specific_heat_density(
+    auto fermi_specific_heat_dens = auxiliaries::phys::fermi_specific_heat_density(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, exp_phi, superfluid_n_1s0,
         superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp, superconduct_q_gap);
 
@@ -241,11 +241,11 @@ int main(int argc, char **argv)
         }
         y[i] = cooling_solver(x[i], cooling_rhs, T_init, base_t_step, exp_rate_estim, cooling_interpolator);
         // print in understandable units
-        std::cout << 1.0E6 * (x[i] + t_init) / (constants::conversion::myr_over_s * constants::conversion::gev_s) << "\t" << cooling::predefined::auxiliary::te_tb_relation(y[i], r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k << "\t" << photon_luminosity(x[i], y[i]) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << neutrino_luminosity(x[i], y[i]) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << '\n';
+        std::cout << 1.0E6 * (x[i] + t_init) / (constants::conversion::myr_over_s * constants::conversion::gev_s) << "\t" << auxiliaries::phys::te_tb_relation(y[i], r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k << "\t" << photon_luminosity(x[i], y[i]) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << neutrino_luminosity(x[i], y[i]) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << '\n';
         // rescale
         x[i] += t_init;
         x[i] *= 1.0E6 / (constants::conversion::myr_over_s * constants::conversion::gev_s);
-        y[i] = cooling::predefined::auxiliary::te_tb_relation(y[i], r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k;
+        y[i] = auxiliaries::phys::te_tb_relation(y[i], r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k;
     }
 
     //draw
