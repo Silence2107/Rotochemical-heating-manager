@@ -63,8 +63,8 @@ double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double
 }
 
 std::function<double(double, double, double)> cooling::predefined::auxiliary::fermi_specific_heat_density(
-                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
                 double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
                 const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp, const std::function<double(double)> &superconduct_q_gap)
 {
@@ -123,7 +123,7 @@ std::function<double(double, double, double)> cooling::predefined::auxiliary::fe
                 }
             }
             // quark superconductivity?
-            else if (key.classify() == auxiliaries::Species::ParticleClassification::kQuark)
+            else if (key.classify() == auxiliaries::phys::Species::ParticleClassification::kQuark)
             {
                 // kinda following Blashke..
                 auto exp_factor = superconduct_q_gap(nbar_val)/T_loc;
@@ -222,13 +222,13 @@ double cooling::predefined::auxiliary::critical_temperature(double k_fermi, cool
     }
 }
 
-std::function<double(double, const auxiliaries::Species &, double, double)> cooling::predefined::neutrinic::hadron_durca_emissivity(
-    const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-    const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+std::function<double(double, const auxiliaries::phys::Species &, double, double)> cooling::predefined::neutrinic::hadron_durca_emissivity(
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
     double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
-    return [=](double r, const auxiliaries::Species &lepton_flavour, double t, double T)
+    return [=](double r, const auxiliaries::phys::Species &lepton_flavour, double t, double T)
     {
         using namespace constants::scientific;
         using namespace constants::conversion;
@@ -378,13 +378,13 @@ std::function<double(double, const auxiliaries::Species &, double, double)> cool
     };
 }
 
-std::function<double(double, const auxiliaries::Species &, double, double)> cooling::predefined::neutrinic::hadron_murca_emissivity(
-    const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-    const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+std::function<double(double, const auxiliaries::phys::Species &, double, double)> cooling::predefined::neutrinic::hadron_murca_emissivity(
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
     double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
-    return [=](double r, const auxiliaries::Species &lepton_flavour, double t, double T)
+    return [=](double r, const auxiliaries::phys::Species &lepton_flavour, double t, double T)
     {
         using namespace constants::scientific;
         using namespace constants::conversion;
@@ -472,8 +472,8 @@ std::function<double(double, const auxiliaries::Species &, double, double)> cool
 }
 
 std::function<double(double, double, double)> cooling::predefined::neutrinic::hadron_bremsstrahlung_emissivity(
-    const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-    const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
     const std::function<double(double)> &ion_volume_frac, double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
@@ -577,13 +577,13 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
     };
 }
 
-std::function<double(double, const auxiliaries::Species &, double, double)> cooling::predefined::neutrinic::hadron_pbf_emissivity(
-    const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-    const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+std::function<double(double, const auxiliaries::phys::Species &, double, double)> cooling::predefined::neutrinic::hadron_pbf_emissivity(
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
     double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
-    return [=](double r, const auxiliaries::Species &hadron, double t, double T)
+    return [=](double r, const auxiliaries::phys::Species &hadron, double t, double T)
     {
         // the process is not allowed in normal matter
         if (!(superfluid_n_3p2 || superfluid_n_1s0 || superfluid_p_1s0))
@@ -671,8 +671,8 @@ std::function<double(double, const auxiliaries::Species &, double, double)> cool
 }
 
 std::function<double(double, double, double)> cooling::predefined::neutrinic::quark_durca_emissivity(
-    const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-    const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
     const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap)
 {
     return [=](double r, double t, double T)
@@ -692,7 +692,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         double dens_ud = 3.74E-10 * alpha_c * pf_u * pf_d * pow(T_loc, 6);
         for (auto it = k_fermi_of_nbar.begin(); it != k_fermi_of_nbar.end(); ++it)
         {
-            if (it->first.classify() == auxiliaries::Species::ParticleClassification::kLepton)
+            if (it->first.classify() == auxiliaries::phys::Species::ParticleClassification::kLepton)
                 pf_l += it->second(nbar_val);
         }
         dens_ud *= pf_l;
@@ -702,7 +702,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         double dens_us = 1.208E-11 * mu_s * pf_u * pow(T_loc, 6);
         for (auto it = k_fermi_of_nbar.begin(); it != k_fermi_of_nbar.end(); ++it)
         {
-            if (it->first.classify() == auxiliaries::Species::ParticleClassification::kLepton)
+            if (it->first.classify() == auxiliaries::phys::Species::ParticleClassification::kLepton)
             {
                 double pf_l = it->second(nbar_val);
                 if (fabs(pf_s - pf_u) > pf_l)
@@ -727,8 +727,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
 }
 
 std::function<double(double, double, double)> cooling::predefined::neutrinic::quark_murca_emissivity(
-    const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-    const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
     const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap)
 {
     return [=](double r, double t, double T)
@@ -752,8 +752,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
 }
 
 std::function<double(double, double, double)> cooling::predefined::neutrinic::quark_bremsstrahlung_emissivity(
-    const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-    const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
     const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap)
 {
     return [=](double r, double t, double T)
@@ -778,8 +778,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
 }
 
 std::function<double(double, double, double)> cooling::predefined::neutrinic::electron_bremsstrahlung_emissivity(
-                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
                 const std::function<double(double)> &exp_phi)
 {
     return [=](double r, double t, double T)

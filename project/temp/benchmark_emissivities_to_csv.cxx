@@ -22,7 +22,7 @@ int main()
 
     // EoS definition
 
-    auto eos_cached = auxiliaries::CachedFunc<std::vector<std::vector<double>>, double, double>(
+    auto eos_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double>(
         [&](std::vector<std::vector<double>> &cache, double rho)
         {
             if (rho < 0 || rho > edensity_upp)
@@ -52,7 +52,7 @@ int main()
 
     // TOV solver
 
-    auto tov_cached = auxiliaries::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
+    auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
                                               const std::function<double(double)> &, double, double, double, double>(tov_solver::tov_solution);
     auto tov = [&tov_cached, &eos_cached](double r)
     {
@@ -60,7 +60,7 @@ int main()
         return tov_cached(eos_cached, r, center_density, radius_step, density_step);
     };
 
-    auto nbar = auxiliaries::CachedFunc<std::vector<std::vector<double>>, double, double>(
+    auto nbar = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double>(
         [&](std::vector<std::vector<double>> &cache, double r)
         {
             // cache contains {r, n_B(r)} arrays; recaching is not supported at the moment, call ::erase instead
@@ -138,7 +138,7 @@ int main()
     bool has_quarks = false;
     for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
     {
-        if (it->first.classify() == auxiliaries::Species::ParticleClassification::kQuark)
+        if (it->first.classify() == auxiliaries::phys::Species::ParticleClassification::kQuark)
         {
             has_quarks = true;
             break;
@@ -171,12 +171,12 @@ int main()
         for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
         {
             auto key = it->first;
-            if (key.classify() == auxiliaries::Species::ParticleClassification::kLepton)
+            if (key.classify() == auxiliaries::phys::Species::ParticleClassification::kLepton)
             {
                 result += hadron_murca_emissivity(r, key, t, T);
                 result += hadron_durca_emissivity(r, key, t, T);
             }
-            if (key.classify() == auxiliaries::Species::ParticleClassification::kBaryon)
+            if (key.classify() == auxiliaries::phys::Species::ParticleClassification::kBaryon)
             {
                 result += hadron_PBF_emissivity(r, key, t, T);
             }
@@ -187,16 +187,16 @@ int main()
         return result * exp_phi(r) * exp_phi(r);
     };
 
-    auto neutrino_luminosity = auxiliaries::integrate_volume<double, double>(
-        std::function<double(double, double, double)>(Q_nu), 0, r_ns, exp_lambda, auxiliaries::IntegrationMode::kGaussLegendre_12p, radius_step);
+    auto neutrino_luminosity = auxiliaries::math::integrate_volume<double, double>(
+        std::function<double(double, double, double)>(Q_nu), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p, radius_step);
 
     // specific heat
     auto fermi_specific_heat_dens = cooling::predefined::auxiliary::fermi_specific_heat_density(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, exp_phi, superfluid_n_1s0,
         superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp, superconduct_q_gap);
 
-    auto heat_capacity = auxiliaries::integrate_volume<double, double>(
-        std::function<double(double, double, double)>(fermi_specific_heat_dens), 0, r_ns, exp_lambda, auxiliaries::IntegrationMode::kGaussLegendre_12p, radius_step);
+    auto heat_capacity = auxiliaries::math::integrate_volume<double, double>(
+        std::function<double(double, double, double)>(fermi_specific_heat_dens), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p, radius_step);
 
     std::ofstream out("NormalizedEmissivities.txt");
     out << "r,km\t Q_{eDU}/T_inf^6,GeV^{-1}\t Q_{muDU}/T_inf^6,GeV^{-1}\t Q_{eMU}/T_inf^8,GeV^{-3}\t Q_{muMU}/T_inf^8,GeV^{-3}\n";

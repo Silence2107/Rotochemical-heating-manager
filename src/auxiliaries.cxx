@@ -8,11 +8,11 @@
 #include <fstream>
 #include <sstream>
 
-std::vector<std::vector<double>> auxiliaries::read_tabulated_file(const std::string &path, std::pair<size_t, size_t> columns, std::pair<size_t, size_t> rows, double empty_value)
+std::vector<std::vector<double>> auxiliaries::io::read_tabulated_file(const std::string &path, std::pair<size_t, size_t> columns, std::pair<size_t, size_t> rows, double empty_value)
 {
     std::ifstream fstr(path);
     if (!fstr.is_open())
-        throw std::runtime_error("Cannot open file " + path + ". Encountered in auxiliaries::read_tabulated_file");
+        throw std::runtime_error("Cannot open file " + path + ". Encountered in auxiliaries::io::read_tabulated_file");
     std::vector<std::vector<double>> table;
     std::vector<std::string> lines;
     std::string line;
@@ -22,18 +22,18 @@ std::vector<std::vector<double>> auxiliaries::read_tabulated_file(const std::str
         rows.second = lines.size();
     if (columns.second == 0)
     {
-        std::string cleared_line = auxiliaries::retrieve_cleared_line(lines[rows.first]);
+        std::string cleared_line = auxiliaries::io::retrieve_cleared_line(lines[rows.first]);
         std::stringstream ss(cleared_line);
         std::string str;
         while (ss >> str)
             ++columns.second;
     }
     if (rows.second <= rows.first || columns.second <= columns.first)
-        throw std::runtime_error("Invalid rows or columns count extracted from input file. Encountered in auxiliaries::read_tabulated_file");
+        throw std::runtime_error("Invalid rows or columns count extracted from input file. Encountered in auxiliaries::io::read_tabulated_file");
     std::vector<std::vector<std::string>> str_data(rows.second - rows.first, std::vector<std::string>(columns.second - columns.first));
     for (size_t i = rows.first; i < rows.second; ++i)
     {
-        std::string cleared_line = auxiliaries::retrieve_cleared_line(lines[i]);
+        std::string cleared_line = auxiliaries::io::retrieve_cleared_line(lines[i]);
         std::stringstream ss(cleared_line);
         for (size_t j = columns.first; j < columns.second; ++j)
         {
@@ -57,7 +57,7 @@ std::vector<std::vector<double>> auxiliaries::read_tabulated_file(const std::str
             }
             catch (const std::invalid_argument &e)
             {
-                throw std::runtime_error("Intractable argument: " + std::string(e.what()) + ". Encountered in auxiliaries::read_tabulated_file");
+                throw std::runtime_error("Intractable argument: " + std::string(e.what()) + ". Encountered in auxiliaries::io::read_tabulated_file");
             }
         }
         table.push_back(column);
@@ -65,7 +65,7 @@ std::vector<std::vector<double>> auxiliaries::read_tabulated_file(const std::str
     return table;
 }
 
-std::string auxiliaries::retrieve_cleared_line(const std::string &line)
+std::string auxiliaries::io::retrieve_cleared_line(const std::string &line)
 {
     if (line.empty())
         return line;
@@ -86,19 +86,19 @@ std::string auxiliaries::retrieve_cleared_line(const std::string &line)
     return cleared_line;
 }
 
-double auxiliaries::interpolate(const std::vector<double> &input, const std::vector<double> &output,
-                                auxiliaries::InterpolationMode mode, double x, bool extrapolate, bool enable_checks)
+double auxiliaries::math::interpolate(const std::vector<double> &input, const std::vector<double> &output,
+                                auxiliaries::math::InterpolationMode mode, double x, bool extrapolate, bool enable_checks)
 {
     if (enable_checks)
     {
         if (input.size() != output.size())
-            throw std::runtime_error("Input and output arrays have different sizes. Encountered in auxiliaries::interpolate");
+            throw std::runtime_error("Input and output arrays have different sizes. Encountered in auxiliaries::math::interpolate");
     }
     // determine if input is increasing or decreasing
     bool decreasingly_sorted = (input[0] > input[1]) ? true : false;
     if (!extrapolate && enable_checks)
         if ((!decreasingly_sorted && (x < input.front() || x > input.back())) || (decreasingly_sorted && (x > input.front() || x < input.back())))
-            throw std::runtime_error("Searched value is out of range. Encountered in auxiliaries::interpolate");
+            throw std::runtime_error("Searched value is out of range. Encountered in auxiliaries::math::interpolate");
 
     // find index of x in input sorted array in reasonable time
     size_t low_pos;
@@ -125,19 +125,19 @@ double auxiliaries::interpolate(const std::vector<double> &input, const std::vec
     // interpolate
     switch (mode)
     {
-    case auxiliaries::InterpolationMode::kLinear:
+    case auxiliaries::math::InterpolationMode::kLinear:
     {
         if (enable_checks)
             if (input.size() < 2)
-                throw std::runtime_error("Cannot perform linear interpolation with less than 2 points. Encountered in auxiliaries::interpolate");
+                throw std::runtime_error("Cannot perform linear interpolation with less than 2 points. Encountered in auxiliaries::math::interpolate");
         return output[low_pos] + (output[low_pos + 1] - output[low_pos]) * (x - input[low_pos]) / (input[low_pos + 1] - input[low_pos]);
     }
     break;
-    case auxiliaries::InterpolationMode::kCubic:
+    case auxiliaries::math::InterpolationMode::kCubic:
     {
         if (enable_checks)
             if (input.size() < 5)
-                throw std::runtime_error("Cannot perform cubic interpolation with less than 5 points. Encountered in auxiliaries::interpolate");
+                throw std::runtime_error("Cannot perform cubic interpolation with less than 5 points. Encountered in auxiliaries::math::interpolate");
         auto tridiagonal_solve = [](const std::vector<double> &subdiag, const std::vector<double> &diag, const std::vector<double> &superdiag, const std::vector<double> &rhs)
         {
             size_t n = diag.size();
@@ -190,33 +190,33 @@ double auxiliaries::interpolate(const std::vector<double> &input, const std::vec
     }
     break;
     default:
-        throw std::runtime_error("Unknown interpolation mode. Encountered in auxiliaries::interpolate");
+        throw std::runtime_error("Unknown interpolation mode. Encountered in auxiliaries::math::interpolate");
     }
 }
 
-double auxiliaries::interpolate_cached(std::function<double(double)> &cache, const std::vector<double> &input, const std::vector<double> &output, auxiliaries::InterpolationMode mode, double x, bool extrapolate, bool enable_checks)
+double auxiliaries::math::interpolate_cached(std::function<double(double)> &cache, const std::vector<double> &input, const std::vector<double> &output, auxiliaries::math::InterpolationMode mode, double x, bool extrapolate, bool enable_checks)
 {
     // determine if input is increasing or decreasing
     bool decreasingly_sorted = (input[0] > input[1]) ? true : false;
     if (!extrapolate && enable_checks)
         if ((!decreasingly_sorted && (x < input.front() || x > input.back())) || (decreasingly_sorted && (x > input.front() || x < input.back())))
-            throw std::runtime_error("Searched value is out of range. Encountered in auxiliaries::interpolate_cached");
+            throw std::runtime_error("Searched value is out of range. Encountered in auxiliaries::math::interpolate_cached");
     if (!cache) // if a callable is not stored, cache one
     {
         if (enable_checks)
         {
             if (input.size() != output.size())
-                throw std::runtime_error("Input and output arrays have different sizes. Encountered in auxiliaries::interpolate_cached");
+                throw std::runtime_error("Input and output arrays have different sizes. Encountered in auxiliaries::math::interpolate_cached");
         }
         
         // interpolate
         switch (mode)
         {
-        case auxiliaries::InterpolationMode::kLinear:
+        case auxiliaries::math::InterpolationMode::kLinear:
         {
             if (enable_checks)
                 if (input.size() < 2)
-                    throw std::runtime_error("Cannot perform linear interpolation with less than 2 points. Encountered in auxiliaries::interpolate_cached");
+                    throw std::runtime_error("Cannot perform linear interpolation with less than 2 points. Encountered in auxiliaries::math::interpolate_cached");
             cache = [=](double x)
             {
                 // find index of x in input sorted array in reasonable time
@@ -245,11 +245,11 @@ double auxiliaries::interpolate_cached(std::function<double(double)> &cache, con
             };
         }
         break;
-        case auxiliaries::InterpolationMode::kCubic:
+        case auxiliaries::math::InterpolationMode::kCubic:
         {
             if (enable_checks)
                 if (input.size() < 5)
-                    throw std::runtime_error("Cannot perform cubic interpolation with less than 5 points. Encountered in auxiliaries::interpolate_cached");
+                    throw std::runtime_error("Cannot perform cubic interpolation with less than 5 points. Encountered in auxiliaries::math::interpolate_cached");
             auto tridiagonal_solve = [](const std::vector<double> &subdiag, const std::vector<double> &diag, const std::vector<double> &superdiag, const std::vector<double> &rhs)
             {
                 size_t n = diag.size();
@@ -331,23 +331,23 @@ double auxiliaries::interpolate_cached(std::function<double(double)> &cache, con
         }
         break;
         default:
-            throw std::runtime_error("Unknown interpolation mode. Encountered in auxiliaries::interpolate_cached");
+            throw std::runtime_error("Unknown interpolation mode. Encountered in auxiliaries::math::interpolate_cached");
         }
     }
     return cache(x);
 }
 
-auxiliaries::Species::Species(auxiliaries::Species::ParticleType type, auxiliaries::Species::ParticleClassification classification)
+auxiliaries::phys::Species::Species(auxiliaries::phys::Species::ParticleType type, auxiliaries::phys::Species::ParticleClassification classification)
     : m_type(type), m_classification(classification)
 {
 }
 
-bool auxiliaries::Species::operator==(const auxiliaries::Species &other) const
+bool auxiliaries::phys::Species::operator==(const auxiliaries::phys::Species &other) const
 {
     return m_type == other.m_type;
 }
 
-bool auxiliaries::Species::operator<(const auxiliaries::Species &other) const
+bool auxiliaries::phys::Species::operator<(const auxiliaries::phys::Species &other) const
 {
     return m_type < other.m_type;
 }

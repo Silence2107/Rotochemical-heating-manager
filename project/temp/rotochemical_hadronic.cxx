@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 
     // EoS definition
 
-    auto eos_cached = auxiliaries::CachedFunc<std::vector<std::vector<double>>, double, double>(
+    auto eos_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double>(
         [&](std::vector<std::vector<double>> &cache, double rho)
         {
             if (rho < 0 || rho > edensity_upp)
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 
     // TOV solver
 
-    auto tov_cached = auxiliaries::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
+    auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
                                               const std::function<double(double)> &, double, double, double, double>(tov_solver::tov_solution);
     auto tov = [&tov_cached, &eos_cached](double r)
     {
@@ -75,7 +75,7 @@ int main(int argc, char **argv)
     double r_crust;
     bool crust_found = false;
 
-    auto nbar = auxiliaries::CachedFunc<std::vector<std::vector<double>>, double, double>(
+    auto nbar = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double>(
         [&](std::vector<std::vector<double>> &cache, double r)
         {
             // cache contains {r, n_B(r)} arrays; recaching is not supported at the moment, call ::erase instead
@@ -149,7 +149,7 @@ int main(int argc, char **argv)
         return -nbar(r) * 1.0 / omega_k_sqr * (Y_e(nbar(r + radius_step)) - Y_e(nbar(r))) / (tov(r + radius_step)[3] / tov(r)[3] - 1);
     };
     // I_e is given by the following integral
-    double I_e = auxiliaries::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_crust, exp_lambda, auxiliaries::IntegrationMode::kGaussLegendre_12p)();
+    double I_e = auxiliaries::math::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_crust, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)();
 
     // Dipole ansatz for \Omega evolution
     double p_0 = 1.0E-3 * constants::conversion::gev_s,
@@ -209,7 +209,7 @@ int main(int argc, char **argv)
     bool has_quarks = false;
     for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
     {
-        if (it->first.classify() == auxiliaries::Species::ParticleClassification::kQuark)
+        if (it->first.classify() == auxiliaries::phys::Species::ParticleClassification::kQuark)
         {
             has_quarks = true;
             break;
@@ -252,7 +252,7 @@ int main(int argc, char **argv)
         for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
         {
             auto key = it->first;
-            if (key.classify() == auxiliaries::Species::ParticleClassification::kLepton)
+            if (key.classify() == auxiliaries::phys::Species::ParticleClassification::kLepton)
             {
                 if (key == electron)
                 {
@@ -265,7 +265,7 @@ int main(int argc, char **argv)
                     result += hadron_durca_emissivity(r, key, t, T);
                 }
             }
-            if (key.classify() == auxiliaries::Species::ParticleClassification::kBaryon)
+            if (key.classify() == auxiliaries::phys::Species::ParticleClassification::kBaryon)
             {
                 result += hadron_PBF_emissivity(r, key, t, T);
             }
@@ -280,16 +280,16 @@ int main(int argc, char **argv)
         return result * exp_phi(r) * exp_phi(r);
     };
 
-    auto neutrino_luminosity = auxiliaries::integrate_volume<double, double, double>(
-        std::function<double(double, double, double, double)>(Q_nu), 0, r_ns, exp_lambda, auxiliaries::IntegrationMode::kGaussLegendre_12p, radius_step);
+    auto neutrino_luminosity = auxiliaries::math::integrate_volume<double, double, double>(
+        std::function<double(double, double, double, double)>(Q_nu), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p, radius_step);
 
     // specific heat
     auto fermi_specific_heat_dens = cooling::predefined::auxiliary::fermi_specific_heat_density(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, exp_phi, superfluid_n_1s0,
         superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp, superconduct_q_gap);
 
-    auto heat_capacity = auxiliaries::integrate_volume<double, double>(
-        std::function<double(double, double, double)>(fermi_specific_heat_dens), 0, r_ns, exp_lambda, auxiliaries::IntegrationMode::kGaussLegendre_12p, radius_step);
+    auto heat_capacity = auxiliaries::math::integrate_volume<double, double>(
+        std::function<double(double, double, double)>(fermi_specific_heat_dens), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p, radius_step);
 
     auto cooling_rhs = [&heat_capacity, &photon_luminosity, &neutrino_luminosity](double t, double T, double eta_e)
     {
@@ -307,7 +307,7 @@ int main(int argc, char **argv)
                     (hadron_murca_emissivity(r, electron, t, T) + quark_murca_emissivity(r, t, T)) / T * nonequilibrium_diff_func_murca(eta_e / T)) *
                    pow(exp_phi(r), 2.0);
         };
-        return -z_npe * (auxiliaries::integrate_volume<>(std::function<double(double)>(ratediff_local), 0, r_crust, exp_lambda, auxiliaries::IntegrationMode::kGaussLegendre_12p)() - 2 * omega_omega_dot(t) * I_e);
+        return -z_npe * (auxiliaries::math::integrate_volume<>(std::function<double(double)>(ratediff_local), 0, r_crust, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)() - 2 * omega_omega_dot(t) * I_e);
     };
 
     // solve cooling equation
@@ -316,7 +316,7 @@ int main(int argc, char **argv)
 
     using interpolator_t = std::function<double(const std::vector<double> &, const std::vector<double> &, double)>;
 
-    auto cooling_solver = auxiliaries::CachedFunc<std::vector<std::vector<double>>, std::vector<double>, double, const std::function<double(double, double, double)> &, const std::function<double(double, double, double)> &, double, double, double, double,
+    auto cooling_solver = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, std::vector<double>, double, const std::function<double(double, double, double)> &, const std::function<double(double, double, double)> &, double, double, double, double,
                                                   const interpolator_t &, const interpolator_t &>(
         [&](std::vector<std::vector<double>> &cache, double t, const std::function<double(double, double, double)> &rhs_T, const std::function<double(double, double, double)> &rhs_eta_e, double T_init, double eta_e_init, double base_time_step, double exp_rate, const interpolator_t &interpolator_T, const interpolator_t &interpolator_eta_e)
         {
@@ -385,12 +385,12 @@ int main(int argc, char **argv)
 
     double T_init = T_init_local * exp_phi_at_R;
 
-    auto eta_interpolator_cached = auxiliaries::CachedFunc<std::function<double(double)>,
+    auto eta_interpolator_cached = auxiliaries::math::CachedFunc<std::function<double(double)>,
                                                            double, const std::vector<double> &, const std::vector<double> &,
-                                                           auxiliaries::InterpolationMode, double, bool, bool>(auxiliaries::interpolate_cached);
+                                                           auxiliaries::math::InterpolationMode, double, bool, bool>(auxiliaries::math::interpolate_cached);
     auto eta_interpolator = [&eta_interpolator_cached](const std::vector<double> &x, const std::vector<double> &y, double val)
     {
-        return eta_interpolator_cached(x, y, auxiliaries::InterpolationMode::kCubic, val, false, true);
+        return eta_interpolator_cached(x, y, auxiliaries::math::InterpolationMode::kCubic, val, false, true);
     };
 
     // invoke the solver once to cache the solution

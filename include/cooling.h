@@ -26,7 +26,7 @@ namespace cooling
             std::vector<std::vector<double>> &cache, double t, const std::function<double(double, double)> &cooling_rhs, double initial_temperature, double base_time_step, double exp_rate,
             const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &interpolator =
                 [](const std::vector<double> &x, const std::vector<double> &y, double val)
-            { return auxiliaries::interpolate(x, y, auxiliaries::InterpolationMode::kLinear, val); });
+            { return auxiliaries::math::interpolate(x, y, auxiliaries::math::InterpolationMode::kLinear, val); });
     }
 
     /// @brief Predefined functionality, including cooling luminosities
@@ -48,8 +48,8 @@ namespace cooling
             /// @param superfluid_n_temp temperature of superfluid neutrons [GeV]
             /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^{-3}]
             std::function<double(double, double, double)> fermi_specific_heat_density(
-                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
                 double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
                 const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp, const std::function<double(double)> &superconduct_q_gap);
 
@@ -122,9 +122,9 @@ namespace cooling
             /// @param superfluid_p_temp temperature of superfluid protons [GeV]
             /// @param superfluid_n_temp temperature of superfluid neutrons [GeV]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], species, time [GeV], temperature [GeV]
-            std::function<double(double, const auxiliaries::Species &, double, double)> hadron_durca_emissivity(
-                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+            std::function<double(double, const auxiliaries::phys::Species &, double, double)> hadron_durca_emissivity(
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
                 double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
                 const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp);
 
@@ -140,9 +140,9 @@ namespace cooling
             /// @param superfluid_p_temp temperature of superfluid protons [GeV]
             /// @param superfluid_n_temp temperature of superfluid neutrons [GeV]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], species, time [GeV], temperature [GeV]
-            std::function<double(double, const auxiliaries::Species &, double, double)> hadron_murca_emissivity(
-                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+            std::function<double(double, const auxiliaries::phys::Species &, double, double)> hadron_murca_emissivity(
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
                 double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
                 const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp);
 
@@ -160,8 +160,8 @@ namespace cooling
             /// @param superfluid_n_temp temperature of superfluid neutrons [GeV]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
             std::function<double(double, double, double)> hadron_bremsstrahlung_emissivity(
-                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
                 const std::function<double(double)> &ion_volume_frac, double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
                 const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp);
 
@@ -177,9 +177,9 @@ namespace cooling
             /// @param superfluid_p_temp temperature of superfluid protons [GeV]
             /// @param superfluid_n_temp temperature of superfluid neutrons [GeV]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], species, time [GeV], temperature [GeV]
-            std::function<double(double, const auxiliaries::Species &, double, double)> hadron_pbf_emissivity(
-                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+            std::function<double(double, const auxiliaries::phys::Species &, double, double)> hadron_pbf_emissivity(
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
                 double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
                 const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp);
 
@@ -191,8 +191,8 @@ namespace cooling
             /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^{-3}]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
             std::function<double(double, double, double)> quark_durca_emissivity(
-                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
                 const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap);
 
             /// @brief Emissivity of neutrinos from quark MUrca reactions
@@ -203,8 +203,8 @@ namespace cooling
             /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^{-3}]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
             std::function<double(double, double, double)> quark_murca_emissivity(
-                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
                 const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap);
 
             /// @brief Emissivity of neutrinos from quark Bremsstrahlung reactions
@@ -215,8 +215,8 @@ namespace cooling
             /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^{-3}]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
             std::function<double(double, double, double)> quark_bremsstrahlung_emissivity(
-                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
                 const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap);
 
             /// @brief Emissivity of neutrinos from electron bremsstrahlung reaction (important in highly supressed quark phase)
@@ -226,8 +226,8 @@ namespace cooling
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
             std::function<double(double, double, double)> electron_bremsstrahlung_emissivity(
-                const std::map<auxiliaries::Species, std::function<double(double)>> &k_fermi_of_nbar,
-                const std::map<auxiliaries::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
                 const std::function<double(double)> &exp_phi);
         }
     }

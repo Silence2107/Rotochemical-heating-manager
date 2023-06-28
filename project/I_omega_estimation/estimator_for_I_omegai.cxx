@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 
     // EoS definition
 
-    auto eos_cached = auxiliaries::CachedFunc<std::vector<std::vector<double>>, double, double>(
+    auto eos_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double>(
         [&](std::vector<std::vector<double>> &cache, double rho)
         {
             if (rho < 0 || rho > edensity_upp)
@@ -62,7 +62,7 @@ int main(int argc, char **argv)
 
     // TOV solver
 
-    auto tov_cached = auxiliaries::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
+    auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
                                               const std::function<double(double)> &, double, double, double, double>(tov_solver::tov_solution);
     auto tov = [&tov_cached, &eos_cached, center_density](double r)
     {
@@ -73,7 +73,7 @@ int main(int argc, char **argv)
     double r_crust;
     bool crust_found = false;
 
-    auto nbar = auxiliaries::CachedFunc<std::vector<std::vector<double>>, double, double>(
+    auto nbar = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double>(
         [&](std::vector<std::vector<double>> &cache, double r)
         {
             // cache contains {r, n_B(r)} arrays; recaching is not supported at the moment, call ::erase instead
@@ -139,7 +139,7 @@ int main(int argc, char **argv)
         {
             return -nbar(r) * 1.0 / omega_k_sqr * (Y_i(nbar(r + radius_step)) - Y_i(nbar(r))) / (tov(r + radius_step)[3] / tov(r)[3] - 1);
         };
-        I_i = auxiliaries::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_crust, exp_lambda, auxiliaries::IntegrationMode::kGaussLegendre_12p)();
+        I_i = auxiliaries::math::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_crust, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)();
         std::cout << I_i / (constants::conversion::gev_s * constants::conversion::gev_s) << " ";
     }
 }

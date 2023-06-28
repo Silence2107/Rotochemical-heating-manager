@@ -137,8 +137,8 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &c
 
 	// linear interpolation
 
-	double mass = auxiliaries::interpolate(cache[0], cache[1], auxiliaries::InterpolationMode::kLinear, r);
-	double density = auxiliaries::interpolate(cache[0], cache[2], auxiliaries::InterpolationMode::kLinear, r);
-	double phi = auxiliaries::interpolate(cache[0], cache[3], auxiliaries::InterpolationMode::kLinear, r);
+	double mass = auxiliaries::math::interpolate(cache[0], cache[1], auxiliaries::math::InterpolationMode::kLinear, r);
+	double density = auxiliaries::math::interpolate(cache[0], cache[2], auxiliaries::math::InterpolationMode::kLinear, r);
+	double phi = auxiliaries::math::interpolate(cache[0], cache[3], auxiliaries::math::InterpolationMode::kLinear, r);
 	return std::vector<double>({mass, density, phi, eos(density), cache[0].back()});
 }

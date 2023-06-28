@@ -26,25 +26,25 @@ namespace constants
 
 		// Predefined species
 		/// @brief Neutron species
-		const auxiliaries::Species neutron(auxiliaries::Species::ParticleType::kNeutron, auxiliaries::Species::ParticleClassification::kBaryon);
+		const auxiliaries::phys::Species neutron(auxiliaries::phys::Species::ParticleType::kNeutron, auxiliaries::phys::Species::ParticleClassification::kBaryon);
 		/// @brief Proton species
-		const auxiliaries::Species proton(auxiliaries::Species::ParticleType::kProton, auxiliaries::Species::ParticleClassification::kBaryon);
+		const auxiliaries::phys::Species proton(auxiliaries::phys::Species::ParticleType::kProton, auxiliaries::phys::Species::ParticleClassification::kBaryon);
 		/// @brief Electron species
-		const auxiliaries::Species electron(auxiliaries::Species::ParticleType::kElectron, auxiliaries::Species::ParticleClassification::kLepton);
+		const auxiliaries::phys::Species electron(auxiliaries::phys::Species::ParticleType::kElectron, auxiliaries::phys::Species::ParticleClassification::kLepton);
 		/// @brief Muon species
-		const auxiliaries::Species muon(auxiliaries::Species::ParticleType::kMuon, auxiliaries::Species::ParticleClassification::kLepton);
+		const auxiliaries::phys::Species muon(auxiliaries::phys::Species::ParticleType::kMuon, auxiliaries::phys::Species::ParticleClassification::kLepton);
 		/// @brief Tau species
-		const auxiliaries::Species tau(auxiliaries::Species::ParticleType::kTau, auxiliaries::Species::ParticleClassification::kLepton);
+		const auxiliaries::phys::Species tau(auxiliaries::phys::Species::ParticleType::kTau, auxiliaries::phys::Species::ParticleClassification::kLepton);
 		/// @brief Pion species
-		const auxiliaries::Species pion(auxiliaries::Species::ParticleType::kPion, auxiliaries::Species::ParticleClassification::kMeson);
+		const auxiliaries::phys::Species pion(auxiliaries::phys::Species::ParticleType::kPion, auxiliaries::phys::Species::ParticleClassification::kMeson);
 		/// @brief Kaon species
-		const auxiliaries::Species kaon(auxiliaries::Species::ParticleType::kKaon, auxiliaries::Species::ParticleClassification::kMeson);
+		const auxiliaries::phys::Species kaon(auxiliaries::phys::Species::ParticleType::kKaon, auxiliaries::phys::Species::ParticleClassification::kMeson);
 		/// @brief Up quark species
-		const auxiliaries::Species uquark(auxiliaries::Species::ParticleType::kUquark, auxiliaries::Species::ParticleClassification::kQuark);
+		const auxiliaries::phys::Species uquark(auxiliaries::phys::Species::ParticleType::kUquark, auxiliaries::phys::Species::ParticleClassification::kQuark);
 		/// @brief Down quark species
-		const auxiliaries::Species dquark(auxiliaries::Species::ParticleType::kDquark, auxiliaries::Species::ParticleClassification::kQuark);
+		const auxiliaries::phys::Species dquark(auxiliaries::phys::Species::ParticleType::kDquark, auxiliaries::phys::Species::ParticleClassification::kQuark);
 		/// @brief Strange quark species
-		const auxiliaries::Species squark(auxiliaries::Species::ParticleType::kSquark, auxiliaries::Species::ParticleClassification::kQuark);
+		const auxiliaries::phys::Species squark(auxiliaries::phys::Species::ParticleType::kSquark, auxiliaries::phys::Species::ParticleClassification::kQuark);
 	}
 	/// @brief conversion table
 	namespace conversion
