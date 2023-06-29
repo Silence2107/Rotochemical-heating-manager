@@ -37,7 +37,7 @@ int main(int argc, char** argv)
     // returns {r, m} pair at given center density. (Hopefully) cleans up all global cache that may spoil further calls
     auto get_m_r_at_density = [&](double edensity)
     {
-        auto eos_cached = auxiliaries::CachedFunc<std::vector<std::vector<double>>, double, double>(
+        auto eos_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double>(
             [&](std::vector<std::vector<double>> &cache, double rho)
             {
                 if (rho < 0 || rho > edensity_upp)
@@ -67,7 +67,7 @@ int main(int argc, char** argv)
 
         // TOV solver
 
-        auto tov_cached = auxiliaries::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
+        auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
                                                   const std::function<double(double)> &, double, double, double, double>(tov_solver::tov_solution);
         auto tov = [&tov_cached, &eos_cached, edensity](double r)
         {

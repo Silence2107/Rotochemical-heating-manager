@@ -9,25 +9,13 @@
 #include <functional>
 #include <cmath>
 #include <stdexcept>
-#include <iostream>
+#include <fstream>
 
 #include <sstream>
 #include <fstream>
 
-#include <TCanvas.h>
-#include <TGraph.h>
-#include <TAxis.h>
-#include <TLegend.h>
-#include <TFile.h>
-
-int main(int argc, char **argv)
+int main()
 {
-    if (argc == 1)
-    {
-        std::cout << "Usage: " << argv[0] << " <pdf_path=Cooling.pdf> <rootfile_path=None>" << std::endl;
-    }
-    std::string pdf_path = (argc > 1) ? argv[1] : "Cooling.pdf";
-    bool rootfile_creation = (argc > 2);
     using namespace inputfile;
 
     // RUN --------------------------------------------------------------------------
@@ -146,7 +134,7 @@ int main(int argc, char **argv)
     auto hadron_PBF_emissivity = cooling::predefined::neutrinic::hadron_pbf_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, exp_phi, superfluid_n_1s0,
         superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp);
-    
+
     bool has_quarks = false;
     for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
     {
@@ -158,13 +146,19 @@ int main(int argc, char **argv)
     }
 
     auto quark_durca_emissivity = (has_quarks ? cooling::predefined::neutrinic::quark_durca_emissivity(
-        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap) : [](double, double, double) { return 0.0; });
+                                                    k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap)
+                                              : [](double, double, double)
+                                       { return 0.0; });
 
     auto quark_murca_emissivity = (has_quarks ? cooling::predefined::neutrinic::quark_murca_emissivity(
-        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap) : [](double, double, double) { return 0.0; });
+                                                    k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap)
+                                              : [](double, double, double)
+                                       { return 0.0; });
 
     auto quark_bremsstrahlung_emissivity = (has_quarks ? cooling::predefined::neutrinic::quark_bremsstrahlung_emissivity(
-        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap) : [](double, double, double) { return 0.0; });
+                                                             k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap)
+                                                       : [](double, double, double)
+                                                { return 0.0; });
 
     auto electron_bremsstrahlung_emissivity = cooling::predefined::neutrinic::electron_bremsstrahlung_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi);
@@ -204,74 +198,14 @@ int main(int argc, char **argv)
     auto heat_capacity = auxiliaries::math::integrate_volume<double, double>(
         std::function<double(double, double, double)>(fermi_specific_heat_dens), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p, radius_step);
 
-    auto cooling_rhs = [&heat_capacity, &photon_luminosity, &neutrino_luminosity](double t, double T)
+    std::ofstream out("NormalizedEmissivities.txt");
+    out << "r,km\t Q_{eDU}/T_inf^6,GeV^{-1}\t Q_{muDU}/T_inf^6,GeV^{-1}\t Q_{eMU}/T_inf^8,GeV^{-3}\t Q_{muMU}/T_inf^8,GeV^{-3}\n";
+    for(double r = radius_step/2; r < r_ns; r += radius_step)
     {
-        //std::cout << t << " " << photon_luminosity(t, T) << " " << neutrino_luminosity(t, T) << " " << heat_capacity(t, T) << '\n';
-        return -(photon_luminosity(t + t_init, T) + neutrino_luminosity(t + t_init, T)) / heat_capacity(t + t_init, T);
-    };
-
-    // solve cooling equation
-
-    auto cooling_solver = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double, const std::function<double(double, double)> &, double, double, double,
-                                                  const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &>(cooling::solver::stationary_cooling_cached);
-
-    double exp_phi_at_R = pow(1 - 2 * constants::scientific::G * m_ns / r_ns, 0.5);
-
-    double T_init = T_init_local * exp_phi_at_R;
-
-    // invoke the solver once to cache the solution
-    cooling_solver(t_end - t_init, cooling_rhs, T_init, base_t_step, exp_rate_estim, cooling_interpolator);
-
-    // plot the solution (assumes exp_rate_estim > 1)
-    std::vector<double> x(cooling_n_points_estimate, 0);
-    std::vector<double> y(cooling_n_points_estimate, 0);
-    std::cout << "M/Msol " << m_ns * constants::conversion::gev_over_msol << std::endl;
-    std::cout << "t [years] "
-              << "\tTe^inf [K] "
-              << "\tL_ph [erg/s] "
-              << "\tL_nu [erg/s] " << std::endl;
-    for (int i = 0;; ++i)
-    {
-        x[i] = base_t_step * (pow(exp_rate_estim, i + 1) - 1) / (exp_rate_estim - 1);
-        if (x[i] > t_end)
-        {
-            x.resize(i);
-            y.resize(i);
-            break;
-        }
-        y[i] = cooling_solver(x[i], cooling_rhs, T_init, base_t_step, exp_rate_estim, cooling_interpolator);
-        // print in understandable units
-        std::cout << 1.0E6 * (x[i] + t_init) / (constants::conversion::myr_over_s * constants::conversion::gev_s) << "\t" << auxiliaries::phys::te_tb_relation(y[i], r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k << "\t" << photon_luminosity(x[i], y[i]) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << neutrino_luminosity(x[i], y[i]) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << '\n';
-        // rescale
-        x[i] += t_init;
-        x[i] *= 1.0E6 / (constants::conversion::myr_over_s * constants::conversion::gev_s);
-        y[i] = auxiliaries::phys::te_tb_relation(y[i], r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k;
+        using namespace constants::conversion;
+        using namespace constants::scientific;
+        using namespace constants::species;
+        double T_inf = 2E5 / constants::conversion::gev_over_k;
+        out << r / km_gev << "\t" << hadron_durca_emissivity(r, electron, 0, T_inf) / pow(T_inf, 6) << "\t" << hadron_durca_emissivity(r, muon, 0, T_inf) / pow(T_inf, 6) << "\t" << hadron_murca_emissivity(r, electron, 0, T_inf) / pow(T_inf, 8) << "\t" << hadron_murca_emissivity(r, muon, 0, T_inf) / pow(T_inf, 8) << "\n";
     }
-
-    //draw
-    TCanvas *c1 = new TCanvas("c1", "c1");
-    auto gr = new TGraph(x.size(), x.data(), y.data());
-    if (rootfile_creation)
-    {
-        std::string rootfile_path = argv[2];
-        TFile *f = new TFile(rootfile_path.c_str(), "RECREATE");
-        gr->Write();
-        f->Close();
-    }
-    gr->SetLineColor(kBlue);
-    gr->Draw("AL");
-    // title offset
-    gr->GetYaxis()->SetTitleOffset(1.5);
-    gPad->SetLogx();
-    gPad->SetLogy();
-
-    gr->GetXaxis()->SetTitle("t [yr]");
-    gr->GetYaxis()->SetTitle("T [K]");
-
-    auto legend = new TLegend(0.1, 0.1, 0.38, 0.38);
-    legend->AddEntry(gr, "RH Manager", "l");
-
-    legend->Draw();
-
-    c1->SaveAs(pdf_path.c_str());
 }

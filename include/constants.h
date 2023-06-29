@@ -6,7 +6,7 @@
 /// @brief various constants useful in astrophysics
 namespace constants
 {
-	/// @brief notable physics/math constants and predefined species
+	/// @brief notable physics/math constants
 	namespace scientific
 	{
 		/// @brief Gravitational constant in GeV^-2 units
@@ -24,27 +24,6 @@ namespace constants
 		/// @brief Nuclear matter saturation density in GeV^3
 		const double N_sat = 0.0012345;
 
-		// Predefined species
-		/// @brief Neutron species
-		const auxiliaries::Species neutron(auxiliaries::Species::ParticleType::kNeutron, auxiliaries::Species::ParticleClassification::kBaryon);
-		/// @brief Proton species
-		const auxiliaries::Species proton(auxiliaries::Species::ParticleType::kProton, auxiliaries::Species::ParticleClassification::kBaryon);
-		/// @brief Electron species
-		const auxiliaries::Species electron(auxiliaries::Species::ParticleType::kElectron, auxiliaries::Species::ParticleClassification::kLepton);
-		/// @brief Muon species
-		const auxiliaries::Species muon(auxiliaries::Species::ParticleType::kMuon, auxiliaries::Species::ParticleClassification::kLepton);
-		/// @brief Tau species
-		const auxiliaries::Species tau(auxiliaries::Species::ParticleType::kTau, auxiliaries::Species::ParticleClassification::kLepton);
-		/// @brief Pion species
-		const auxiliaries::Species pion(auxiliaries::Species::ParticleType::kPion, auxiliaries::Species::ParticleClassification::kMeson);
-		/// @brief Kaon species
-		const auxiliaries::Species kaon(auxiliaries::Species::ParticleType::kKaon, auxiliaries::Species::ParticleClassification::kMeson);
-		/// @brief Up quark species
-		const auxiliaries::Species uquark(auxiliaries::Species::ParticleType::kUquark, auxiliaries::Species::ParticleClassification::kQuark);
-		/// @brief Down quark species
-		const auxiliaries::Species dquark(auxiliaries::Species::ParticleType::kDquark, auxiliaries::Species::ParticleClassification::kQuark);
-		/// @brief Strange quark species
-		const auxiliaries::Species squark(auxiliaries::Species::ParticleType::kSquark, auxiliaries::Species::ParticleClassification::kQuark);
 	}
 	/// @brief conversion table
 	namespace conversion
@@ -71,6 +50,30 @@ namespace constants
 		const double erg_over_gev = 6.2415E2;
 		/// @brief Conversion from Myr to s in natural units
 		const double myr_over_s = 3.1536E13;
+	}
+	/// @brief predefined species
+	namespace species
+	{
+		/// @brief Neutron species
+		const auxiliaries::phys::Species neutron(auxiliaries::phys::Species::ParticleType::kNeutron, auxiliaries::phys::Species::ParticleClassification::kBaryon);
+		/// @brief Proton species
+		const auxiliaries::phys::Species proton(auxiliaries::phys::Species::ParticleType::kProton, auxiliaries::phys::Species::ParticleClassification::kBaryon);
+		/// @brief Electron species
+		const auxiliaries::phys::Species electron(auxiliaries::phys::Species::ParticleType::kElectron, auxiliaries::phys::Species::ParticleClassification::kLepton);
+		/// @brief Muon species
+		const auxiliaries::phys::Species muon(auxiliaries::phys::Species::ParticleType::kMuon, auxiliaries::phys::Species::ParticleClassification::kLepton);
+		/// @brief Tau species
+		const auxiliaries::phys::Species tau(auxiliaries::phys::Species::ParticleType::kTau, auxiliaries::phys::Species::ParticleClassification::kLepton);
+		/// @brief Pion species
+		const auxiliaries::phys::Species pion(auxiliaries::phys::Species::ParticleType::kPion, auxiliaries::phys::Species::ParticleClassification::kMeson);
+		/// @brief Kaon species
+		const auxiliaries::phys::Species kaon(auxiliaries::phys::Species::ParticleType::kKaon, auxiliaries::phys::Species::ParticleClassification::kMeson);
+		/// @brief Up quark species
+		const auxiliaries::phys::Species uquark(auxiliaries::phys::Species::ParticleType::kUquark, auxiliaries::phys::Species::ParticleClassification::kQuark);
+		/// @brief Down quark species
+		const auxiliaries::phys::Species dquark(auxiliaries::phys::Species::ParticleType::kDquark, auxiliaries::phys::Species::ParticleClassification::kQuark);
+		/// @brief Strange quark species
+		const auxiliaries::phys::Species squark(auxiliaries::phys::Species::ParticleType::kSquark, auxiliaries::phys::Species::ParticleClassification::kQuark);
 	}
 }
 
