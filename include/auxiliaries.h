@@ -9,7 +9,7 @@
 /// @brief various auxiliary functionality
 namespace auxiliaries
 {
-    /// @brief IO auxiliary functionality. 
+    /// @brief IO auxiliary functionality.
     /// @brief Contains means to read tabulated files and clear lines from adverse symbols
     namespace io
     {
@@ -26,9 +26,9 @@ namespace auxiliaries
         /// @return line, cleared of auxiliary symbols, preceeding, trailing or excessive whitespaces; separation between words is done with whitespaces
         std::string retrieve_cleared_line(const std::string &line);
     }
-    
-    /// @brief Math auxiliary functionality. 
-    /// @brief Includes interpolation, integration and caching functionality
+
+    /// @brief Math auxiliary functionality.
+    /// @brief Includes interpolation, integration, caching functionality and matrix operations
     namespace math
     {
         /// @brief Allows to wrap std::function of general form so that to support caching.
@@ -184,9 +184,107 @@ namespace auxiliaries
                 }
             };
         }
+
+        /// @brief Matrix number class
+        class MatrixD
+        {
+        private:
+            /// @brief matrix elements
+            std::vector<std::vector<double>> m_matrix;
+
+        public:
+            /// @brief size + allocation constructor
+            /// @param rows number of rows
+            /// @param columns number of columns
+            /// @param aloc_value value to populate matrix with
+            MatrixD(size_t rows, size_t cols, double aloc_value = 0.0);
+            /// @brief direct constructor
+            /// @param matrix matrix elements
+            MatrixD(const std::vector<std::vector<double>> &matrix);
+
+            /// @brief matrix element access
+            /// @param i row index
+            /// @param j column index
+            /// @return matrix element
+            double &at(size_t i, size_t j);
+
+            /// @brief matrix element access
+            /// @param i row index
+            /// @param j column index
+            /// @return matrix element
+            const double &at(size_t i, size_t j) const;
+
+            /// @brief matrix row access
+            /// @param i row index
+            /// @return matrix row
+            const std::vector<double> &row(size_t i) const;
+
+            /// @brief matrix column access
+            /// @param j column index
+            /// @return matrix column
+            std::vector<double> column(size_t j) const;
+
+            /// @brief matrix row setter
+            /// @param i row index
+            /// @param row new row elements
+            void set_row(size_t i, const std::vector<double> &row);
+
+            /// @brief matrix column setter
+            /// @param j column index
+            /// @param column new column elements
+            void set_column(size_t j, const std::vector<double> &column);
+
+            /// @brief matrix rows number
+            /// @return matrix rows number
+            size_t rows() const;
+
+            /// @brief matrix columns number
+            /// @return matrix columns number
+            size_t columns() const;
+
+            /// @brief matrix determinant
+            /// @return matrix determinant
+            double det() const;
+
+            /// @brief matrix transpose
+            /// @return matrix transpose
+            MatrixD transpose() const;
+
+            /// @brief matrix inverse
+            /// @return matrix inverse
+            MatrixD inverse() const;
+
+            /// @brief matrix addition
+            /// @param other matrix to add
+            /// @return matrix sum
+            MatrixD operator+(const MatrixD &other) const;
+
+            /// @brief matrix subtraction
+            /// @param other matrix to subtract
+            /// @return matrix difference
+            MatrixD operator-(const MatrixD &other) const;
+
+            /// @brief matrix multiplication
+            /// @param other matrix to multiply with
+            /// @return matrix product
+            MatrixD operator*(const MatrixD &other) const;
+
+        };
+
+        /// @brief matrix multiplication with scalar
+        /// @param scalar scalar to multiply with
+        /// @param matrix matrix to multiply with
+        /// @return matrix product
+        MatrixD operator*(double scalar, const MatrixD &matrix);
+
+        /// @brief matrix multiplication with scalar
+        /// @param matrix matrix to multiply with
+        /// @param scalar scalar to multiply with
+        /// @return matrix product  
+        MatrixD operator*(const MatrixD &matrix, double scalar);
     }
-    
-    /// @brief Physics related functionality. 
+
+    /// @brief Physics related functionality.
     /// @brief Includes a handler for particle species, critical phenomena related functions, as well as Te(Tb) relation and thermodynamic quantities
     namespace phys
     {
@@ -240,10 +338,14 @@ namespace auxiliaries
             bool operator<(const Species &other) const;
             /// @brief Get particle type
             ParticleType identify() const
-            { return m_type; }
+            {
+                return m_type;
+            }
             /// @brief Get particle classification
             ParticleClassification classify() const
-            { return m_classification; }
+            {
+                return m_classification;
+            }
         };
 
         /// @brief Specific heat of substance, based on Fermi gas model
@@ -306,6 +408,6 @@ namespace auxiliaries
         /// @param tau T/Tc
         double superfluid_gap_3p2(double tau);
     }
-    
+
 }
 #endif
