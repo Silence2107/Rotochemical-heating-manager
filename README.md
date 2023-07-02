@@ -21,4 +21,4 @@ If successful, the binary will be put under `bin/path/to/cxxfile_no_ext.out`.
 
 ### ROOT support
 
-The toolset heavily relies on ROOT framework for graphics. Wherever possible, we decouple the dependence on ROOT, however recentest code is not guaranteed to compile without it. To disable the compiler's attempts to compile against ROOT, comment the EXTRALIBS variable within the Makefile.
+The toolset heavily relies on ROOT framework for graphics. Wherever possible, we decouple the dependence on ROOT, however recentest code is not guaranteed to compile without it. In case you do not have a system-wide installation, you can still run make on the scripts that do not depend on ROOT.
