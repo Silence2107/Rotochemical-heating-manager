@@ -2,7 +2,9 @@ CXX:=g++
 
 CXX_FLAGS_RELEASE:=-O3 
 CXX_FLAGS_DEBUG:=-Wall -Wextra -g
-CXX_FLAGS_EXTRALIBS:=`root-config --cflags --glibs`
+ifneq (, $(shell which root-config))
+	CXX_FLAGS_EXTRALIBS:=`root-config --cflags --glibs`
+endif
 
 HEADERS:=$(wildcard include/*.h)
 
