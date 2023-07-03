@@ -21,6 +21,7 @@ namespace tov_solver
 	/// @param radius_step is used for RK4 algorithm (typical scale is way less than 1E19 GeV^{-1})
 	/// @param density_step (typical scale is way less than 1E-4 - 1E-2 GeV^4) is used for eos derivative, for caching purposes (if |cached_density-center_density|&lt;density_step then no need for recaching) and for finding the radius of NS
 	/// @return [0] -> mass in given point r, [1] -> density -//-, [2] -> phi metric function -//-, [3] -> pressure -//-, [4] -> additionals(radius of NS)
+	/// @cite TOV - Oppenheimer, Volkoff, 1939
 	std::vector<double> tov_solution(std::vector<std::vector<double>> &cache, const std::function<double(double)> &eos, double r, double center_density, double radius_step, double density_step);
 }
 

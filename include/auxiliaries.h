@@ -132,6 +132,7 @@ namespace auxiliaries
         /// @param mode integration mode
         /// @param r_step integration step (for rectangular integration). Defaults to 10 meters
         /// @return integral value as a function of args...
+        /// @cite Quadrature coefficients - https://pomax.github.io/bezierinfo/legendre-gauss.html
         template <class... Args>
         std::function<double(Args... args)> integrate_volume(const std::function<double(double, Args...)> &function, double rmin, double rmax, const std::function<double(double)> &exp_lambda, IntegrationMode mode, double r_step = 5.06E16)
         {
@@ -258,6 +259,7 @@ namespace auxiliaries
         /// @param superfluid_p_temp temperature of superfluid protons [GeV]
         /// @param superfluid_n_temp temperature of superfluid neutrons [GeV]
         /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^{-3}]
+        /// @cite Base density - Yanagi, 2020; superfluidity - Yakovlev, Levenfish, 1999; superconductivity - Blashke, Grigorian 2001
         std::function<double(double, double, double)> fermi_specific_heat_density(
             const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
             const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
@@ -270,6 +272,7 @@ namespace auxiliaries
         /// @param M NS mass [GeV]
         /// @param eta NS light element share
         /// @return corresponding surface temperature [GeV]
+        /// @cite Te(Tb) - Potekhin, Chabrier, 1997
         double te_tb_relation(double Tb, double R, double M, double eta);
 
         /// @brief Nucleon critical temperature parametrization from Keisuke thesis, (2.34)
@@ -279,6 +282,7 @@ namespace auxiliaries
         /// @param k_width variance-like parameter [GeV]
         /// @param quad_skew high order correction to the gaussian [dimensionless]
         /// @return T0 * exp[- ((k_fermi - k_offs) / (k_width))^2 - quad_skew * ((k_fermi - k_offs) / (k_width))^4]
+        /// @cite Parametrization - Yanagi, Nagata, 2019
         double critical_temperature_smeared_guassian(double k_fermi, double temp_ampl, double k_offs, double k_width, double quad_skew);
 
         /// @brief Enumerate choices for the nucleon critical temperature parametrization
@@ -296,14 +300,17 @@ namespace auxiliaries
         /// @brief Critical temperature in given model
         /// @param k_fermi fermi momentum [GeV], correspoding to the nucleon
         /// @param model choice of the model
+        /// @cite Parametrization - Yanagi, Nagata, 2019
         double critical_temperature(double k_fermi, CriticalTemperatureModel model);
 
         /// @brief Superfluid gap in 1S0 state (A)
         /// @param tau T/Tc
+        /// @cite Parametrization - Yakovlev, Levenfish, 1999
         double superfluid_gap_1s0(double tau);
 
         /// @brief Superfluid gap in 3P2 state (B)
         /// @param tau T/Tc
+        /// @cite Parametrization - Yakovlev, Levenfish, 1999
         double superfluid_gap_3p2(double tau);
     }
     
