@@ -35,7 +35,7 @@ namespace cooling
         /// @brief Photon related cooling functionality
         namespace photonic
         {
-            /// @brief Returns the cooling luminosity function of (t, T^inf) for a given temperature, radius, mass, light element share and phi function at radius R. The calculation is based on the formula Keisuke thesis.
+            /// @brief Returns the cooling luminosity function of (t, T^inf) for a given temperature, radius, mass, light element share and phi function at radius R.
             /// @param R NS radius [GeV^{-1}]
             /// @param M NS mass [GeV]
             /// @param eta g_14^2 * delta M / M , where g_14 is surface_gravity/(10^14 cm/s^2) and delta M is the light element mass on the surface
