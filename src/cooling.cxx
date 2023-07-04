@@ -96,10 +96,11 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
                mst_p = m_stars_of_nbar.at(proton)(nbar_val),
                mst_l = m_stars_of_nbar.at(lepton_flavour)(nbar_val);
         double T_loc = T / exp_phi(r);
+        double k0 = pow(3 * Pi * Pi * N_sat, 1.0 / 3);
         if (pf_l + pf_p - pf_n <= 0)
             return 0.0;
-        double dens = (4.001E27 / 1.68E54) * (mst_n / M_N) * (mst_p / M_N) * mst_l *
-                      pow(T_loc, 6) * pow(gev_over_k, 6) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3);
+        double dens = 4.00E27 * (mst_n / M_N) * (mst_p / M_N) * (mst_l / k0) *
+                      pow(T_loc * gev_over_k / 1.0E9, 6) * erg_over_cm3_s_gev5;
 
         // Superfluid factors
 
@@ -253,15 +254,17 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
                mst_p = m_stars_of_nbar.at(proton)(nbar_val),
                mst_l = m_stars_of_nbar.at(lepton_flavour)(nbar_val);
         double T_loc = T / exp_phi(r);
+        double k0 = pow(3 * Pi * Pi * N_sat, 1.0 / 3);
         double alpha = 1.76 - 0.63 * pow(N_sat / nbar_val, 2.0 / 3), beta = 0.68,
                v_fl = pf_l / mst_l;
-        double dens_n = (8.05E21 / 1.68E72) * v_fl * pow(mst_n / M_N, 3) * (mst_p / M_N) * pf_p *
-                        pow(T_loc, 8) * alpha * beta *
-                        pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3);
-        double dens_p = (pf_l + 3 * pf_p - pf_n > 0) ? (8.05E21 / (8 * 1.68E72)) * (pow(pf_l + 3 * pf_p - pf_n, 2) / mst_l) * pow(mst_p / M_N, 3) * (mst_n / M_N) *
-                                                           pow(T_loc, 8) * alpha * beta *
-                                                           pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3)
-                                                     : 0.0;
+        double dens_n = 8.1E21 * v_fl * pow(mst_n / M_N, 3) * (mst_p / M_N) * (pf_p / k0) *
+                        pow(T_loc * gev_over_k / 1.0E9, 8) * alpha * beta * erg_over_cm3_s_gev5;
+        // manually cross out pf_l and pf_p in numerator and denominator to avoid numerical issues
+        double dens_p = (pf_l + 3 * pf_p - pf_n > 0) ? 
+                        (pow(pf_l + 3 * pf_p - pf_n, 2) / (8 * mst_l)) *
+                        8.1E21 * pow(mst_p / M_N, 3) * (mst_n / M_N) * (1.0 / k0) *
+                        pow(T_loc * gev_over_k / 1.0E9, 8) * alpha * beta * erg_over_cm3_s_gev5 
+                        : 0.0;
 
         // Superfluid factors
         double r_Mn_n = 1.0, r_Mn_p = 1.0, r_Mp_n = 1.0, r_Mp_p = 1.0;
