@@ -199,13 +199,14 @@ int main()
         std::function<double(double, double, double)>(fermi_specific_heat_dens), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p, radius_step);
 
     std::ofstream out("NormalizedEmissivities.txt");
-    out << "r,km\t Q_{eDU}/T_inf^6,GeV^{-1}\t Q_{muDU}/T_inf^6,GeV^{-1}\t Q_{eMU}/T_inf^8,GeV^{-3}\t Q_{muMU}/T_inf^8,GeV^{-3}\n";
+    out << "r,km\t Q_{eDU}/T_inf^6,GeV^{-1}\t Q_{muDU}/T_inf^6,GeV^{-1}\t Q_{eMU}/T_inf^8,GeV^{-3}\t Q_{muMU}/T_inf^8,GeV^{-3}\t Q_{hnubr}/T_inf^8,GeV^{-3}\t Q_{pPBF}/T_inf^7,GeV^{-2}\t Q_{nPBF}/T_inf^7,GeV^{-2}\n";
     for(double r = radius_step/2; r < r_ns; r += radius_step)
     {
         using namespace constants::conversion;
         using namespace constants::scientific;
         using namespace constants::species;
-        double T_inf = 2E5 / constants::conversion::gev_over_k;
-        out << r / km_gev << "\t" << hadron_durca_emissivity(r, electron, 0, T_inf) / pow(T_inf, 6) << "\t" << hadron_durca_emissivity(r, muon, 0, T_inf) / pow(T_inf, 6) << "\t" << hadron_murca_emissivity(r, electron, 0, T_inf) / pow(T_inf, 8) << "\t" << hadron_murca_emissivity(r, muon, 0, T_inf) / pow(T_inf, 8) << "\n";
+        double T_inf = 2E8 / constants::conversion::gev_over_k;
+        out << r / km_gev << "\t" << hadron_durca_emissivity(r, electron, 0, T_inf) / pow(T_inf, 6) << "\t" << hadron_durca_emissivity(r, muon, 0, T_inf) / pow(T_inf, 6) << "\t" << hadron_murca_emissivity(r, electron, 0, T_inf) / pow(T_inf, 8) << "\t" << hadron_murca_emissivity(r, muon, 0, T_inf) / pow(T_inf, 8) << 
+            "\t" << hadron_bremsstrahlung_emissivity(r, 0, T_inf) / pow(T_inf, 8) << "\t" << hadron_PBF_emissivity(r, proton, 0, T_inf) / pow(T_inf, 7) << "\t" << hadron_PBF_emissivity(r, neutron, 0, T_inf) / pow(T_inf, 7) << "\n";
     }
 }

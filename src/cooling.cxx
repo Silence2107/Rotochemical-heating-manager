@@ -350,16 +350,17 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
         double alpha_nn = 0.59, alpha_np = 1.06, alpha_pp = 0.11,
                beta_nn = 0.56, beta_np = 0.66, beta_pp = 0.7;
         double T_loc = T / exp_phi(r);
+        double k0 = pow(3 * Pi * Pi * N_sat, 1.0/3);
         int n_flavours = 3;
-        double dens_nn = (7.5E19 / 1.68E72) * pow(mst_n / M_N, 4) * pf_n * n_flavours *
-                         pow(T_loc, 8) * alpha_nn * beta_nn *
-                         pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3),
-               dens_pp = (7.5E19 / 1.68E72) * pow(mst_p / M_N, 4) * pf_p * n_flavours *
-                         pow(T_loc, 8) * alpha_pp * beta_pp *
-                         pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3),
-               dens_np = (1.5E20 / 1.68E72) * pow(mst_p / M_N, 2) * pow(mst_n / M_N, 2) * pf_p * n_flavours *
-                         pow(T_loc, 8) * alpha_np * beta_np *
-                         pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3);
+        double dens_nn = 7.5E19 * pow(mst_n / M_N, 4) * (pf_n / k0) * n_flavours *
+                         pow(T_loc * gev_over_k / 1.0E9, 8) * alpha_nn * beta_nn *
+                         erg_over_cm3_s_gev5,
+               dens_pp = 7.5E19 * pow(mst_p / M_N, 4) * (pf_p / k0) * n_flavours *
+                         pow(T_loc * gev_over_k / 1.0E9, 8) * alpha_pp * beta_pp *
+                         erg_over_cm3_s_gev5,
+               dens_np = 1.5E20 * pow(mst_p / M_N, 2) * pow(mst_n / M_N, 2) * (pf_p / k0) * n_flavours *
+                         pow(T_loc * gev_over_k / 1.0E9, 8) * alpha_np * beta_np *
+                         erg_over_cm3_s_gev5;
 
         // Suppression due to ion excluded volume
         double eta_ion = 0.0; // if p1s0 is not enabled, we should account for this
@@ -467,16 +468,16 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         {
             if (mst == 0.0)
                 return 0.0;
+            //Yakovlev's formula appear to include more corrections in a_ps
             a_s = 0.0064 + 1.588 * pow(pf / M_N, 2.0) * (1.0 + 0.262 * pow(mst / M_N, -2.0));
-            a_t = 0.0;
+            a_t = 3.18;
         }
         else
             throw std::runtime_error("Unexpected species: " + std::to_string(static_cast<int>(hadron.identify())) + "; Encountered in hadron_PBF_emissivity");
         double T_loc = T / exp_phi(r);
         int n_flavours = 3;
-        double base_dens = (1.17E21 / 1.0E63) * (mst / M_N) * (pf / M_N) * n_flavours *
-                           pow(T_loc, 7) *
-                           pow(gev_over_k, 7) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3);
+        double base_dens = 1.17E21 * (mst / M_N) * (pf / M_N) * n_flavours * 
+                            pow(T_loc * gev_over_k / 1.0E9, 7) * erg_over_cm3_s_gev5;
 
         // Superfluid factors
         auto f_s = [&](double v)
