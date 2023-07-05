@@ -461,6 +461,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         {
             if (mst == 0.0)
                 return 0.0;
+            // From Page
             a_s = 1.0 + 1.588 * pow(pf / M_N, 2.0) * (1.0 + 0.262 * pow(mst / M_N, -2.0));
             a_t = 4.17;
         }
@@ -468,8 +469,9 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         {
             if (mst == 0.0)
                 return 0.0;
-            //Yakovlev's formula appear to include more corrections in a_ps
+            // Yakovlev's formula appear to include more corrections in a_ps
             a_s = 0.0064 + 1.588 * pow(pf / M_N, 2.0) * (1.0 + 0.262 * pow(mst / M_N, -2.0));
+            // We do not include proton triplet superfluidity, but the value follows
             a_t = 3.18;
         }
         else
