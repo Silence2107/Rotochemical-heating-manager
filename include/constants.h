@@ -50,6 +50,8 @@ namespace constants
 		const double erg_over_gev = 6.2415E2;
 		/// @brief Conversion from Myr to s in natural units
 		const double myr_over_s = 3.1536E13;
+		/// @brief Conversion from erg/(cm^3 s) to GeV^5 in natural units
+		const double erg_over_cm3_s_gev5 = 3.17E-63;
 	}
 	/// @brief predefined species
 	namespace species

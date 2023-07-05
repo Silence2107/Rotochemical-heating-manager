@@ -266,7 +266,7 @@ namespace auxiliaries
             double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
             const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp, const std::function<double(double)> &superconduct_q_gap);
 
-        /// @brief Te-Tb relation, based on Keisure thesis
+        /// @brief Te-Tb relation
         /// @param Tb internal temperature [GeV], measured by distant observer (inf)
         /// @param R NS radius [GeV^{-1}]
         /// @param M NS mass [GeV]
@@ -275,7 +275,7 @@ namespace auxiliaries
         /// @cite Te(Tb) - Potekhin, Chabrier, 1997
         double te_tb_relation(double Tb, double R, double M, double eta);
 
-        /// @brief Nucleon critical temperature parametrization from Keisuke thesis, (2.34)
+        /// @brief Nucleon critical temperature parametrization
         /// @param k_fermi fermi momentum [GeV], correspoding to the nucleon
         /// @param temp_ampl amplitude parameter [GeV]
         /// @param k_offs mean-like parameter [GeV]
