@@ -362,10 +362,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
                          pow(T_loc * gev_over_k / 1.0E9, 8) * alpha_np * beta_np *
                          erg_over_cm3_s_gev5;
 
-        // Suppression due to ion excluded volume
-        double eta_ion = 0.0; // if p1s0 is not enabled, we should account for this
-        if (!superfluid_p_1s0)
-            eta_ion = ion_volume_frac(nbar_val);
+        // Suppression due to ion excluded volume (account same as in NSCool)
+        double eta_ion = ion_volume_frac(nbar_val);
 
         // Superfluid factors
         double r_nn_n = 1.0, r_nn_p = 1.0,
