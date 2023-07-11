@@ -169,7 +169,7 @@ namespace cooling
             /// @param nbar_of_r baryon density [GeV^{-3}] as a function of radius [GeV^{-1}]
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
-            /// @cite Yakovlev, Kaminker, 2000
+            /// @cite All - Blaschke, 2001
             std::function<double(double, double, double)> electron_bremsstrahlung_emissivity(
                 const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
                 const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
