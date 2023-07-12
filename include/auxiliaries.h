@@ -259,7 +259,7 @@ namespace auxiliaries
         /// @param superfluid_p_temp temperature of superfluid protons [GeV]
         /// @param superfluid_n_temp temperature of superfluid neutrons [GeV]
         /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^{-3}]
-        /// @cite Base density - Yanagi, 2020; superfluidity - Yakovlev, Levenfish, 1999; superconductivity - Blashke, Grigorian 2001
+        /// @cite Base density - Yanagi, 2020; superfluidity - Yakovlev, Levenfish, 1999; superconductivity - Blaschke, Grigorian 2001
         std::function<double(double, double, double)> fermi_specific_heat_density(
             const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
             const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
