@@ -59,7 +59,7 @@ namespace cooling
             /// @param superfluid_p_temp temperature of superfluid protons [GeV]
             /// @param superfluid_n_temp temperature of superfluid neutrons [GeV]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], species, time [GeV], temperature [GeV]
-            /// @cite Yakovlev, Kaminker, 2000
+            /// @cite All - Yakovlev, Kaminker, 2000; AB joint superfluidity - Levenfish, Yakovlev, 1994
             std::function<double(double, const auxiliaries::phys::Species &, double, double)> hadron_durca_emissivity(
                 const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
                 const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
