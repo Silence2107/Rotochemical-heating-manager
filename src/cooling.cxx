@@ -62,8 +62,6 @@ double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double
     return interpolator(cache[0], cache[1], t);
 }
 
-
-
 std::function<double(double, double)> cooling::predefined::photonic::surface_luminosity(double R, double M, double eta)
 {
     return [=](double t, double T)
@@ -73,8 +71,6 @@ std::function<double(double, double)> cooling::predefined::photonic::surface_lum
         return 4 * Pi * R * R * Sigma * pow(auxiliaries::phys::te_tb_relation(T, R, M, eta), 4) * exp_2phi_at_R;
     };
 }
-
-
 
 std::function<double(double, const auxiliaries::phys::Species &, double, double)> cooling::predefined::neutrinic::hadron_durca_emissivity(
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
@@ -155,6 +151,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         {
             // Here we have quite cumbersome factors, so I do not define them in outer scope
 
+            using namespace auxiliaries::phys;
             // for n1S0 neutron superfluidity
             auto r_AA = [](double v1, double v2)
             {
@@ -185,7 +182,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
 
                 // No analytic formula for this case, so we use a (lg tau_p, lg tau_n) \in
                 // [-0.1, -0.2 ,..., -1.6]^2 -> lg R_AB table
-                // Follows Levenfish, Yakovlev, 1994 
+                // Follows Levenfish, Yakovlev, 1994
                 std::vector<std::vector<double>> table = {
                     {-0.1480, -0.2358, -0.3454, -0.4843, -0.6628, -0.8931, -1.1920, -1.5829,
                      -2.0996, -2.7905, -3.7203, -4.9696, -6.6362, -8.8387, -11.7229, -15.4698},
@@ -229,8 +226,27 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
 
                 return (pow(tau_n, 2.0) + pow(tau_p, 2.0) < 3 * 3) ? r_comp : r_comp * exp(-sqrt(pow(tau_n, 2.0) + pow(tau_p, 2.0)) / 3.0);
             };
+
+            // 1S0/3P2 division at core entrance
+            if (superfluid_n_1s0 && superfluid_n_3p2)
+            {
+                return dens *
+                    (nbar_val > nbar_core_limit ? 
+                            r_AB(1 / tau_n_inv, 1 / tau_p_inv)
+                            : r_AA(superfluid_gap_1s0(1 / tau_n_inv), superfluid_gap_1s0(1 / tau_p_inv)));
+            }
+            // pure 1S0 for neutrons
+            else if (superfluid_n_1s0)
+            {
+                return dens * r_AA(superfluid_gap_1s0(1 / tau_n_inv), superfluid_gap_1s0(1 / tau_p_inv));
+            }
+            // pure 3P2 for neutrons
+            else
+            {
+                
+                return dens * r_AB(1 / tau_n_inv, 1 / tau_p_inv);
+            }
         }
-        return 0.0;
     };
 }
 
@@ -260,11 +276,10 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         double dens_n = 8.1E21 * v_fl * pow(mst_n / M_N, 3) * (mst_p / M_N) * (pf_p / k0) *
                         pow(T_loc * gev_over_k / 1.0E9, 8) * alpha * beta * erg_over_cm3_s_gev5;
         // manually cross out pf_l and pf_p in numerator and denominator to avoid numerical issues
-        double dens_p = (pf_l + 3 * pf_p - pf_n > 0) ? 
-                        (pow(pf_l + 3 * pf_p - pf_n, 2) / (8 * mst_l)) *
-                        8.1E21 * pow(mst_p / M_N, 3) * (mst_n / M_N) * (1.0 / k0) *
-                        pow(T_loc * gev_over_k / 1.0E9, 8) * alpha * beta * erg_over_cm3_s_gev5 
-                        : 0.0;
+        double dens_p = (pf_l + 3 * pf_p - pf_n > 0) ? (pow(pf_l + 3 * pf_p - pf_n, 2) / (8 * mst_l)) *
+                                                           8.1E21 * pow(mst_p / M_N, 3) * (mst_n / M_N) * (1.0 / k0) *
+                                                           pow(T_loc * gev_over_k / 1.0E9, 8) * alpha * beta * erg_over_cm3_s_gev5
+                                                     : 0.0;
 
         // Superfluid factors
         double r_Mn_n = 1.0, r_Mn_p = 1.0, r_Mp_n = 1.0, r_Mp_p = 1.0;
@@ -350,7 +365,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
         double alpha_nn = 0.59, alpha_np = 1.06, alpha_pp = 0.11,
                beta_nn = 0.56, beta_np = 0.66, beta_pp = 0.7;
         double T_loc = T / exp_phi(r);
-        double k0 = pow(3 * Pi * Pi * N_sat, 1.0/3);
+        double k0 = pow(3 * Pi * Pi * N_sat, 1.0 / 3);
         int n_flavours = 3;
         double dens_nn = 7.5E19 * pow(mst_n / M_N, 4) * (pf_n / k0) * n_flavours *
                          pow(T_loc * gev_over_k / 1.0E9, 8) * alpha_nn * beta_nn *
@@ -476,8 +491,8 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
             throw std::runtime_error("Unexpected species: " + std::to_string(static_cast<int>(hadron.identify())) + "; Encountered in hadron_PBF_emissivity");
         double T_loc = T / exp_phi(r);
         int n_flavours = 3;
-        double base_dens = 1.17E21 * (mst / M_N) * (pf / M_N) * n_flavours * 
-                            pow(T_loc * gev_over_k / 1.0E9, 7) * erg_over_cm3_s_gev5;
+        double base_dens = 1.17E21 * (mst / M_N) * (pf / M_N) * n_flavours *
+                           pow(T_loc * gev_over_k / 1.0E9, 7) * erg_over_cm3_s_gev5;
 
         // Superfluid factors
         auto f_s = [&](double v)
@@ -558,7 +573,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
 
         // 314/915 G_F^2 \cos^2 \theta_c = 3.726E-10 GeV^{-4}, therefore the prefactor
         double dens_ud = 3.726E-10 * alpha_c * pf_u * pf_d * pow(T_loc, 6);
-        // We now need to multiply this by the lepton's Fermi momentum. In order to extend the 
+        // We now need to multiply this by the lepton's Fermi momentum. In order to extend the
         // formula for multiple lepton species, we employ NSCool approach (add them all up)
         for (auto it = k_fermi_of_nbar.begin(); it != k_fermi_of_nbar.end(); ++it)
         {
@@ -567,7 +582,6 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         }
         dens_ud *= pf_l;
 
-
         // us
 
         // Following Iwamoto
@@ -575,7 +589,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         double mu_s = (x > 0.001) ? (eta / x + 8 * alpha_c / (3 * Pi) * (1 - 3 / (eta * x) * log(x + eta))) * pf_s : m_s;
         // 457pi/840 G_F^2 \sin^2 \theta_c = 1.303E-11 GeV^{-4}, therefore the prefactor
         double dens_us = 1.303E-11 * mu_s * pf_u * pow(T_loc, 6);
-        // This has to be multiplied by a weighted lepton's Fermi momentum, 
+        // This has to be multiplied by a weighted lepton's Fermi momentum,
         // so I employ same trick, though it's unlikely anything but electron will contribute
         for (auto it = k_fermi_of_nbar.begin(); it != k_fermi_of_nbar.end(); ++it)
         {
@@ -660,9 +674,9 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
 }
 
 std::function<double(double, double, double)> cooling::predefined::neutrinic::electron_bremsstrahlung_emissivity(
-                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
-                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-                const std::function<double(double)> &exp_phi)
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    const std::function<double(double)> &exp_phi)
 {
     return [=](double r, double t, double T)
     {
