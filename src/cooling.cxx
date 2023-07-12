@@ -62,8 +62,6 @@ double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double
     return interpolator(cache[0], cache[1], t);
 }
 
-
-
 std::function<double(double, double)> cooling::predefined::photonic::surface_luminosity(double R, double M, double eta)
 {
     return [=](double t, double T)
@@ -73,8 +71,6 @@ std::function<double(double, double)> cooling::predefined::photonic::surface_lum
         return 4 * Pi * R * R * Sigma * pow(auxiliaries::phys::te_tb_relation(T, R, M, eta), 4) * exp_2phi_at_R;
     };
 }
-
-
 
 std::function<double(double, const auxiliaries::phys::Species &, double, double)> cooling::predefined::neutrinic::hadron_durca_emissivity(
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
@@ -136,7 +132,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
             //  1S0/3P2 division at core entrance
             if (superfluid_n_3p2 && superfluid_n_1s0)
             {
-                return dens * (nbar_val > nbar_core_limit) ? r_B(superfluid_gap_3p2(1 / tau_n_inv)) : r_A(superfluid_gap_1s0(1 / tau_n_inv));
+                return dens * (nbar_val > nbar_core_limit ? r_B(superfluid_gap_3p2(1 / tau_n_inv)) : r_A(superfluid_gap_1s0(1 / tau_n_inv)));
             }
             // 1S0 only
             else if (superfluid_n_1s0)
@@ -221,12 +217,12 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
 
                 double base_exp = table[index_1][index_2];
                 // linear corrections
-                double tau_p_corr = (index_1 > 14) ? 0.0 : (table[index_1 + 1][index_2] - base_exp) / 0.1 * (-10 * log10(tau_p) - 1 - index_1);
-                double tau_n_corr = (index_2 > 14) ? 0.0 : (table[index_1][index_2 + 1] - base_exp) / 0.1 * (-10 * log10(tau_n) - 1 - index_2);
+                double tau_p_corr = (index_1 > 14 ? 0.0 : (table[index_1 + 1][index_2] - base_exp) / 0.1 * (-10 * log10(tau_p) - 1 - index_1));
+                double tau_n_corr = (index_2 > 14 ? 0.0 : (table[index_1][index_2 + 1] - base_exp) / 0.1 * (-10 * log10(tau_n) - 1 - index_2));
 
                 double r_comp = pow(10.0, base_exp + tau_p_corr + tau_n_corr);
 
-                return (pow(tau_n, 2.0) + pow(tau_p, 2.0) < 3 * 3) ? r_comp : r_comp * exp(-sqrt(pow(tau_n, 2.0) + pow(tau_p, 2.0)) / 3.0);
+                return (pow(tau_n, 2.0) + pow(tau_p, 2.0) < 3 * 3 ? r_comp : r_comp * exp(-sqrt(pow(tau_n, 2.0) + pow(tau_p, 2.0)) / 3.0));
             };
         }
         return 0.0;
@@ -258,10 +254,10 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         double dens_n = (8.05E21 / 1.68E72) * v_fl * pow(mst_n / M_N, 3) * (mst_p / M_N) * pf_p *
                         pow(T_loc, 8) * alpha * beta *
                         pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3);
-        double dens_p = (pf_l + 3 * pf_p - pf_n > 0) ? (8.05E21 / (8 * 1.68E72)) * (pow(pf_l + 3 * pf_p - pf_n, 2) / mst_l) * pow(mst_p / M_N, 3) * (mst_n / M_N) *
-                                                           pow(T_loc, 8) * alpha * beta *
-                                                           pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3)
-                                                     : 0.0;
+        double dens_p = (pf_l + 3 * pf_p - pf_n > 0 ? (8.05E21 / (8 * 1.68E72)) * (pow(pf_l + 3 * pf_p - pf_n, 2) / mst_l) * pow(mst_p / M_N, 3) * (mst_n / M_N) *
+                                                          pow(T_loc, 8) * alpha * beta *
+                                                          pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3)
+                                                    : 0.0);
 
         // Superfluid factors
         double r_Mn_n = 1.0, r_Mn_p = 1.0, r_Mp_n = 1.0, r_Mp_p = 1.0;
@@ -306,8 +302,8 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
                 //  1S0/3P2 division at core entrance
                 if (superfluid_n_3p2 && superfluid_n_1s0)
                 {
-                    r_Mn_n = (nbar_val > nbar_core_limit) ? r_Mn_n_3P2(superfluid_gap_3p2(tau)) : r_Mn_n_1S0(superfluid_gap_1s0(tau));
-                    r_Mp_n = (nbar_val > nbar_core_limit) ? r_Mp_n_3P2(superfluid_gap_3p2(tau)) : r_Mp_n_1S0(superfluid_gap_1s0(tau));
+                    r_Mn_n = (nbar_val > nbar_core_limit ? r_Mn_n_3P2(superfluid_gap_3p2(tau)) : r_Mn_n_1S0(superfluid_gap_1s0(tau)));
+                    r_Mp_n = (nbar_val > nbar_core_limit ? r_Mp_n_3P2(superfluid_gap_3p2(tau)) : r_Mp_n_1S0(superfluid_gap_1s0(tau)));
                 }
                 // 1S0 only
                 else if (superfluid_n_1s0)
@@ -409,8 +405,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
                 // 1S0/3P2 division at core entrance
                 if (superfluid_n_3p2 && superfluid_n_1s0)
                 {
-                    r_nn_n = (nbar_val > nbar_core_limit) ? r_nn_n_3P2(superfluid_gap_3p2(tau)) : r_nn_n_1S0(superfluid_gap_1s0(tau));
-                    r_np_n = (nbar_val > nbar_core_limit) ? r_np_n_3P2(superfluid_gap_3p2(tau)) : r_np_n_1S0(superfluid_gap_1s0(tau));
+                    r_nn_n = (nbar_val > nbar_core_limit ? r_nn_n_3P2(superfluid_gap_3p2(tau)) : r_nn_n_1S0(superfluid_gap_1s0(tau)));
+                    r_np_n = (nbar_val > nbar_core_limit ? r_np_n_3P2(superfluid_gap_3p2(tau)) : r_np_n_1S0(superfluid_gap_1s0(tau)));
                 }
                 // 1S0 only
                 else if (superfluid_n_1s0)
@@ -510,7 +506,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
                 // 1S0/3P2 division at core entrance
                 if (superfluid_n_3p2 && superfluid_n_1s0)
                 {
-                    return base_dens * ((nbar_val > nbar_core_limit) ? a_t * f_t(superfluid_gap_3p2(tau)) : a_s * f_s(superfluid_gap_1s0(tau)));
+                    return base_dens * (nbar_val > nbar_core_limit ? a_t * f_t(superfluid_gap_3p2(tau)) : a_s * f_s(superfluid_gap_1s0(tau)));
                 }
                 // 1S0 only
                 else if (superfluid_n_1s0)
@@ -557,7 +553,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         dens_ud *= pf_l;
 
         double x = pf_s / m_s, eta = sqrt(1 + x * x);
-        double mu_s = (x > 0.001) ? (eta / x + 8 * alpha_c / (3 * Pi) * (1 - 3 / (eta * x) * log(x + eta))) * pf_s : m_s;
+        double mu_s = (x > 0.001 ? (eta / x + 8 * alpha_c / (3 * Pi) * (1 - 3 / (eta * x) * log(x + eta))) * pf_s : m_s);
         double dens_us = 1.208E-11 * mu_s * pf_u * pow(T_loc, 6);
         for (auto it = k_fermi_of_nbar.begin(); it != k_fermi_of_nbar.end(); ++it)
         {
@@ -630,7 +626,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
 
         // Estimates
         double dens_u = 1.36E-10 * pf_u * pow(T_loc, 8),
-                dens_d = 1.36E-10 * pf_d * pow(T_loc, 8);
+               dens_d = 1.36E-10 * pf_d * pow(T_loc, 8);
 
         // q superconductivity?
         auto dens = (dens_u + dens_d) * exp(-2.0 * superconduct_q_gap(nbar_val) / T_loc);
@@ -639,9 +635,9 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
 }
 
 std::function<double(double, double, double)> cooling::predefined::neutrinic::electron_bremsstrahlung_emissivity(
-                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
-                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-                const std::function<double(double)> &exp_phi)
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    const std::function<double(double)> &exp_phi)
 {
     return [=](double r, double t, double T)
     {
@@ -655,7 +651,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::el
 
         // Ignore superfluidity, since the reaction is not relevant in hadronic phase
         double dens = (2.427E16 / 1.0E72) * pf_e * pow(T_loc, 8) *
-                        pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3);
+                      pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3);
 
         return dens;
     };

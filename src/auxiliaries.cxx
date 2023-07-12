@@ -407,7 +407,7 @@ std::function<double(double, double, double)> auxiliaries::phys::fermi_specific_
                     using namespace auxiliaries::phys;
                     // 1S0/3P2 division at core entrance
                     if (superfluid_n_1s0 && superfluid_n_3p2)
-                        diff *= (nbar_val > nbar_core_limit) ? r_B(superfluid_gap_3p2(tau)) : r_A(superfluid_gap_1s0(tau));
+                        diff *= (nbar_val > nbar_core_limit ? r_B(superfluid_gap_3p2(tau)) : r_A(superfluid_gap_1s0(tau)));
                     // 3P2 only
                     else if (superfluid_n_3p2)
                         diff *= r_B(superfluid_gap_3p2(tau));
@@ -457,7 +457,7 @@ double auxiliaries::phys::te_tb_relation(double Tb, double R, double M, double e
     // surface temperature normalized to 1E6 K in 4th power
     double T_s6_to_4 = (a * T_s6_Fe_to_4 + T_s6_a_to_4) / (a + 1);
     double Ts = pow(T_s6_to_4, 1.0 / 4) * 1.0E6 / gev_over_k;
-    return (Ts < Tb / exp_phi_at_R) ? Ts : Tb / exp_phi_at_R;
+    return std::min(Ts, Tb / exp_phi_at_R);
 }
 
 double auxiliaries::phys::critical_temperature_smeared_guassian(double k_fermi, double temp_ampl, double k_offs, double k_width, double quad_skew)
