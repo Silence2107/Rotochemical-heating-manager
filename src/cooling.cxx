@@ -133,7 +133,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
             //  1S0/3P2 division at core entrance
             if (superfluid_n_3p2 && superfluid_n_1s0)
             {
-                return dens * (nbar_val > nbar_core_limit) ? r_B(superfluid_gap_3p2(1 / tau_n_inv)) : r_A(superfluid_gap_1s0(1 / tau_n_inv));
+                return dens * (nbar_val > nbar_core_limit ? r_B(superfluid_gap_3p2(1 / tau_n_inv)) : r_A(superfluid_gap_1s0(1 / tau_n_inv)));
             }
             // 1S0 only
             else if (superfluid_n_1s0)
@@ -219,12 +219,12 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
 
                 double base_exp = table[index_1][index_2];
                 // linear corrections
-                double tau_p_corr = (index_1 > 14) ? 0.0 : (table[index_1 + 1][index_2] - base_exp) / 0.1 * (-10 * log10(tau_p) - 1 - index_1);
-                double tau_n_corr = (index_2 > 14) ? 0.0 : (table[index_1][index_2 + 1] - base_exp) / 0.1 * (-10 * log10(tau_n) - 1 - index_2);
+                double tau_p_corr = (index_1 > 14 ? 0.0 : (table[index_1 + 1][index_2] - base_exp) / 0.1 * (-10 * log10(tau_p) - 1 - index_1));
+                double tau_n_corr = (index_2 > 14 ? 0.0 : (table[index_1][index_2 + 1] - base_exp) / 0.1 * (-10 * log10(tau_n) - 1 - index_2));
 
                 double r_comp = pow(10.0, base_exp + tau_p_corr + tau_n_corr);
 
-                return (pow(tau_n, 2.0) + pow(tau_p, 2.0) < 3 * 3) ? r_comp : r_comp * exp(-sqrt(pow(tau_n, 2.0) + pow(tau_p, 2.0)) / 3.0);
+                return (pow(tau_n, 2.0) + pow(tau_p, 2.0) < 3 * 3 ? r_comp : r_comp * exp(-sqrt(pow(tau_n, 2.0) + pow(tau_p, 2.0)) / 3.0));
             };
 
             // 1S0/3P2 division at core entrance
@@ -276,10 +276,10 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         double dens_n = 8.1E21 * v_fl * pow(mst_n / M_N, 3) * (mst_p / M_N) * (pf_p / k0) *
                         pow(T_loc * gev_over_k / 1.0E9, 8) * alpha * beta * erg_over_cm3_s_gev5;
         // manually cross out pf_l and pf_p in numerator and denominator to avoid numerical issues
-        double dens_p = (pf_l + 3 * pf_p - pf_n > 0) ? (pow(pf_l + 3 * pf_p - pf_n, 2) / (8 * mst_l)) *
+        double dens_p = (pf_l + 3 * pf_p - pf_n > 0 ? (pow(pf_l + 3 * pf_p - pf_n, 2) / (8 * mst_l)) *
                                                            8.1E21 * pow(mst_p / M_N, 3) * (mst_n / M_N) * (1.0 / k0) *
                                                            pow(T_loc * gev_over_k / 1.0E9, 8) * alpha * beta * erg_over_cm3_s_gev5
-                                                     : 0.0;
+                                                     : 0.0);
 
         // Superfluid factors
         double r_Mn_n = 1.0, r_Mn_p = 1.0, r_Mp_n = 1.0, r_Mp_p = 1.0;
@@ -324,8 +324,8 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
                 //  1S0/3P2 division at core entrance
                 if (superfluid_n_3p2 && superfluid_n_1s0)
                 {
-                    r_Mn_n = (nbar_val > nbar_core_limit) ? r_Mn_n_3P2(superfluid_gap_3p2(tau)) : r_Mn_n_1S0(superfluid_gap_1s0(tau));
-                    r_Mp_n = (nbar_val > nbar_core_limit) ? r_Mp_n_3P2(superfluid_gap_3p2(tau)) : r_Mp_n_1S0(superfluid_gap_1s0(tau));
+                    r_Mn_n = (nbar_val > nbar_core_limit ? r_Mn_n_3P2(superfluid_gap_3p2(tau)) : r_Mn_n_1S0(superfluid_gap_1s0(tau)));
+                    r_Mp_n = (nbar_val > nbar_core_limit ? r_Mp_n_3P2(superfluid_gap_3p2(tau)) : r_Mp_n_1S0(superfluid_gap_1s0(tau)));
                 }
                 // 1S0 only
                 else if (superfluid_n_1s0)
@@ -426,8 +426,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
                 // 1S0/3P2 division at core entrance
                 if (superfluid_n_3p2 && superfluid_n_1s0)
                 {
-                    r_nn_n = (nbar_val > nbar_core_limit) ? r_nn_n_3P2(superfluid_gap_3p2(tau)) : r_nn_n_1S0(superfluid_gap_1s0(tau));
-                    r_np_n = (nbar_val > nbar_core_limit) ? r_np_n_3P2(superfluid_gap_3p2(tau)) : r_np_n_1S0(superfluid_gap_1s0(tau));
+                    r_nn_n = (nbar_val > nbar_core_limit ? r_nn_n_3P2(superfluid_gap_3p2(tau)) : r_nn_n_1S0(superfluid_gap_1s0(tau)));
+                    r_np_n = (nbar_val > nbar_core_limit ? r_np_n_3P2(superfluid_gap_3p2(tau)) : r_np_n_1S0(superfluid_gap_1s0(tau)));
                 }
                 // 1S0 only
                 else if (superfluid_n_1s0)
@@ -529,7 +529,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
                 // 1S0/3P2 division at core entrance
                 if (superfluid_n_3p2 && superfluid_n_1s0)
                 {
-                    return base_dens * ((nbar_val > nbar_core_limit) ? a_t * f_t(superfluid_gap_3p2(tau)) : a_s * f_s(superfluid_gap_1s0(tau)));
+                    return base_dens * (nbar_val > nbar_core_limit ? a_t * f_t(superfluid_gap_3p2(tau)) : a_s * f_s(superfluid_gap_1s0(tau)));
                 }
                 // 1S0 only
                 else if (superfluid_n_1s0)
@@ -586,7 +586,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
 
         // Following Iwamoto
         double x = pf_s / m_s, eta = sqrt(1 + x * x);
-        double mu_s = (x > 0.001) ? (eta / x + 8 * alpha_c / (3 * Pi) * (1 - 3 / (eta * x) * log(x + eta))) * pf_s : m_s;
+        double mu_s = (x > 0.001 ? (eta / x + 8 * alpha_c / (3 * Pi) * (1 - 3 / (eta * x) * log(x + eta))) * pf_s : m_s);
         // 457pi/840 G_F^2 \sin^2 \theta_c = 1.303E-11 GeV^{-4}, therefore the prefactor
         double dens_us = 1.303E-11 * mu_s * pf_u * pow(T_loc, 6);
         // This has to be multiplied by a weighted lepton's Fermi momentum,
