@@ -173,10 +173,15 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
             };
 
             // for n3P2 neutron superfluidity
-            auto r_AB = [](double tau_n, double tau_p)
+            auto r_AB = [&r_A, &r_B](double tau_n, double tau_p)
             {
-                size_t index_1 = ceil(-10 * log10(tau_p) - 1),
-                       index_2 = ceil(-10 * log10(tau_n) - 1);
+                if (log10(tau_n) > -0.1)
+                    return r_A(superfluid_gap_1s0(tau_p));
+                else if (log10(tau_p) > -0.1)
+                    return r_B(superfluid_gap_3p2(tau_n));
+
+                size_t index_1 = floor(-10 * log10(tau_p)) - 1,
+                       index_2 = floor(-10 * log10(tau_n)) - 1;
                 if (index_1 > 15 || index_2 > 15)
                     return 0.0;
 
@@ -219,12 +224,12 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
 
                 double base_exp = table[index_1][index_2];
                 // linear corrections
-                double tau_p_corr = (index_1 > 14 ? 0.0 : (table[index_1 + 1][index_2] - base_exp) / 0.1 * (-10 * log10(tau_p) - 1 - index_1));
-                double tau_n_corr = (index_2 > 14 ? 0.0 : (table[index_1][index_2 + 1] - base_exp) / 0.1 * (-10 * log10(tau_n) - 1 - index_2));
+                double tau_p_corr = (index_1 > 14 ? 0.0 : (table[index_1 + 1][index_2] - base_exp) * (-10 * log10(tau_p) - 1 - index_1) / 1.0);
+                double tau_n_corr = (index_2 > 14 ? 0.0 : (table[index_1][index_2 + 1] - base_exp) * (-10 * log10(tau_n) - 1 - index_2) / 1.0);
 
-                double r_comp = pow(10.0, base_exp + tau_p_corr + tau_n_corr);
+                return pow(10.0, base_exp + tau_p_corr + tau_n_corr);
 
-                return (pow(tau_n, 2.0) + pow(tau_p, 2.0) < 3 * 3 ? r_comp : r_comp * exp(-sqrt(pow(tau_n, 2.0) + pow(tau_p, 2.0)) / 3.0));
+                // return (pow(tau_n, 2.0) + pow(tau_p, 2.0) < 3 * 3 ? r_comp : r_comp * exp(-sqrt(pow(tau_n, 2.0) + pow(tau_p, 2.0)) / 3.0));
             };
 
             // 1S0/3P2 division at core entrance
