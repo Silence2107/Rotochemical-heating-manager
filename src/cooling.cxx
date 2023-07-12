@@ -362,10 +362,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
                          pow(T_loc * gev_over_k / 1.0E9, 8) * alpha_np * beta_np *
                          erg_over_cm3_s_gev5;
 
-        // Suppression due to ion excluded volume
-        double eta_ion = 0.0; // if p1s0 is not enabled, we should account for this
-        if (!superfluid_p_1s0)
-            eta_ion = ion_volume_frac(nbar_val);
+        // Suppression due to ion excluded volume (account same as in NSCool)
+        double eta_ion = ion_volume_frac(nbar_val);
 
         // Superfluid factors
         double r_nn_n = 1.0, r_nn_p = 1.0,
@@ -549,12 +547,19 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         double pf_u = k_fermi_of_nbar.at(uquark)(nbar_val),
                pf_d = k_fermi_of_nbar.at(dquark)(nbar_val),
                pf_s = k_fermi_of_nbar.at(squark)(nbar_val);
+        // placeholders for future use
         double pf_l = 0.0,
                pf_l_mult_onemincos = 0.0;
+        // rough estimates for the strong coupling and squark mass (natural units)
         double alpha_c = 1.0, m_s = 0.01;
         double T_loc = T / exp_phi(r);
 
-        double dens_ud = 3.74E-10 * alpha_c * pf_u * pf_d * pow(T_loc, 6);
+        // ud
+
+        // 314/915 G_F^2 \cos^2 \theta_c = 3.726E-10 GeV^{-4}, therefore the prefactor
+        double dens_ud = 3.726E-10 * alpha_c * pf_u * pf_d * pow(T_loc, 6);
+        // We now need to multiply this by the lepton's Fermi momentum. In order to extend the 
+        // formula for multiple lepton species, we employ NSCool approach (add them all up)
         for (auto it = k_fermi_of_nbar.begin(); it != k_fermi_of_nbar.end(); ++it)
         {
             if (it->first.classify() == auxiliaries::phys::Species::ParticleClassification::kLepton)
@@ -562,9 +567,16 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         }
         dens_ud *= pf_l;
 
+
+        // us
+
+        // Following Iwamoto
         double x = pf_s / m_s, eta = sqrt(1 + x * x);
         double mu_s = (x > 0.001) ? (eta / x + 8 * alpha_c / (3 * Pi) * (1 - 3 / (eta * x) * log(x + eta))) * pf_s : m_s;
-        double dens_us = 1.208E-11 * mu_s * pf_u * pow(T_loc, 6);
+        // 457pi/840 G_F^2 \sin^2 \theta_c = 1.303E-11 GeV^{-4}, therefore the prefactor
+        double dens_us = 1.303E-11 * mu_s * pf_u * pow(T_loc, 6);
+        // This has to be multiplied by a weighted lepton's Fermi momentum, 
+        // so I employ same trick, though it's unlikely anything but electron will contribute
         for (auto it = k_fermi_of_nbar.begin(); it != k_fermi_of_nbar.end(); ++it)
         {
             if (it->first.classify() == auxiliaries::phys::Species::ParticleClassification::kLepton)
@@ -574,7 +586,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
                     continue;
                 if (pf_s * pf_u * pf_l == 0.0)
                     continue;
-                // Hopefully this is an enough contraint
+                // This must suffice to avoid numerical issues
 
                 double theta_14 = acos((pf_s * pf_s + pf_l * pf_l - pf_u * pf_u) / (2.0 * pf_s * pf_l)),
                        theta_13 = acos((pf_s * pf_s + pf_u * pf_u - pf_l * pf_l) / (2.0 * pf_s * pf_u));
@@ -608,8 +620,10 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         double alpha_c = 1.0;
         double T_loc = T / exp_phi(r);
 
-        // Estimates
-        double dens = alpha_c * alpha_c * 1.29E-10 * (pf_u + pf_d) * pow(T_loc, 8);
+        // Exact expression is not yet known, we use order estimate from Iwamoto.
+        // I assume u and d quarks contribute in the same way, so the quark Fermi momentum is pf_u + pf_d.
+        // G_F^2 \cos^2 \theta_c = 1.284E-10 GeV^{-4}, therefore the prefactor
+        double dens = 1.284E-10 * alpha_c * alpha_c * (pf_u + pf_d) * pow(T_loc, 8);
 
         // q superconductivity?
         dens *= exp(-2.0 * superconduct_q_gap(nbar_val) / T_loc);
@@ -634,12 +648,13 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         double alpha_c = 1.0;
         double T_loc = T / exp_phi(r);
 
-        // Estimates
-        double dens_u = 1.36E-10 * pf_u * pow(T_loc, 8),
-                dens_d = 1.36E-10 * pf_d * pow(T_loc, 8);
+        // Exact expression is not yet known, we use order estimate from Iwamoto.
+        // I assume u and d quarks contribute in the same way, so the quark Fermi momentum is pf_u + pf_d.
+        // G_F^2 = 1.36E-10 GeV^{-4}, therefore the prefactor
+        double dens = 1.36E-10 * (pf_u + pf_d) * pow(T_loc, 8);
 
         // q superconductivity?
-        auto dens = (dens_u + dens_d) * exp(-2.0 * superconduct_q_gap(nbar_val) / T_loc);
+        dens *= exp(-2.0 * superconduct_q_gap(nbar_val) / T_loc);
         return dens;
     };
 }
@@ -657,11 +672,11 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::el
 
         double nbar_val = nbar_of_r(r);
         double pf_e = k_fermi_of_nbar.at(electron)(nbar_val);
+        double k0 = pow(3 * Pi * Pi * N_sat, 1.0 / 3);
         double T_loc = T / exp_phi(r);
 
         // Ignore superfluidity, since the reaction is not relevant in hadronic phase
-        double dens = (2.427E16 / 1.0E72) * pf_e * pow(T_loc, 8) *
-                        pow(gev_over_k, 8) * erg_over_gev / gev_s * (km_gev * 1.0E-18) / pow(km_gev * 1.0E-5, 3);
+        double dens = 2 * 2.8E12 * (pf_e / k0) * pow(T_loc * gev_over_k / 1.0E9, 8) * erg_over_cm3_s_gev5;
 
         return dens;
     };

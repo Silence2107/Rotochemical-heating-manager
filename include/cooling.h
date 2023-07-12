@@ -131,7 +131,7 @@ namespace cooling
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
             /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^{-3}]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
-            /// @cite Base density - Iwamoto, 1982; superconductivity effect - Blashke, 2001
+            /// @cite Base density - Iwamoto, 1982; superconductivity effect - Blaschke, Grigorian 2001
             std::function<double(double, double, double)> quark_durca_emissivity(
                 const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
                 const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
@@ -144,7 +144,7 @@ namespace cooling
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
             /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^{-3}]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
-            /// @cite Base density - Iwamoto, 1982; superconductivity effect - Blashke, 2001
+            /// @cite Base density - Iwamoto, 1982; superconductivity effect - Blaschke, Grigorian 2001
             std::function<double(double, double, double)> quark_murca_emissivity(
                 const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
                 const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
@@ -157,7 +157,7 @@ namespace cooling
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
             /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^{-3}]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
-            /// @cite Base density - Iwamoto, 1982; superconductivity effect - Blashke, 2001
+            /// @cite Base density - Iwamoto, 1982; superconductivity effect - Blaschke, Grigorian 2001
             std::function<double(double, double, double)> quark_bremsstrahlung_emissivity(
                 const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
                 const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
@@ -169,7 +169,7 @@ namespace cooling
             /// @param nbar_of_r baryon density [GeV^{-3}] as a function of radius [GeV^{-1}]
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
-            /// @cite Yakovlev, Kaminker, 2000
+            /// @cite All - Blaschke, Grigorian 2001
             std::function<double(double, double, double)> electron_bremsstrahlung_emissivity(
                 const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
                 const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,

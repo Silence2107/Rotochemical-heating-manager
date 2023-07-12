@@ -419,7 +419,7 @@ std::function<double(double, double, double)> auxiliaries::phys::fermi_specific_
             // quark superconductivity?
             else if (key.classify() == auxiliaries::phys::Species::ParticleClassification::kQuark)
             {
-                // kinda following Blashke..
+                // following Blaschke except the gap is provided externally
                 auto exp_factor = superconduct_q_gap(nbar_val) / T_loc;
                 // estimate critical temperature as 0.15 GeV (consider later if we need Tc(nbar))
                 if (exp_factor > 1.0)
