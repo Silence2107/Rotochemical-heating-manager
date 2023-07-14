@@ -248,17 +248,17 @@ namespace auxiliaries
         };
 
         /// @brief Specific heat of substance, based on Fermi gas model
-        /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^{-3}]
-        /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^{-3}]
-        /// @param nbar_of_r baryon density [GeV^{-3}] as a function of radius [GeV^{-1}]
-        /// @param nbar_core_limit baryon density [GeV^{-3}] at the core
+        /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^3]
+        /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^3]
+        /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
+        /// @param nbar_core_limit baryon density [GeV^3] at the core
         /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
         /// @param superfluid_n_1s0 allow/forbid superfluidity in 1S0 state for neutrons
         /// @param superfluid_p_1s0 allow/forbid superfluidity in 1S0 state for protons
         /// @param superfluid_n_3p2 allow/forbid superfluidity in 3P2 state for neutrons
         /// @param superfluid_p_temp temperature of superfluid protons [GeV]
         /// @param superfluid_n_temp temperature of superfluid neutrons [GeV]
-        /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^{-3}]
+        /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^3]
         /// @cite Base density - Yanagi, 2020; superfluidity - Yakovlev, Levenfish, 1999; superconductivity - Blaschke, Grigorian 2001
         std::function<double(double, double, double)> fermi_specific_heat_density(
             const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,

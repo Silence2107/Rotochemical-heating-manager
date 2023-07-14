@@ -48,10 +48,10 @@ namespace cooling
         namespace neutrinic
         {
             /// @brief Emissivity of neutrinos from hadronic DUrca reactions
-            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^{-3}]
-            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^{-3}]
-            /// @param nbar_of_r baryon density [GeV^{-3}] as a function of radius [GeV^{-1}]
-            /// @param nbar_core_limit baryon density [GeV^{-3}] at the core
+            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^3]
+            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^3]
+            /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
+            /// @param nbar_core_limit baryon density [GeV^3] at the core
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
             /// @param superfluid_n_1s0 allow/forbid superfluidity in 1S0 state for neutrons
             /// @param superfluid_p_1s0 allow/forbid superfluidity in 1S0 state for protons
@@ -67,10 +67,10 @@ namespace cooling
                 const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp);
 
             /// @brief Emissivity of neutrinos from hadronic MUrca reactions
-            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^{-3}]
-            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^{-3}]
-            /// @param nbar_of_r baryon density [GeV^{-3}] as a function of radius [GeV^{-1}]
-            /// @param nbar_core_limit baryon density [GeV^{-3}] at the core
+            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^3]
+            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^3]
+            /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
+            /// @param nbar_core_limit baryon density [GeV^3] at the core
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
             /// @param superfluid_n_1s0 allow/forbid superfluidity in 1S0 state for neutrons
             /// @param superfluid_p_1s0 allow/forbid superfluidity in 1S0 state for protons
@@ -86,11 +86,11 @@ namespace cooling
                 const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp);
 
             /// @brief Emissivity of neutrinos from hadronic bremsstrahlung reactions
-            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^{-3}]
-            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^{-3}]
-            /// @param nbar_of_r baryon density [GeV^{-3}] as a function of radius [GeV^{-1}]
-            /// @param ion_volume_frac volume fraction of ions as a function of baryon density [GeV^{-3}]
-            /// @param nbar_core_limit baryon density [GeV^{-3}] at the core
+            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^3]
+            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^3]
+            /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
+            /// @param ion_volume_frac volume fraction of ions as a function of baryon density [GeV^3]
+            /// @param nbar_core_limit baryon density [GeV^3] at the core
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
             /// @param superfluid_n_1s0 allow/forbid superfluidity in 1S0 state for neutrons
             /// @param superfluid_p_1s0 allow/forbid superfluidity in 1S0 state for protons
@@ -106,10 +106,10 @@ namespace cooling
                 const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp);
 
             /// @brief Emissivity of neutrinos from hadronic pair breaking & formations
-            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^{-3}]
-            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^{-3}]
-            /// @param nbar_of_r baryon density [GeV^{-3}] as a function of radius [GeV^{-1}]
-            /// @param nbar_core_limit baryon density [GeV^{-3}] at the core
+            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^3]
+            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^3]
+            /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
+            /// @param nbar_core_limit baryon density [GeV^3] at the core
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
             /// @param superfluid_n_1s0 allow/forbid superfluidity in 1S0 state for neutrons
             /// @param superfluid_p_1s0 allow/forbid superfluidity in 1S0 state for protons
@@ -125,11 +125,11 @@ namespace cooling
                 const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp);
 
             /// @brief Emissivity of neutrinos from quark DUrca reactions
-            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^{-3}]
-            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^{-3}]
-            /// @param nbar_of_r baryon density [GeV^{-3}] as a function of radius [GeV^{-1}]
+            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^3]
+            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^3]
+            /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
-            /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^{-3}]
+            /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^3]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
             /// @cite Base density - Iwamoto, 1982; superconductivity effect - Blaschke, Grigorian 2001
             std::function<double(double, double, double)> quark_durca_emissivity(
@@ -138,11 +138,11 @@ namespace cooling
                 const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap);
 
             /// @brief Emissivity of neutrinos from quark MUrca reactions
-            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^{-3}]
-            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^{-3}]
-            /// @param nbar_of_r baryon density [GeV^{-3}] as a function of radius [GeV^{-1}]
+            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^3]
+            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^3]
+            /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
-            /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^{-3}]
+            /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^3]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
             /// @cite Base density - Iwamoto, 1982; superconductivity effect - Blaschke, Grigorian 2001
             std::function<double(double, double, double)> quark_murca_emissivity(
@@ -151,11 +151,11 @@ namespace cooling
                 const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap);
 
             /// @brief Emissivity of neutrinos from quark Bremsstrahlung reactions
-            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^{-3}]
-            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^{-3}]
-            /// @param nbar_of_r baryon density [GeV^{-3}] as a function of radius [GeV^{-1}]
+            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^3]
+            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^3]
+            /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
-            /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^{-3}]
+            /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^3]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
             /// @cite Base density - Iwamoto, 1982; superconductivity effect - Blaschke, Grigorian 2001
             std::function<double(double, double, double)> quark_bremsstrahlung_emissivity(
@@ -164,9 +164,9 @@ namespace cooling
                 const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap);
 
             /// @brief Emissivity of neutrinos from electron bremsstrahlung reaction (important in highly supressed quark phase)
-            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^{-3}]
-            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^{-3}]
-            /// @param nbar_of_r baryon density [GeV^{-3}] as a function of radius [GeV^{-1}]
+            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^3]
+            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^3]
+            /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
             /// @cite All - Blaschke, Grigorian 2001
