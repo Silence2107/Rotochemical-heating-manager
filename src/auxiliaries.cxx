@@ -143,24 +143,16 @@ double auxiliaries::math::interpolate(const std::vector<double> &input, const st
                 throw std::runtime_error("Cannot perform cubic interpolation with less than 5 points. Encountered in auxiliaries::math::interpolate");
         auto tridiagonal_solve = [](const std::vector<double> &subdiag, const std::vector<double> &diag, const std::vector<double> &superdiag, const std::vector<double> &rhs)
         {
-            size_t n = diag.size();
-            std::vector<double> v(n);     // The solution vector
-            std::vector<double> c(n - 1); // new superdiagonal
-            std::vector<double> g(n);     // new right hand side
-            c[0] = superdiag[0] / diag[0];
-            g[0] = rhs[0] / diag[0];
-            for (size_t i = 1; i < n - 1; ++i)
+            auxiliaries::math::MatrixD A(diag.size(), diag.size(), 0.0);
+            for (size_t i = 0; i < diag.size(); ++i)
             {
-                c[i] = superdiag[i] / (diag[i] - subdiag[i - 1] * c[i - 1]);
-                g[i] = (rhs[i] - subdiag[i - 1] * g[i - 1]) / (diag[i] - subdiag[i - 1] * c[i - 1]);
+                A.at(i, i) = diag[i];
+                if (i < diag.size() - 1)
+                    A.at(i, i + 1) = superdiag[i];
+                if (i > 0)
+                    A.at(i, i - 1) = subdiag[i - 1];
             }
-            g[n - 1] = (rhs[n - 1] - subdiag[n - 2] * g[n - 2]) / (diag[n - 1] - subdiag[n - 2] * c[n - 2]);
-            v[n - 1] = g[n - 1];
-            for (int i = n - 2; i >= 0; --i)
-            {
-                v[i] = g[i] - c[i] * v[i + 1];
-            }
-            return v;
+            return A.tridiagonal_solve(rhs);
         };
         // Solve for quadratic coefficients
         std::vector<double> subdiag(input.size() - 4);
@@ -255,24 +247,16 @@ double auxiliaries::math::interpolate_cached(std::function<double(double)> &cach
                     throw std::runtime_error("Cannot perform cubic interpolation with less than 5 points. Encountered in auxiliaries::math::interpolate_cached");
             auto tridiagonal_solve = [](const std::vector<double> &subdiag, const std::vector<double> &diag, const std::vector<double> &superdiag, const std::vector<double> &rhs)
             {
-                size_t n = diag.size();
-                std::vector<double> v(n);     // The solution vector
-                std::vector<double> c(n - 1); // new superdiagonal
-                std::vector<double> g(n);     // new right hand side
-                c[0] = superdiag[0] / diag[0];
-                g[0] = rhs[0] / diag[0];
-                for (size_t i = 1; i < n - 1; ++i)
+                auxiliaries::math::MatrixD A(diag.size(), diag.size(), 0.0);
+                for (size_t i = 0; i < diag.size(); ++i)
                 {
-                    c[i] = superdiag[i] / (diag[i] - subdiag[i - 1] * c[i - 1]);
-                    g[i] = (rhs[i] - subdiag[i - 1] * g[i - 1]) / (diag[i] - subdiag[i - 1] * c[i - 1]);
+                    A.at(i, i) = diag[i];
+                    if (i < diag.size() - 1)
+                        A.at(i, i + 1) = superdiag[i];
+                    if (i > 0)
+                        A.at(i, i - 1) = subdiag[i - 1];
                 }
-                g[n - 1] = (rhs[n - 1] - subdiag[n - 2] * g[n - 2]) / (diag[n - 1] - subdiag[n - 2] * c[n - 2]);
-                v[n - 1] = g[n - 1];
-                for (int i = n - 2; i >= 0; --i)
-                {
-                    v[i] = g[i] - c[i] * v[i + 1];
-                }
-                return v;
+                return A.tridiagonal_solve(rhs);
             };
             // Solve for quadratic coefficients
             std::vector<double> subdiag(input.size() - 4);
