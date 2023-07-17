@@ -173,8 +173,8 @@ namespace inputfile
     // Critical phenomena settings
 
     bool superfluid_p_1s0 = false,
-         superfluid_n_3p2 = false,
-         superfluid_n_1s0 = false;
+         superfluid_n_3p2 = true,
+         superfluid_n_1s0 = true;
 
     std::function<double(double)> superfluid_p_temp = [](double k_fermi)
     {
@@ -190,7 +190,11 @@ namespace inputfile
         if (superfluid_n_3p2 || superfluid_n_1s0)
         {
             using namespace auxiliaries::phys;
-            return critical_temperature(k_fermi, CriticalTemperatureModel::kCCDK);
+            using namespace constants::species;
+            if (superfluid_n_1s0 && (k_fermi <= k_fermi_of_nbar[neutron](nbar_core_limit)))
+                return critical_temperature(k_fermi, CriticalTemperatureModel::kCCDK);
+            else
+                return critical_temperature(k_fermi, CriticalTemperatureModel::kC);
         }
         return 0.0;
     };
