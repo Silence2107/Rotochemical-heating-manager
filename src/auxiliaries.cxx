@@ -510,6 +510,15 @@ auxiliaries::math::MatrixD::MatrixD(size_t rows, size_t cols, double aloc_value)
 
 auxiliaries::math::MatrixD::MatrixD(const std::vector<std::vector<double>> &matrix) : m_matrix(matrix) {}
 
+auxiliaries::math::MatrixD::MatrixD(const std::vector<double> &column)
+{
+    m_matrix = std::vector<std::vector<double>>(column.size(), std::vector<double>(1, 0.0));
+    for (size_t i = 0; i < column.size(); i++)
+    {
+        m_matrix.at(i).at(0) = column.at(i);
+    }
+}
+
 double &auxiliaries::math::MatrixD::at(size_t i, size_t j)
 {
     return m_matrix.at(i).at(j);
@@ -699,7 +708,89 @@ auxiliaries::math::MatrixD auxiliaries::math::MatrixD::inverse() const
     return result;
 }
 
-auxiliaries::math::MatrixD auxiliaries::math::MatrixD::operator+(const MatrixD& other) const
+auxiliaries::math::MatrixD auxiliaries::math::MatrixD::tridiagonal_inverse() const
+{
+    if (this->rows() != this->columns())
+    {
+        throw std::runtime_error("Non-square matrix has no inverse. Encountered in auxiliaries::math::MatrixD::tridiagonal_inverse()");
+    }
+    MatrixD result(this->rows(), this->columns());
+    // Gaussian elimination of augmented matrix
+    MatrixD augmented = MatrixD(this->rows(), this->columns() * 2, 0.0);
+    for (size_t row = 0; row < this->rows(); ++row)
+    {
+        for (size_t col = 0; col < this->columns(); ++col)
+        {
+            augmented.at(row, col) = this->at(row, col);
+        }
+        if (augmented.at(row, row) == 0.0)
+        {
+            throw std::runtime_error("Tridiagonal inverse cannot be applied with zeros on the diagonal. Encountered in auxiliaries::math::MatrixD::tridiagonal_inverse()");
+        }
+        augmented.at(row, row + this->columns()) = 1.0;
+    }
+    for (size_t row = 0; row < this->rows() - 1; ++row)
+    {
+        // Forward elimination (only one row below to eliminate)
+        double factor = augmented.at(row + 1, row) / augmented.at(row, row);
+        for (size_t col = row; col < augmented.columns(); ++col)
+        {
+            augmented.at(row + 1, col) -= factor * augmented.at(row, col);
+        }
+    }
+    for (size_t row = augmented.rows() - 1; row > 0; --row)
+    {
+        // Backward elimination (only one row above to eliminate)
+        double factor = augmented.at(row - 1, row) / augmented.at(row, row);
+        for (size_t col = row; col < augmented.columns(); ++col)
+        {
+            augmented.at(row - 1, col) -= factor * augmented.at(row, col);
+        }
+    }
+    // Obtain inverse
+    for (size_t row = 0; row < this->rows(); ++row)
+    {
+        double factor = 1.0 / augmented.at(row, row);
+        for (size_t col = 0; col < this->columns(); ++col)
+        {
+            result.at(row, col) = factor * augmented.at(row, col + this->columns());
+        }
+    }
+    return result;
+}
+
+std::vector<double> auxiliaries::math::MatrixD::tridiagonal_solve(const std::vector<double>& rhs) const
+{
+    if (this->rows() != this->columns())
+    {
+        throw std::runtime_error("Non-square matrix cannot be subjected to tridiagonal solver. Encountered in auxiliaries::math::MatrixD::tridiagonal_solve()");
+    }
+    if (this->rows() != rhs.size())
+    {
+        throw std::runtime_error("Matrix and right-hand side vector dimensions do not match. Encountered in auxiliaries::math::MatrixD::tridiagonal_solve()");
+    }
+
+    size_t n = this->rows();
+    std::vector<double> v(n);     // The solution vector
+    std::vector<double> c(n - 1); // new superdiagonal
+    std::vector<double> g(n);     // new right hand side
+    c[0] = this->at(0, 1) / this->at(0, 0);
+    g[0] = rhs[0] / this->at(0, 0);
+    for (size_t i = 1; i < n - 1; ++i)
+    {
+        c[i] = this->at(i, i + 1) / (this->at(i, i) - this->at(i, i - 1) * c[i - 1]);
+        g[i] = (rhs[i] - this->at(i, i - 1) * g[i - 1]) / (this->at(i, i) - this->at(i, i - 1) * c[i - 1]);
+    }
+    g[n - 1] = (rhs[n - 1] - this->at(n - 1, n - 2) * g[n - 2]) / (this->at(n - 1, n - 1) - this->at(n - 1, n - 2) * c[n - 2]);
+    v[n - 1] = g[n - 1];
+    for (int i = n - 2; i >= 0; --i)
+    {
+        v[i] = g[i] - c[i] * v[i + 1];
+    }
+    return v;
+}
+
+auxiliaries::math::MatrixD auxiliaries::math::MatrixD::operator+(const MatrixD &other) const
 {
     if (this->rows() != other.rows() || this->columns() != other.columns())
     {
@@ -769,4 +860,17 @@ auxiliaries::math::MatrixD auxiliaries::math::operator*(const MatrixD &matrix, d
 auxiliaries::math::MatrixD auxiliaries::math::operator*(double scalar, const MatrixD &matrix)
 {
     return matrix * scalar;
+}
+
+std::ostream &auxiliaries::math::operator<<(std::ostream &os, const MatrixD &matrix)
+{
+    for (size_t row = 0; row < matrix.rows(); ++row)
+    {
+        for (size_t col = 0; col < matrix.columns(); ++col)
+        {
+            os << matrix.at(row, col) << " ";
+        }
+        os << '\n';
+    }
+    return os;
 }

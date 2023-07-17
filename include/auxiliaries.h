@@ -201,6 +201,9 @@ namespace auxiliaries
             /// @brief direct constructor
             /// @param matrix matrix elements
             MatrixD(const std::vector<std::vector<double>> &matrix);
+            /// @brief vector-column constructor
+            /// @param column vector-column
+            MatrixD(const std::vector<double> &column);
 
             /// @brief matrix element access
             /// @param i row index
@@ -254,6 +257,17 @@ namespace auxiliaries
             /// @return matrix inverse
             MatrixD inverse() const;
 
+            /// @brief tridiagonal matrix inverse (i.e. diagonal and 1-off-diagonal elements only, check is not performed).
+            /// @brief Only applicable for tridiagonal matrices with all diagonal elements non-zero.
+            /// @return tridiagonal matrix inverse
+            MatrixD tridiagonal_inverse() const;
+
+            /// @brief solve tridiagonal matrix equation M*X = RHS (i.e. diagonal and 1-off-diagonal elements only, check is not performed).
+            /// @brief Only applicable for tridiagonal matrices with all diagonal elements non-zero.
+            /// @param rhs right hand side (RHS)
+            /// @return solution (X)
+            std::vector<double> tridiagonal_solve(const std::vector<double> &rhs) const;
+
             /// @brief matrix addition
             /// @param other matrix to add
             /// @return matrix sum
@@ -282,6 +296,9 @@ namespace auxiliaries
         /// @param scalar scalar to multiply with
         /// @return matrix product  
         MatrixD operator*(const MatrixD &matrix, double scalar);
+
+        /// @brief print matrix to stdout
+        std::ostream &operator<<(std::ostream &os, const MatrixD &matrix);
     }
 
     /// @brief Physics related functionality.
