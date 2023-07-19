@@ -27,8 +27,27 @@ namespace cooling
             const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &interpolator =
                 [](const std::vector<double> &x, const std::vector<double> &y, double val)
             { return auxiliaries::math::interpolate(x, y, auxiliaries::math::InterpolationMode::kLinear, val); });
-    }
 
+        /// @brief Solves the nonequilibrium cooling equation dT^inf/dt = -Qv^inf/cv + e^{-Lambda}/cv * 1/r^2 d/dr[r^2 e^{Phi - Lambda} lambda dT^inf/dr]
+        /// @brief via 1 + 1D differencing scheme (backward exponential in time, forward linear in space). BCs are applied automatically, however, the initial profile must be set.
+        /// @param t time at which the temperature profile is to be calculated [GeV^{-1}] (initial time is assumed to be 0)
+        /// @param neutrino_rate density of neutrino energy loss Qv^inf [GeV^{2}] as a function of r, t, T^inf
+        /// @param cv specific heat capacity cv [GeV^{-1}] as a function of r, t, T^inf
+        /// @param lambda thermal conductivity [GeV^2] as a function of r, t, T^inf
+        /// @param exp_lambda e^Lambda metric function of radius [GeV^{-1}]
+        /// @param exp_phi e^Phi metric function of radius [GeV^{-1}]
+        /// @param initial_profile initial temperature profile T^inf(r, t=0) [GeV] as a function of r [GeV^{-1}]
+        /// @param te_tb Local surface temperature [GeV] as a function of undercrustal T_b^inf [GeV]
+        /// @param base_time_step initial time step [GeV^{-1}]
+        /// @param exp_rate a constant multiplying the time step at each iteration to cover multiple timescales
+        /// @param radius_step radius step [GeV^{-1}]
+        /// @param r_ns NS radius [GeV^{-1}]
+        /// @return Temperature profile T^inf(r, t) 
+        std::function<double(double)> nonequilibrium_cooling(
+            double t, const std::function<double(double, double, double)> &neutrino_rate, const std::function<double(double, double, double)> &cv, const std::function<double(double, double, double)> &lambda,
+            const std::function<double(double)> &exp_lambda, const std::function<double(double)> &exp_phi, const std::function<double(double)> &initial_profile, const std::function<double(double)> &te_tb, double base_time_step, double exp_rate,
+            double radius_step, double r_ns);
+    }
     /// @brief Predefined functionality, including cooling luminosities
     namespace predefined
     {
