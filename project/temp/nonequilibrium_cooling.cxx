@@ -16,6 +16,7 @@
 
 #include <TCanvas.h>
 #include <TGraph.h>
+#include <TMultiGraph.h>
 #include <TAxis.h>
 #include <TLegend.h>
 #include <TFile.h>
@@ -219,46 +220,109 @@ int main(int argc, char **argv)
         return 5E9 / gev_over_k;
     };
 
-    double cooling_radius_step = radius_step * 10.0;
-
-    auto profile = cooling::solver::nonequilibrium_cooling(
-        1E-6 * t_end, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
-        exp_lambda, exp_phi, initial_profile, te_tb, base_t_step, exp_rate_estim,
-        cooling_radius_step, r_ns);
-
-        // plot the solution (assumes exp_rate_estim > 1)
-    std::vector<double> x;
-    std::vector<double> y;
-    std::cout << "M/Msol " << m_ns * constants::conversion::gev_over_msol << std::endl;
-    
-    for (int i = 0;; ++i)
+    // tabulate initial profile and radii
+    double cooling_radius_step = 10 * radius_step;
+    std::vector<double> radii, profile;
+    for(double r = cooling_radius_step / 2.0; r < r_ns; r += cooling_radius_step)
     {
-        double r = (i + 0.5) * cooling_radius_step;
-        if (r > r_ns)
+        radii.push_back(r);
+        profile.push_back(initial_profile(r));
+    }
+
+    std::vector<std::vector<double>> xs, ys;
+    std::cout << "M/Msol " << m_ns * constants::conversion::gev_over_msol << std::endl;
+
+    double t_curr = 0, time_step = base_t_step;
+    double write_time = base_t_step;
+    while (t_curr + time_step < 5E10 * base_t_step)
+    {
+        std::cout << "t = " << t_curr << ", prof[0] = " << profile[0] << ", prof[-1] = " << profile.back() << '\n';
+
+        if (t_curr >= write_time)
+        {
+            using namespace constants::conversion;
+            xs.push_back(radii);
+            ys.push_back(profile);
+            for (size_t i = 0; i < radii.size(); ++i)
+            {
+                xs.back()[i] /= km_gev;
+                ys.back()[i] *= gev_over_k;
+            }
+            write_time *= 10.0;
+        }
+
+        bool error = false;
+
+        // update
+        while(true)
+        {
+            try
+            {
+                auto new_profile = cooling::solver::nonequilibrium_cooling(
+                    t_curr, t_curr + time_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
+                    exp_lambda, exp_phi, radii, profile, te_tb);
+                double max_diff = 0;
+                for (size_t i = 0; i < radii.size(); ++i)
+                {
+                    max_diff = std::max(max_diff, fabs(new_profile[i] - profile[i]));
+                    profile[i] = new_profile[i];
+                }
+                std::cout << "max_diff = " << max_diff << '\n';
+                /*if (max_diff > 1E-1 * initial_profile(r_ns / 2))
+                    {
+                        time_step *= 0.5;
+                        std::cout << "Adapting time step \n";
+                    }*/
+                break;
+            }
+            catch (std::runtime_error &e)
+            {
+                std::cout << e.what() << '\n';
+                using namespace constants::conversion;
+                xs.push_back(radii);
+                ys.push_back(profile);
+                for (size_t i = 0; i < radii.size(); ++i)
+                {
+                    xs.back()[i] /= km_gev;
+                    ys.back()[i] *= gev_over_k;
+                }
+                error = true;
+                break;
+            }
+        }
+        
+        if(error)
             break;
-        x.push_back(r / constants::conversion::km_gev);
-        y.push_back(profile(r) * constants::conversion::gev_over_k);
-        std::cout << x.back() << " " << y.back() << std::endl;
+
+        t_curr += time_step;
+        time_step *= exp_rate_estim;
     }
 
     // draw
     TCanvas *c1 = new TCanvas("c1", "c1");
-    auto gr = new TGraph(x.size(), x.data(), y.data());
+    TMultiGraph *mg = new TMultiGraph("mg", "mg");
+    for(size_t i = 0; i < xs.size(); ++i)
+    {
+        auto gr = new TGraph(xs[i].size(), xs[i].data(), ys[i].data());
+        gr->SetLineColor(i + 1);
+        gr->SetLineWidth(2.5);
+        mg->Add(gr, "L");
+    }
     if (rootfile_creation)
     {
         std::string rootfile_path = argv[2];
         TFile *f = new TFile(rootfile_path.c_str(), "RECREATE");
-        gr->Write();
+        mg->Write();
         f->Close();
     }
-    gr->SetLineColor(kBlue);
-    gr->Draw("AL");
+    mg->Draw("A");
     // title offset
-    gr->GetYaxis()->SetTitleOffset(1.5);
-    gr->GetYaxis()->SetRangeUser(0.9 * y[0], 6E9);
+    mg->GetYaxis()->SetTitleOffset(1.5);
+    mg->GetYaxis()->SetRangeUser(6E6, 6E9);
+    gPad->SetLogy();
 
-    gr->GetXaxis()->SetTitle("r [km]");
-    gr->GetYaxis()->SetTitle("T^{#infty} [K]");
+    mg->GetXaxis()->SetTitle("r [km]");
+    mg->GetYaxis()->SetTitle("T^{#infty} [K]");
 
     c1->SaveAs(pdf_path.c_str());
 }

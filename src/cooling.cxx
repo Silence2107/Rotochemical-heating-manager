@@ -63,152 +63,131 @@ double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double
     return interpolator(cache[0], cache[1], t);
 }
 
-std::function<double(double)> cooling::solver::nonequilibrium_cooling(
-    double t, const std::function<double(double, double, double)> &neutrino_rate, const std::function<double(double, double, double)> &cv, const std::function<double(double, double, double)> &lambda,
-    const std::function<double(double)> &exp_lambda, const std::function<double(double)> &exp_phi, const std::function<double(double)> &initial_profile, const std::function<double(double)> &te_tb, double base_time_step, double exp_rate,
-    double radius_step, double r_ns)
+std::vector<double> cooling::solver::nonequilibrium_cooling(
+    double t_curr, double t_next, const std::function<double(double, double, double)> &neutrino_rate, const std::function<double(double, double, double)> &cv, const std::function<double(double, double, double)> &lambda,
+    const std::function<double(double)> &exp_lambda, const std::function<double(double)> &exp_phi, const std::vector<double> &radii, const std::vector<double> &initial_profile,
+    const std::function<double(double)> &te_tb)
 {
     // biggest available radius zone (therefore i_m + 1 is the number of zones)
-    size_t i_m = std::floor(r_ns / radius_step - 0.5);
+    size_t i_m = radii.size() - 1;
 
-    // radii of the zones
-    std::vector<double> radii(i_m + 1);
-    for (size_t i = 0; i <= i_m; ++i)
-    {
-        radii[i] = (i + 0.5) * radius_step;
-    }
-
-    // time variables
-    double t_curr = base_time_step, time_step = base_time_step;
-
-    std::vector<double> old_profile(i_m + 1), new_profile(i_m + 1);
-    // fill the profile with initial values
-    for (size_t i = 0; i <= i_m; ++i)
-    {
-        old_profile[i] = initial_profile(radii[i]);
-    }
     // estimate new profile based on old one
-    new_profile = old_profile;
+    std::vector<double> new_profile = initial_profile;
 
     // Here follow the equations we're supposed to satisfy
 
-    // (1) T^inf(r_0, t_{j+1}) = T^inf(r_1, t_{j+1}), where (B, C) are sequential temperature estimates at ({i , i + 1}, j + 1)
+    // (1) T^inf(r_0, t_next) = T^inf(r_1, t_next), where (B, C) are sequential temperature estimates at ({i , i + 1}, t_next)
     auto left_boundary = [&](double B, double C)
     {
         return B - C;
     };
 
-    // (2) [T^inf(r_i, t_{j+1}) - T^inf(r_i, t_j)]/(t_{j+1} - t_j) = rhs, where {rad_index == i, t_f -> j + 1} node, and (A, B, C) are sequential temperature estimates at ({i - 1, i , i + 1}, j + 1)
-    auto eq = [&](size_t rad_index, double t_f, double A, double B, double C)
+    // (2) [T^inf(r_i, t_next) - T^inf(r_i, t_curr)]/(t_next - t_curr) = rhs, where {rad_index == i} node, and (A, B, C) are sequential temperature estimates at ({i - 1, i , i + 1}, t_next)
+    auto eq = [&](size_t rad_index, double A, double B, double C)
     {
-        double r = radii[rad_index];
-        double r_b = radii[rad_index - 1];
-        // in case you change code here, make sure time_step is actually t_{j+1} - t_j, not t_j - t_{j-1}
-        return (B - old_profile[rad_index]) / time_step + neutrino_rate(r_b, t_f, A) / cv(r_b, t_f, A) -
-               1.0 / (r_b * r_b * cv(r_b, t_f, A) * exp_lambda(r_b) * radius_step * radius_step) *
-                   (r * r * lambda(r, t_f, B) * exp_phi(r) / exp_lambda(r) * (C - B) -
-                    r_b * r_b * lambda(r_b, t_f, A) * exp_phi(r_b) / exp_lambda(r_b) * (B - A));
+        double r = radii[rad_index],
+                r_b = radii[rad_index - 1],
+                radius_step = r - r_b;
+        
+        return (B - initial_profile[rad_index]) / (t_next - t_curr) + neutrino_rate(r_b, t_next, A) / cv(r_b, t_next, A) -
+               1.0 / (r_b * r_b * cv(r_b, t_next, A) * exp_lambda(r_b) * radius_step * radius_step) *
+                   (r * r * lambda(r, t_next, B) * exp_phi(r) / exp_lambda(r) * (C - B) -
+                    r_b * r_b * lambda(r_b, t_next, A) * exp_phi(r_b) / exp_lambda(r_b) * (B - A));
     };
 
-    // (3) [T^inf(r_{i_m}, t_j) - T^inf(r_{i_{m}-1}, t_j)]/dr = -sigma_B * Te^4(T^inf(r_{i_m}, t_j)) / lambda(r_{i_m}, t_j, T^inf(r_{i_m}, t_j)), where {t -> j + 1} (A, B) are sequential temperature estimates at ({i_m -1 , i_m}, j + 1)
+    // (3) [T^inf(r_{i_m}, t_next) - T^inf(r_{i_{m}-1}, t_next)]/(r_{i_m} - r_{i_{m}-1}) = -sigma_B * Te^4(T^inf(r_{i_m}, t_next)) / lambda(r_{i_m}, t_next, T^inf(r_{i_m}, t_j)), where (A, B) are sequential temperature estimates at ({i_m -1 , i_m}, t_next)
     auto right_boundary = [&](double A, double B)
     {
-        return (B - A) / radius_step + constants::scientific::Sigma * pow(te_tb(B), 4) / lambda(radii[i_m], t, B);
+        return (B - A) / (radii[i_m] - radii[i_m - 1]) + constants::scientific::Sigma * pow(te_tb(B), 4) / lambda(radii[i_m], t_next, B);
     };
 
-    while (t_curr < t)
+    // Now we perform the Newton's method to solve the system
+
+    // biggest difference between old and new profile
+    double max_diff;
+    size_t max_diff_index;
+    do
     {
-        // biggest difference between old and new profile
-        double max_diff;
-        do
+        // Unfortunately, the system is not linear, so we have to solve it iteratively.
+        // Usual tridiagonal matrix algorithm is applicable under linearization, for which
+        // we simply employ the Newton's method
+
+        using auxiliaries::math::MatrixD;
+
+        // initial guess for the solution is already set, and equal to the old profile,
+        // so I'm not spamming the copies
+
+        // For the approach, jacobi matrix is needed, which is triagonal due to the nature of the system
+        MatrixD jacobi(i_m + 1, i_m + 1, 0.0);
+        // fill the matrix
+
+        // we're going to calculate temperature derivatives as [f((1+ext)*x)-f(x)]/ext*x,
+        // since temperature here is always (hopefully!) > 0
+        double ext_persentage = 0.001;
+
+        // placeholder for f(X), s. t. we do not reevaluate it multiple times
+        double unperturbed_val = left_boundary(new_profile[0], new_profile[1]);
+
+        // left boundary
+        jacobi.at(0, 0) = (left_boundary((1 + ext_persentage) * new_profile[0], new_profile[1]) - unperturbed_val) / (ext_persentage * new_profile[0]);
+        jacobi.at(0, 1) = (left_boundary(new_profile[0], (1 + ext_persentage) * new_profile[1]) - unperturbed_val) / (ext_persentage * new_profile[1]);
+        // PDE
+        for (size_t row = 1; row < jacobi.rows() - 1; ++row)
         {
-            // Unfortunately, the system is not linear, so we have to solve it iteratively
-            // Usual tridiagonal matrix algorithm is applicable under linearization, for which
-            // we simply employ the Newton's method
+            // evade filling anything beyond tridiagonal, it is still computationally expensive
 
-            using auxiliaries::math::MatrixD;
-
-            // initial guess for the solution is already set, and equal to the old profile,
-            // so I'm not spamming the copies
-
-            // For the approach, jacobi matrix is needed, which is triagonal due to the nature of the system
-            MatrixD jacobi(i_m + 1, i_m + 1, 0.0);
-            // fill the matrix
-
-            // we're going to calculate temperature derivatives as [f((1+ext)*x)-f(x)]/ext*x,
-            // since temperature here is always (hopefully!) > 0
-            double ext_persentage = 0.001;
-
-            // placeholder for f(X), s. t. we do not reevaluate it multiple times
-            double unperturbed_val = left_boundary(new_profile[0], new_profile[1]);
-
-            // left boundary
-            jacobi.at(0, 0) = (left_boundary((1 + ext_persentage) * new_profile[0], new_profile[1]) - unperturbed_val) / (ext_persentage * new_profile[0]);
-            jacobi.at(0, 1) = (left_boundary(new_profile[0], (1 + ext_persentage) * new_profile[1]) - unperturbed_val) / (ext_persentage * new_profile[1]);
-            // PDE
-            for (size_t row = 1; row < jacobi.rows() - 1; ++row)
-            {
-                // evade filling anything beyond tridiagonal, it is still computationally expensive
-
-                // f(A, B, C)
-                unperturbed_val = eq(row, t_curr, new_profile[row - 1], new_profile[row], new_profile[row + 1]);
-                // derivatives wrt A, B, C respectively
-                jacobi.at(row, row - 1) = (eq(row, t_curr, (1 + ext_persentage) * new_profile[row - 1], new_profile[row],
-                                              new_profile[row + 1]) -
-                                           unperturbed_val) /
-                                          (ext_persentage * new_profile[row - 1]);
-                jacobi.at(row, row) = (eq(row, t_curr, new_profile[row - 1], (1 + ext_persentage) * new_profile[row],
-                                          new_profile[row + 1]) -
+            // f(A, B, C)
+            unperturbed_val = eq(row, new_profile[row - 1], new_profile[row], new_profile[row + 1]);
+            // derivatives wrt A, B, C respectively
+            jacobi.at(row, row - 1) = (eq(row, (1 + ext_persentage) * new_profile[row - 1], new_profile[row],
+                                            new_profile[row + 1]) -
+                                        unperturbed_val) /
+                                        (ext_persentage * new_profile[row - 1]);
+            jacobi.at(row, row) = (eq(row, new_profile[row - 1], (1 + ext_persentage) * new_profile[row],
+                                        new_profile[row + 1]) -
+                                    unperturbed_val) /
+                                    (ext_persentage * new_profile[row]);
+            jacobi.at(row, row + 1) = (eq(row, new_profile[row - 1], new_profile[row],
+                                          (1 + ext_persentage) * new_profile[row + 1]) -
                                        unperturbed_val) /
-                                      (ext_persentage * new_profile[row]);
-                jacobi.at(row, row + 1) = (eq(row, t_curr, new_profile[row - 1], new_profile[row],
-                                              (1 + ext_persentage) * new_profile[row + 1]) -
-                                           unperturbed_val) /
-                                          (ext_persentage * new_profile[row + 1]);
-            }
-            // right boundary
-            unperturbed_val = right_boundary(new_profile[i_m - 1], new_profile[i_m]);
-            jacobi.at(i_m, i_m - 1) = (right_boundary((1 + ext_persentage) * new_profile[i_m - 1], new_profile[i_m]) - unperturbed_val) / (ext_persentage * new_profile[i_m - 1]);
-            jacobi.at(i_m, i_m) = (right_boundary(new_profile[i_m - 1], (1 + ext_persentage) * new_profile[i_m]) - unperturbed_val) / (ext_persentage * new_profile[i_m]);
+                                      (ext_persentage * new_profile[row + 1]);
+        }
+        // right boundary
+        unperturbed_val = right_boundary(new_profile[i_m - 1], new_profile[i_m]);
+        jacobi.at(i_m, i_m - 1) = (right_boundary((1 + ext_persentage) * new_profile[i_m - 1], new_profile[i_m]) - unperturbed_val) / (ext_persentage * new_profile[i_m - 1]);
+        jacobi.at(i_m, i_m) = (right_boundary(new_profile[i_m - 1], (1 + ext_persentage) * new_profile[i_m]) - unperturbed_val) / (ext_persentage * new_profile[i_m]);
 
-            // right hand side of the system
-            std::vector<double> rhs(i_m + 1, 0.0);
-            // We solve J * X = -F, where X is the vector of iterative updates, and the rhs is all the equations above with minus
-            rhs[0] = -left_boundary(new_profile[0], new_profile[1]);
-            for (size_t row = 1; row < rhs.size() - 1; ++row)
+        // right hand side of the system
+        std::vector<double> rhs(i_m + 1, 0.0);
+        // We solve J * X = -F, where X is the vector of iterative updates, and the rhs is all the equations above with minus
+        rhs[0] = -left_boundary(new_profile[0], new_profile[1]);
+        for (size_t row = 1; row < rhs.size() - 1; ++row)
+        {
+            rhs[row] = -eq(row, new_profile[row - 1], new_profile[row], new_profile[row + 1]);
+        }
+        rhs[i_m] = -right_boundary(new_profile[i_m - 1], new_profile[i_m]);
+
+        // solve the system
+        std::vector<double> updates = jacobi.tridiagonal_solve(rhs);
+
+        max_diff = 0.0;
+        // apply the updates
+        for (size_t i = 0; i < new_profile.size(); ++i)
+        {
+            new_profile[i] += updates[i];
+            if (new_profile[i] < 0.0)
+                throw std::runtime_error("Negative temperature encountered!");
+                 // calculate the abs.-maximum update of the vector
+            if (std::abs(updates[i]) > max_diff)
             {
-                rhs[row] = -eq(row, t_curr, new_profile[row - 1], new_profile[row], new_profile[row + 1]);
+                max_diff = std::abs(updates[i] / new_profile[i]);
+                max_diff_index = i;
             }
-            rhs[i_m] = -right_boundary(new_profile[i_m - 1], new_profile[i_m]);
+        }
+    } while (max_diff > 1e-5);
 
-            // solve the system
-            std::vector<double> updates = jacobi.tridiagonal_solve(rhs);
-
-            // calculate the abs.-maximum update of the vector
-            max_diff = std::abs(*std::max_element(updates.begin(), updates.end(),
-                                                  [](double a, double b)
-                                                  { return std::abs(a) < std::abs(b); }));
-
-            // apply the updates
-            for (size_t i = 0; i < new_profile.size(); ++i)
-            {
-                new_profile[i] += updates[i];
-                if (new_profile[i] < 0.0)
-                    throw std::runtime_error("Negative temperature encountered!");
-            }
-
-        } while (max_diff / new_profile[0] > 1e-3);
-        // profile must be sufficiently updated by now, we can update other values
-        old_profile = new_profile;
-        time_step *= exp_rate;
-        t_curr += time_step;
-        std::cout << t_curr << " " << old_profile[0] << " " << old_profile[i_m] << '\n';
-    }
-    // interpolate the profile
-    return [radii, new_profile](double x)
-    {
-        return auxiliaries::math::interpolate(radii, new_profile, auxiliaries::math::InterpolationMode::kLinear, x, false, true);
-    };
+    // return the profile
+    return new_profile;
 }
 
 std::function<double(double, double)> cooling::predefined::photonic::surface_luminosity(double R, double M, double eta)
