@@ -205,7 +205,8 @@ int main()
         using namespace constants::conversion;
         using namespace constants::scientific;
         using namespace constants::species;
-        double T_inf = 2E5 / gev_over_k;
+        //r = 2.1865 * km_gev;
+        double T_inf = 2E8 * exp_phi(r) / gev_over_k;
         out << r / km_gev << "\t" << hadron_durca_emissivity(r, electron, 0, T_inf) / erg_over_cm3_s_gev5 / pow(T_inf * gev_over_k / exp_phi(r), 6) << "\t"
             << hadron_durca_emissivity(r, muon, 0, T_inf) / erg_over_cm3_s_gev5 / pow(T_inf * gev_over_k / exp_phi(r), 6) << "\t"
             << hadron_murca_emissivity(r, electron, 0, T_inf) / erg_over_cm3_s_gev5 / pow(T_inf * gev_over_k / exp_phi(r), 8)

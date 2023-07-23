@@ -346,7 +346,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
                 }
             }
         }
-        return dens_n * std::min(r_Mn_n, r_Mp_n) + dens_p * std::min(r_Mn_p, r_Mp_p);
+        return dens_n * std::min(r_Mn_n, r_Mn_p) + dens_p * std::min(r_Mp_n, r_Mp_p);
     };
 }
 
