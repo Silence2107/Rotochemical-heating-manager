@@ -98,7 +98,7 @@ int main(int argc, char **argv)
                     while (fabs(nbar_right - nbar_left) > nbar_low)
                     {
                         // while we are too far from appropriate precision for nbar estimate
-                        // recalculate via bisection method
+                         // recalculate via bisection method
                         nbar_mid = (nbar_left + nbar_right) / 2.0;
                         if (energy_density_of_nbar(nbar_mid) > density_at_r)
                             nbar_right = nbar_mid;
@@ -234,7 +234,7 @@ int main(int argc, char **argv)
 
     double t_curr = 0, time_step = base_t_step;
     double write_time = base_t_step;
-    while (t_curr + time_step < 5E10 * base_t_step)
+    while (t_curr + time_step < t_end)
     {
         std::cout << "t = " << t_curr << ", prof[0] = " << profile[0] << ", prof[-1] = " << profile.back() << '\n';
 
@@ -258,21 +258,22 @@ int main(int argc, char **argv)
         {
             try
             {
-                auto new_profile = cooling::solver::nonequilibrium_cooling(
+                auto new_profile = cooling::solver::nonequilibrium_cooling_2(
                     t_curr, t_curr + time_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
                     exp_lambda, exp_phi, radii, profile, te_tb);
                 double max_diff = 0;
                 for (size_t i = 0; i < radii.size(); ++i)
                 {
-                    max_diff = std::max(max_diff, fabs(new_profile[i] - profile[i]));
+                    max_diff = std::max(max_diff, fabs(new_profile[i] - profile[i])/profile[i]);
                     profile[i] = new_profile[i];
                 }
                 std::cout << "max_diff = " << max_diff << '\n';
-                /*if (max_diff > 1E-1 * initial_profile(r_ns / 2))
+                if (max_diff > 0.05)
                     {
-                        time_step *= 0.5;
-                        std::cout << "Adapting time step \n";
-                    }*/
+                        //time_step *= 0.5;
+                        //exp_rate_estim = sqrt(exp_rate_estim);
+                        //std::cout << "Adapting time step \n";
+                    }
                 break;
             }
             catch (std::runtime_error &e)
