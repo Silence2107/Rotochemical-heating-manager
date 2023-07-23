@@ -199,13 +199,13 @@ int main()
         std::function<double(double, double, double)>(fermi_specific_heat_dens), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p, radius_step);
 
     std::ofstream out("NormalizedEmissivities.txt");
-    out << "r,km\t Q_{eDU}/T_inf^6,erg/cm3s1K6\t Q_{muDU}/T_inf^6,erg/cm3s1K6\t Q_{eMU}/T_inf^8,erg/cm3s1K8\t Q_{muMU}/T_inf^8,erg/cm3s1K8\t Q_{hnubr}/T_inf^8,erg/cm3s1K8\t Q_{pPBF}/T_inf^7,erg/cm3s1K7\t Q_{nPBF}/T_inf^7,erg/cm3s1K7\n";
+    out << "r,km\t Q_{eDU}/T^6,erg/cm3s1K6\t Q_{muDU}/T^6,erg/cm3s1K6\t Q_{eMU}/T^8,erg/cm3s1K8\t Q_{muMU}/T^8,erg/cm3s1K8\t Q_{hnubr}/T^8,erg/cm3s1K8\t Q_{pPBF}/T^7,erg/cm3s1K7\t Q_{nPBF}/T^7,erg/cm3s1K7\n";
     for(double r = radius_step/2; r < r_ns; r += radius_step)
     {
         using namespace constants::conversion;
         using namespace constants::scientific;
         using namespace constants::species;
-        double T_inf = 2E5 / gev_over_k;
+        double T_inf = 2E8 * exp_phi(r) / gev_over_k;
         out << r / km_gev << "\t" << hadron_durca_emissivity(r, electron, 0, T_inf) / erg_over_cm3_s_gev5 / pow(T_inf * gev_over_k / exp_phi(r), 6) << "\t"
             << hadron_durca_emissivity(r, muon, 0, T_inf) / erg_over_cm3_s_gev5 / pow(T_inf * gev_over_k / exp_phi(r), 6) << "\t"
             << hadron_murca_emissivity(r, electron, 0, T_inf) / erg_over_cm3_s_gev5 / pow(T_inf * gev_over_k / exp_phi(r), 8)
