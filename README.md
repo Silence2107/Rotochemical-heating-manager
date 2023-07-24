@@ -9,7 +9,7 @@ The toolset is capable of constructing
 
 ## Input
 
-In order to setup the EoS, one must fill in the inputfile under include/inputfile.hpp . Currently we have no definitive guide on how to construct one, so at best you can replicate the one we provide for APR4 EoS.
+In order to setup the EoS, one must fill in the inputfile under include/inputfile.hpp . Currently we have no definitive guide on how to construct one, so at best you can replicate the one we provide for APR4 EoS. EoS datafile itself must be supplemented by user.
 
 ## Compilation
 
