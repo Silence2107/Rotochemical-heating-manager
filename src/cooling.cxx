@@ -64,7 +64,7 @@ double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double
 }
 
 std::vector<double> cooling::solver::nonequilibrium_cooling(
-    double t_curr, double t_next, const std::function<double(double, double, double)> &neutrino_rate, const std::function<double(double, double, double)> &cv, const std::function<double(double, double, double)> &lambda,
+    double t_curr, double t_step, const std::function<double(double, double, double)> &neutrino_rate, const std::function<double(double, double, double)> &cv, const std::function<double(double, double, double)> &lambda,
     const std::function<double(double)> &exp_lambda, const std::function<double(double)> &exp_phi, const std::vector<double> &radii, const std::vector<double> &initial_profile,
     const std::function<double(double)> &te_tb)
 {
@@ -73,6 +73,9 @@ std::vector<double> cooling::solver::nonequilibrium_cooling(
 
     // estimate new profile based on old one
     std::vector<double> new_profile = initial_profile;
+
+    // following time
+    double t_next = t_curr + t_step;
 
     // Here follow the equations we're supposed to satisfy
 
@@ -89,7 +92,7 @@ std::vector<double> cooling::solver::nonequilibrium_cooling(
                 r_b = radii[rad_index - 1],
                 radius_step = r - r_b;
         
-        return cv(r_b, t_next, A) * (B - initial_profile[rad_index]) / (t_next - t_curr) + neutrino_rate(r_b, t_next, A) -
+        return cv(r_b, t_next, A) * (B - initial_profile[rad_index]) / t_step + neutrino_rate(r_b, t_next, A) -
                1.0 / (r_b * r_b * exp_lambda(r_b) * radius_step * radius_step) *
                    (r * r * lambda(r, t_next, B) * exp_phi(r) / exp_lambda(r) * (C - B) -
                     r_b * r_b * lambda(r_b, t_next, A) * exp_phi(r_b) / exp_lambda(r_b) * (B - A));
@@ -184,7 +187,7 @@ std::vector<double> cooling::solver::nonequilibrium_cooling(
                 max_diff_index = i;
             }
         }
-    } while (max_diff > 1e-5);
+    } while (false);
 
     // return the profile
     return new_profile;
@@ -345,7 +348,7 @@ std::vector<double> cooling::solver::nonequilibrium_cooling_2(
 }*/
 
 std::vector<double> cooling::solver::nonequilibrium_cooling_2(
-    double t_curr, double t_next, const std::function<double(double, double, double)> &neutrino_rate, const std::function<double(double, double, double)> &cv, const std::function<double(double, double, double)> &lambda,
+    double t_curr, double t_step, const std::function<double(double, double, double)> &neutrino_rate, const std::function<double(double, double, double)> &cv, const std::function<double(double, double, double)> &lambda,
     const std::function<double(double)> &exp_lambda, const std::function<double(double)> &exp_phi, const std::vector<double> &radii, const std::vector<double> &initial_profile,
     const std::function<double(double)> &te_tb)
 {
@@ -355,33 +358,6 @@ std::vector<double> cooling::solver::nonequilibrium_cooling_2(
     // estimate new profile based on old one
     std::vector<double> new_profile = initial_profile;
 
-    // Here follow the equations we're supposed to satisfy
-
-    // (1) T^inf(r_0, t_next) = T^inf(r_1, t_next), where C is a temperature estimate at ({i + 1}, t_next)
-    auto left_boundary = [&](double C)
-    {
-        return C;
-    };
-
-    // (2) [T^inf(r_i, t_next) - T^inf(r_i, t_curr)]/(t_next - t_curr) = rhs, where {rad_index == i} node, and (A, B, C) are sequential temperature estimates at ({i - 1, i , i + 1}, t_next)
-    auto eq = [&](size_t rad_index, double A, double B, double C)
-    {
-        double r = radii[rad_index],
-                r_b = radii[rad_index - 1],
-                radius_step = r - r_b;
-        
-        return initial_profile[rad_index] - (t_next - t_curr) / cv(r_b, t_next, A) * (neutrino_rate(r_b, t_next, A) -
-               1.0 / (r_b * r_b * exp_lambda(r_b) * radius_step * radius_step) *
-                   (r * r * lambda(r, t_next, B) * exp_phi(r) / exp_lambda(r) * (C - B) -
-                    r_b * r_b * lambda(r_b, t_next, A) * exp_phi(r_b) / exp_lambda(r_b) * (B - A)));
-    };
-
-    // (3) [T^inf(r_{i_m}, t_next) - T^inf(r_{i_{m}-1}, t_next)]/(r_{i_m} - r_{i_{m}-1}) = -sigma_B * Te^4(T^inf(r_{i_{m}-1}, t_next)) / lambda(r_{i_{m}-1}, t_next, T^inf(r_{i_{m}-1}, t_j)), where A is a temperature estimate at ({i_{m} - 1}, t_next)
-    auto right_boundary = [&](double A)
-    {
-        return A - (radii[i_m] - radii[i_m - 1]) * constants::scientific::Sigma * pow(te_tb(A), 4) / lambda(radii[i_m - 1], t_next, A);
-    };
-
     // Now we perform the Newton's method to solve the system
 
     // biggest difference between old and new profile
@@ -389,49 +365,71 @@ std::vector<double> cooling::solver::nonequilibrium_cooling_2(
     size_t max_diff_index;
     do
     {
-        // Unfortunately, the system is not linear, so we have to solve it iteratively.
-        // We employ inverse iterations
+        // We solve a system by backward method, whereas we replace the temperature in all functions with old guess
 
-        // initial guess for the solution 
-        std::vector<double> updated_new_profile = new_profile;
+        using auxiliaries::math::MatrixD;
 
-        updated_new_profile[0] = left_boundary(new_profile[1]);
-        for (size_t row = 1; row < updated_new_profile.size() - 1; ++row)
+        // initial guess for the solution is already set, and equal to the old profile,
+        // so I'm not spamming the copies
+
+        // For the approach, equation operator matrix is needed, which is triagonal due to the nature of the system
+        MatrixD eq_operator(i_m + 1, i_m + 1, 0.0);
+        // fill the matrix
+
+        // left boundary
+        eq_operator.at(0, 0) = 1;
+        eq_operator.at(0, 1) = -1;
+        // PDE
+        for (size_t row = 1; row < eq_operator.rows() - 1; ++row)
         {
-            updated_new_profile[row] = eq(row, new_profile[row - 1], new_profile[row], new_profile[row + 1]);
+            // evade filling anything beyond tridiagonal, it is still computationally expensive
+
+            // memorize some values first that pop up in the system
+            double r_i = radii[row], r_i_1 = radii[row - 1];
+            double r_step = r_i - r_i_1;
+            double denom = r_i * r_i * exp_lambda(r_i) * cv(r_i, t_curr, initial_profile[row]) * r_step * r_step,
+                   num_1 = r_i * r_i * lambda(r_i, t_curr, initial_profile[row]) * exp_phi(r_i) / exp_lambda(r_i),
+                   num_2 = r_i_1 * r_i_1 * lambda(r_i_1, t_curr, initial_profile[row - 1]) * exp_phi(r_i_1) / exp_lambda(r_i_1);
+
+            eq_operator.at(row, row - 1) = -num_2 / denom;
+            eq_operator.at(row, row) = (num_1 + num_2) / denom + 1/t_step;
+            eq_operator.at(row, row + 1) = -num_1 / denom;
         }
-        updated_new_profile[i_m] = right_boundary(new_profile[i_m - 1]);
-        if (updated_new_profile[i_m] < 0.0)
-            updated_new_profile[i_m] = updated_new_profile[i_m - 1];
+        // right boundary
+        eq_operator.at(i_m, i_m - 1) = -1;
+        eq_operator.at(i_m, i_m) = 1;
+
+        // right hand side of the system
+        std::vector<double> rhs(i_m + 1, 0.0);
+        // We solve L * X = F, where X is the vector of predictions, and F is the rhs of the system
+        rhs[0] = 0;
+        for (size_t row = 1; row < rhs.size() - 1; ++row)
+        {
+            rhs[row] = initial_profile[row]/t_step - neutrino_rate(radii[row], t_curr, initial_profile[row])/cv(radii[row], t_curr, initial_profile[row]);
+        }
+        rhs[i_m] = -(radii[i_m] - radii[i_m - 1]) * constants::scientific::Sigma * pow(te_tb(initial_profile[i_m]), 4) / lambda(radii[i_m], t_curr, initial_profile[i_m]);
         
-        /*
-        // Crank-Nicolson like:
-        updated_new_profile[0] = (left_boundary(updated_new_profile[1]) + left_boundary(new_profile[1])) / 2.0;
-
-        for (size_t row = 1; row < updated_new_profile.size() - 1; ++row)
-        {
-            updated_new_profile[row] = (eq(row, updated_new_profile[row - 1], updated_new_profile[row], updated_new_profile[row + 1]) +
-                                        eq(row, new_profile[row - 1], new_profile[row], new_profile[row + 1])) / 2.0;
-        }
-        updated_new_profile[i_m] = (right_boundary(updated_new_profile[i_m - 1]) + right_boundary(new_profile[i_m - 1])) / 2.0;
-        if (updated_new_profile[i_m] < 0.0)
-            updated_new_profile[i_m] = updated_new_profile[i_m - 1];*/
+        // solve the system
+        std::vector<double> updates = eq_operator.tridiagonal_solve(rhs);
+        // lame safety switch for toooo extreme overestimates of the boundary temperature
+        if (updates[i_m] < updates[i_m - 1] / 2)
+            updates[i_m] = updates[i_m - 1];
 
         max_diff = 0.0;
         // apply the updates
         for (size_t i = 0; i < new_profile.size(); ++i)
         {
-            // calculate the abs.-maximum update of the vector
-            if (std::abs(updated_new_profile[i] - new_profile[i]) > max_diff)
-            {
-                max_diff = std::abs(updated_new_profile[i] - new_profile[i]) / updated_new_profile[i];
-                max_diff_index = i;
-            }
-            new_profile[i] = updated_new_profile[i];
+            new_profile[i] = updates[i];
             if (new_profile[i] < 0.0)
                 throw std::runtime_error("Negative temperature encountered!");
+            // calculate the abs.-maximum update of the vector
+            if (std::abs(updates[i]) > max_diff)
+            {
+                max_diff = std::abs(updates[i] / new_profile[i]);
+                max_diff_index = i;
+            }
         }
-    } while (max_diff > 1e-5);
+    } while (false);
 
     // return the profile
     return new_profile;

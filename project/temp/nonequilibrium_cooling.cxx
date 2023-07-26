@@ -234,7 +234,7 @@ int main(int argc, char **argv)
 
     double t_curr = 0, time_step = base_t_step;
     double write_time = base_t_step;
-    while (t_curr + time_step < t_end)
+    while (t_curr + time_step < 1E12 * base_t_step)
     {
         std::cout << "t = " << t_curr << ", prof[0] = " << profile[0] << ", prof[-1] = " << profile.back() << '\n';
 
@@ -248,48 +248,34 @@ int main(int argc, char **argv)
                 xs.back()[i] /= km_gev;
                 ys.back()[i] *= gev_over_k;
             }
+            //std::cout << t_curr << " " << profile[0] << " " << profile.back() << std::endl;
             write_time *= 10.0;
         }
 
         bool error = false;
 
         // update
-        while(true)
+        while (true)
         {
-            try
+            
+            auto new_profile = cooling::solver::nonequilibrium_cooling_2(
+                t_curr, time_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
+                exp_lambda, exp_phi, radii, profile, te_tb);
+            double max_diff = 0;
+            for (size_t i = 0; i < radii.size(); ++i)
             {
-                auto new_profile = cooling::solver::nonequilibrium_cooling_2(
-                    t_curr, t_curr + time_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
-                    exp_lambda, exp_phi, radii, profile, te_tb);
-                double max_diff = 0;
-                for (size_t i = 0; i < radii.size(); ++i)
-                {
-                    max_diff = std::max(max_diff, fabs(new_profile[i] - profile[i])/profile[i]);
-                    profile[i] = new_profile[i];
-                }
-                std::cout << "max_diff = " << max_diff << '\n';
-                if (max_diff > 0.05)
-                    {
-                        //time_step *= 0.5;
-                        //exp_rate_estim = sqrt(exp_rate_estim);
-                        //std::cout << "Adapting time step \n";
-                    }
-                break;
+                max_diff = std::max(max_diff, fabs(new_profile[i] - profile[i])/profile[i]);
+                profile[i] = new_profile[i];
             }
-            catch (std::runtime_error &e)
-            {
-                std::cout << e.what() << '\n';
-                using namespace constants::conversion;
-                xs.push_back(radii);
-                ys.push_back(profile);
-                for (size_t i = 0; i < radii.size(); ++i)
+            std::cout << "max_diff = " << max_diff << '\n';
+            if (max_diff > 0.05)
                 {
-                    xs.back()[i] /= km_gev;
-                    ys.back()[i] *= gev_over_k;
+                    time_step *= 0.5;
+                    //exp_rate_estim = sqrt(exp_rate_estim);
+                    //std::cout << "Adapting time step \n";
+                    continue;
                 }
-                error = true;
-                break;
-            }
+            break;
         }
         
         if(error)
@@ -319,7 +305,7 @@ int main(int argc, char **argv)
     mg->Draw("A");
     // title offset
     mg->GetYaxis()->SetTitleOffset(1.5);
-    mg->GetYaxis()->SetRangeUser(6E6, 6E9);
+    mg->GetYaxis()->SetRangeUser(5.5E6, 5.5E9);
     gPad->SetLogy();
 
     mg->GetXaxis()->SetTitle("r [km]");
