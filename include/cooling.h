@@ -40,8 +40,8 @@ namespace cooling
         /// @param radii reper radii [GeV^{-1}] at which the profiles are calculated
         /// @param initial_profile initial temperature profile T^inf(r, t=t_curr) [GeV] as an array corresponding to radii
         /// @param te_tb Local surface temperature [GeV] as a function of undercrustal T_b^inf [GeV]
-        /// @return Temperature, luminosity profiles [T^inf(r, t), Ld^inf(r, t)] as an [2][i_m] array corresponding to radii
-        std::vector<double> nonequilibrium_cooling(
+        /// @return Temperature, luminosity profiles [T^inf(r, t), Ld^inf(r, t)] as an [2][i_m + 1] array corresponding to radii
+        std::vector<std::vector<double>> nonequilibrium_cooling(
             double t_curr, double t_step, const std::function<double(double, double, double)> &neutrino_rate, const std::function<double(double, double, double)> &cv, const std::function<double(double, double, double)> &lambda,
             const std::function<double(double)> &exp_lambda, const std::function<double(double)> &exp_phi, const std::vector<double> &radii, const std::vector<double> &initial_profile,
             const std::function<double(double)> &te_tb);

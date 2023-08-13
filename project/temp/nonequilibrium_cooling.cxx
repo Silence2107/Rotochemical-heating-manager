@@ -260,7 +260,7 @@ int main(int argc, char **argv)
             
             auto new_profile = cooling::solver::nonequilibrium_cooling(
                 t_curr, time_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
-                exp_lambda, exp_phi, radii, profile, te_tb);
+                exp_lambda, exp_phi, radii, profile, te_tb)[0];
             double max_diff = 0;
             for (size_t i = 0; i < radii.size(); ++i)
             {

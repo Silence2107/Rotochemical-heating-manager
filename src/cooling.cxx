@@ -34,7 +34,7 @@ double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double
             F_shift = cooling_rhs(t + time_step, T_new + temp_step) - F;
             T_new -= (T_new - T - time_step * F) / (1 - time_step * F_shift / temp_step);
             if (T_new < 0)
-                throw std::runtime_error("Reached negative temperature with current method; Encountered in stationary_cooling_cached");
+                throw std::runtime_error("Reached negative temperature with current method; Encountered in cooling::solver::stationary_cooling_cached");
             if (iter > max_iter)
                 break;
         } while (std::abs(T_new - T - time_step * F) > eps * T);
@@ -63,7 +63,7 @@ double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double
     return interpolator(cache[0], cache[1], t);
 }
 
-std::vector<double> cooling::solver::nonequilibrium_cooling(
+std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
     double t_curr, double t_step, const std::function<double(double, double, double)> &neutrino_rate, const std::function<double(double, double, double)> &cv, const std::function<double(double, double, double)> &lambda,
     const std::function<double(double)> &exp_lambda, const std::function<double(double)> &exp_phi, const std::vector<double> &radii, const std::vector<double> &initial_profile,
     const std::function<double(double)> &te_tb)
@@ -185,7 +185,7 @@ std::vector<double> cooling::solver::nonequilibrium_cooling(
             t_profile[i] += updates[2 * i + 1];
             l_profile[i] += updates[2 * i];
             if (t_profile[i] < 0.0)
-                throw std::runtime_error("Negative temperature encountered!");
+                throw std::runtime_error("Reached negative temperature with current method; Encountered in cooling::solver::nonequilibrium_cooling");
             // calculate the abs.-maximum update of the vector
             if (std::abs(updates[2 * i]) > max_diff)
             {
@@ -195,8 +195,8 @@ std::vector<double> cooling::solver::nonequilibrium_cooling(
         }
     } while (max_diff > 1e-5 && ++iter > max_iter);
 
-    // return the profile
-    return t_profile;
+    // return the profiles
+    return {t_profile, l_profile};
 }
 
 std::function<double(double, double)> cooling::predefined::photonic::surface_luminosity(double R, double M, double eta)
