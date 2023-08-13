@@ -234,7 +234,7 @@ int main(int argc, char **argv)
 
     double t_curr = 0, time_step = base_t_step;
     double write_time = base_t_step;
-    while (t_curr + time_step < 1E12 * base_t_step)
+    while (t_curr + time_step < 0.1 * t_end)
     {
         std::cout << "t = " << t_curr << ", prof[0] = " << profile[0] << ", prof[-1] = " << profile.back() << '\n';
 
@@ -258,7 +258,7 @@ int main(int argc, char **argv)
         while (true)
         {
             
-            auto new_profile = cooling::solver::nonequilibrium_cooling_2(
+            auto new_profile = cooling::solver::nonequilibrium_cooling(
                 t_curr, time_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
                 exp_lambda, exp_phi, radii, profile, te_tb);
             double max_diff = 0;
