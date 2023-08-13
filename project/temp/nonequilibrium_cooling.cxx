@@ -267,7 +267,7 @@ int main(int argc, char **argv)
                 max_diff = std::max(max_diff, fabs(new_profile[i] - profile[i])/profile[i]);
                 profile[i] = new_profile[i];
             }
-            std::cout << "max_diff = " << max_diff << '\n';
+            // std::cout << "max_diff = " << max_diff << '\n';
             if (max_diff > 0.05)
                 {
                     time_step *= 0.5;
