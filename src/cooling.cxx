@@ -9,7 +9,8 @@
 #include <string>
 #include <cmath>
 #include <stdexcept>
-// #include <iostream>
+#include <algorithm>
+#include <iostream>
 
 double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double>> &cache, double t, const std::function<double(double, double)> &cooling_rhs, double initial_temperature, double base_time_step, double exp_rate,
                                                   const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &interpolator)
@@ -33,7 +34,7 @@ double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double
             F_shift = cooling_rhs(t + time_step, T_new + temp_step) - F;
             T_new -= (T_new - T - time_step * F) / (1 - time_step * F_shift / temp_step);
             if (T_new < 0)
-                throw std::runtime_error("Reached negative temperature with current method; Encountered in stationary_cooling_cached");
+                throw std::runtime_error("Reached negative temperature with current method; Encountered in cooling::solver::stationary_cooling_cached");
             if (iter > max_iter)
                 break;
         } while (std::abs(T_new - T - time_step * F) > eps * T);
@@ -60,6 +61,142 @@ double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double
     }
     // now we're sure the time is in the cache, we just interpolate
     return interpolator(cache[0], cache[1], t);
+}
+
+std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
+    double t_curr, double t_step, const std::function<double(double, double, double)> &neutrino_rate, const std::function<double(double, double, double)> &cv, const std::function<double(double, double, double)> &lambda,
+    const std::function<double(double)> &exp_lambda, const std::function<double(double)> &exp_phi, const std::vector<double> &radii, const std::vector<double> &initial_profile,
+    const std::function<double(double)> &te_tb)
+{
+    // biggest available radius zone (therefore i_m + 1 is the number of zones)
+    size_t i_m = radii.size() - 1;
+
+    // estimate new profile based on old one
+    std::vector<double> t_profile = initial_profile, // temperature profile
+                        l_profile(i_m + 1, 0.0); // luminosity profile, to be instantiated later
+
+    double t_next = t_curr + t_step;
+
+    // Here follow the equations we're supposed to satisfy
+
+    // (1) Ld^inf(r_0, t_next) = 0
+
+    // (2) Ld^inf(r_{i+1}, t_next) = -r1(i, T_i, T_{i+1}), where {rad_index == i} node
+    auto r1 = [&](size_t rad_index, double Bt, double Ct)
+    {
+        double r = radii[rad_index],
+               radius_step = r - radii[rad_index - 1];
+
+        return 4 * constants::scientific::Pi * r * r * exp_phi(r) / exp_lambda(r) * lambda(r, t_next, Bt) * (Ct - Bt) / radius_step;
+    };
+
+    // (3) Ld^inf(r_{i+1}, t_next) - Ld^inf(r_{i}, t_next) = -r2(i, T_i), where {rad_index == i} node
+    auto r2 = [&](size_t rad_index, double Bt)
+    {
+        double r = radii[rad_index],
+               radius_step = radii[rad_index + 1] - r;
+
+        return 4 * constants::scientific::Pi * r * r * exp_lambda(r) * radius_step * 
+            (cv(r, t_next, Bt) * (Bt - initial_profile[rad_index]) / t_step + neutrino_rate(r, t_next, Bt));
+    };
+
+    // (4) Ld^inf(r_{i_m}, t_next) = -right_boundary(T_{i_m})
+    auto right_boundary = [&](double Bt)
+    {
+        return -constants::scientific::Sigma * 4 * constants::scientific::Pi * radii[i_m] * radii[i_m] * pow(te_tb(Bt), 4);
+    };
+    
+    // Initial estimate for luminosity profile follows from (1), (2)
+    l_profile[0] = 0.0;
+    for (size_t i = 1; i < l_profile.size(); ++i)
+    {
+        l_profile[i] = -r1(i - 1, t_profile[i - 1], t_profile[i]);
+    }
+
+    // Now we perform the Newton's method to solve the system
+
+    // biggest difference between old and new profile
+    double max_diff;
+    size_t max_diff_index;
+    size_t max_iter = 50, iter = 0;
+    do
+    {
+        // Unfortunately, the system is not linear, so we have to solve it iteratively.
+        // Usual tridiagonal matrix algorithm is applicable under linearization, for which
+        // we simply employ the Newton's method
+
+        using auxiliaries::math::MatrixD;
+
+        // initial guess for the solution is already set, and equal to the old profile,
+        // so I'm not spamming the copies
+
+        // For the approach, jacobi matrix is needed, which is triagonal due to the nature of the system
+        MatrixD jacobi(2 * i_m + 2, 2 * i_m + 2, 0.0);
+        // right hand side of the system
+        std::vector<double> rhs(2 * i_m + 2, 0.0);
+        // fill the matrix
+
+        // we're going to calculate temperature derivatives as [f((1+ext)*x)-f(x)]/ext*x,
+        // since temperature here is always (hopefully!) > 0
+        double ext_persentage = 0.001;
+
+        // placeholder for f(X), s. t. we do not reevaluate it multiple times
+        double unperturbed_val;
+
+        // left boundary
+        jacobi.at(0, 0) = 1.0;
+        jacobi.at(0, 1) = 0.0; // left boundary is independent of T
+        rhs[0] = l_profile[0];
+        // PDE
+        for (size_t p = 0; p < i_m; ++p)
+        {
+            // evade filling anything beyond tridiagonal, it is still computationally expensive
+
+            // derivatives wrt A, B, C respectively
+            unperturbed_val = r2(p, t_profile[p]);
+            size_t row = 2 * p + 1;
+            jacobi.at(row, row - 1) = -1.0;
+            jacobi.at(row, row) = (r2(p, t_profile[p] * (1 + ext_persentage)) - unperturbed_val) / (ext_persentage * t_profile[p]);
+            jacobi.at(row, row + 1) = 1.0;
+            rhs[row] = -(l_profile[p + 1] - l_profile[p] + r2(p, t_profile[p]));
+
+            unperturbed_val = r1(p, t_profile[p], t_profile[p + 1]);
+            row = 2 * p + 2;
+            jacobi.at(row, row - 1) = (r1(p, t_profile[p] * (1 + ext_persentage), t_profile[p + 1]) - unperturbed_val) / (ext_persentage * t_profile[p]);
+            jacobi.at(row, row) = 1.0;
+            jacobi.at(row, row + 1) = (r1(p, t_profile[p], t_profile[p + 1] * (1 + ext_persentage)) - unperturbed_val) / (ext_persentage * t_profile[p + 1]);
+            rhs[row] = -(l_profile[p + 1] + r1(p, t_profile[p], t_profile[p + 1]));
+        }
+        // right boundary
+        unperturbed_val = right_boundary(t_profile[i_m]);
+        jacobi.at(2 * i_m + 1, 2 * i_m) = 1.0;
+        jacobi.at(2 * i_m + 1, 2 * i_m + 1) = (right_boundary(t_profile[i_m] * (1 + ext_persentage)) - unperturbed_val) / (ext_persentage * t_profile[i_m]);
+        rhs[2 * i_m + 1] = -(l_profile[i_m] + right_boundary(t_profile[i_m]));
+
+        // We solve J * X = -F, where X is the vector of iterative updates, and the rhs is all the equations above with minus
+
+        // solve the system
+        std::vector<double> updates = jacobi.tridiagonal_solve(rhs);
+
+        max_diff = 0.0;
+        // apply the updates
+        for (size_t i = 0; i < i_m + 1; ++i)
+        {
+            t_profile[i] += updates[2 * i + 1];
+            l_profile[i] += updates[2 * i];
+            if (t_profile[i] < 0.0)
+                throw std::runtime_error("Reached negative temperature with current method; Encountered in cooling::solver::nonequilibrium_cooling");
+            // calculate the abs.-maximum update of the vector
+            if (std::abs(updates[2 * i]) > max_diff)
+            {
+                max_diff = std::abs(updates[2 * i + 1] / t_profile[i]);
+                max_diff_index = i;
+            }
+        }
+    } while (max_diff > 1e-5 && ++iter > max_iter);
+
+    // return the profiles
+    return {t_profile, l_profile};
 }
 
 std::function<double(double, double)> cooling::predefined::photonic::surface_luminosity(double R, double M, double eta)
@@ -238,7 +375,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
                 return dens *
                     (nbar_val > nbar_core_limit ? 
                             r_AB(1 / tau_n_inv, 1 / tau_p_inv)
-                            : r_AA(superfluid_gap_1s0(1 / tau_n_inv), superfluid_gap_1s0(1 / tau_p_inv)));
+                                                   : r_AA(superfluid_gap_1s0(1 / tau_n_inv), superfluid_gap_1s0(1 / tau_p_inv)));
             }
             // pure 1S0 for neutrons
             else if (superfluid_n_1s0)
@@ -248,7 +385,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
             // pure 3P2 for neutrons
             else
             {
-                
+
                 return dens * r_AB(1 / tau_n_inv, 1 / tau_p_inv);
             }
         }
@@ -282,9 +419,9 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
                         pow(T_loc * gev_over_k / 1.0E9, 8) * alpha * beta * erg_over_cm3_s_gev5;
         // manually cross out pf_l and pf_p in numerator and denominator to avoid numerical issues
         double dens_p = (pf_l + 3 * pf_p - pf_n > 0 ? (pow(pf_l + 3 * pf_p - pf_n, 2) / (8 * mst_l)) *
-                                                           8.1E21 * pow(mst_p / M_N, 3) * (mst_n / M_N) * (1.0 / k0) *
-                                                           pow(T_loc * gev_over_k / 1.0E9, 8) * alpha * beta * erg_over_cm3_s_gev5
-                                                     : 0.0);
+                                                          8.1E21 * pow(mst_p / M_N, 3) * (mst_n / M_N) * (1.0 / k0) *
+                                                          pow(T_loc * gev_over_k / 1.0E9, 8) * alpha * beta * erg_over_cm3_s_gev5
+                                                    : 0.0);
 
         // Superfluid factors
         double r_Mn_n = 1.0, r_Mn_p = 1.0, r_Mp_n = 1.0, r_Mp_p = 1.0;

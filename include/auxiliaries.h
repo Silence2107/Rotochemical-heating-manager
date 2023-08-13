@@ -385,6 +385,14 @@ namespace auxiliaries
             double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
             const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp, const std::function<double(double)> &superconduct_q_gap);
 
+        /// @brief Thermal conductivity of substance
+        /// @param rho energy density of the substance [GeV^4] as a function of baryon density [GeV^3]
+        /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
+        /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
+        /// @return thermal conductivity as a function of radius, time and T^inf [natural units]
+        /// @cite Base value - Flowers, Itoh, 1982
+        std::function<double(double, double, double)> thermal_conductivity_FI(const std::function<double(double)> &rho, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi);
+
         /// @brief Te-Tb relation
         /// @param Tb internal temperature [GeV], measured by distant observer (inf)
         /// @param R NS radius [GeV^{-1}]

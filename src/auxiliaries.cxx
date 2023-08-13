@@ -90,7 +90,7 @@ std::string auxiliaries::io::retrieve_cleared_line(const std::string &line)
 }
 
 double auxiliaries::math::interpolate(const std::vector<double> &input, const std::vector<double> &output,
-                                auxiliaries::math::InterpolationMode mode, double x, bool extrapolate, bool enable_checks)
+                                      auxiliaries::math::InterpolationMode mode, double x, bool extrapolate, bool enable_checks)
 {
     if (enable_checks)
     {
@@ -112,7 +112,7 @@ double auxiliaries::math::interpolate(const std::vector<double> &input, const st
         low_pos = std::upper_bound(input.begin(), input.end(), x, std::greater<double>()) -
                   input.begin();
     // extrapolation: in case x is out of range, we extrapolate from the nearest polinomial
-    if(extrapolate)
+    if (extrapolate)
     {
         if (low_pos == input.size())
             --low_pos;
@@ -203,7 +203,7 @@ double auxiliaries::math::interpolate_cached(std::function<double(double)> &cach
             if (input.size() != output.size())
                 throw std::runtime_error("Input and output arrays have different sizes. Encountered in auxiliaries::math::interpolate_cached");
         }
-        
+
         // interpolate
         switch (mode)
         {
@@ -412,6 +412,89 @@ std::function<double(double, double, double)> auxiliaries::phys::fermi_specific_
             cv_dens += diff;
         }
         return cv_dens;
+    };
+}
+
+std::function<double(double, double, double)> auxiliaries::phys::thermal_conductivity_FI(const std::function<double(double)> &rho, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi)
+{
+    return [=](double r, double t, double T)
+    {
+        using namespace constants::conversion;
+        using namespace constants::scientific;
+        double rho_cm3_over_g = rho(nbar_of_r(r)) / g_over_cm3_gev4,
+               T_loc_8 = T / exp_phi(r) * (gev_over_k / 1E8);
+
+        // scales, present in the calculations
+        double rho_scale_cm3_over_g = 2.0E14,
+               T_melt_8 = 2.4E5 * pow(rho_cm3_over_g, 1.0 / 3) * 1E-8;
+
+        // units: erg / (cm * s * K) -> GeV^2
+        double erg_over_cm_s_k_gev2 = erg_over_gev * gev_over_k / (gev_s * 1E-5 * km_gev);
+        // In what follows we mostly refer to F & I, with the exception of some simplifications
+        // introduced specifically for typical NS conditions.
+
+        // (1) Quantum liquid region
+
+        // usually requires to check if T < T_fp \approx mst_p \ge 0.1 M_N \sim 100 MeV, which as way above NS core temperatures
+
+        // density must usually not exceed the one where nucleon matter become subdominant,
+        // but due to consideration of either npemu or npeq matter, we shall omit this condition
+        if (rho_scale_cm3_over_g <= rho_cm3_over_g)
+        {
+            return 1E23 * (rho_cm3_over_g / 1E14) / T_loc_8 * erg_over_cm_s_k_gev2;
+        }
+
+        // (2) Liquid metal region
+
+        // usually requires to check if T < T_ep = p_fe = (ne/nsat)^{1/3} 1.7 fm^{-1} =
+        // = [for most EoS Tmelt < T will be under crust, so ne \ge 1E-3 nB] \gapprox
+        // (Ye)^{1/3} 1.68/5 GeV \gapprox 10^{0:2} MeV <- only wrong for extremely small Ye
+        // which may occur at crust/exotic ph. However, my opinion that it's safe to
+        // extend in general.
+
+        // auxiliary variables; setup for taylor expansion
+        double x = 0.08594 * log(rho_cm3_over_g) - 1.7949;
+
+        std::vector<double> a = {-43.8644, -11.6758, 1.2698, 0.2798, 2.5652, -0.3879};
+        double y = 0.0;
+
+        for (size_t index = 0; index < a.size(); ++index)
+        {
+            y += a[index] * pow(x, 1.0 * index);
+        }
+
+        // rho_scale_cm3_over_g > rho_cm3_over_g now holds
+        if (T_melt_8 < T_loc_8)
+        {
+            return 1.0 / (1.0 / (1E14 * pow(rho_cm3_over_g, 1.0 / 3) * T_loc_8) + exp(y) * T_loc_8) * erg_over_cm_s_k_gev2;
+        }
+
+        // (3) Solid region
+
+        // auxiliary variables; setup for taylor expansions
+
+        std::vector<double> b = {-41.1677, -7.8991, 3.4603, -0.8061};
+        double z = 0.0;
+
+        for (size_t index = 0; index < b.size(); ++index)
+        {
+            z += b[index] * pow(x, 1.0 * index);
+        }
+
+        double u = 3.6E-6 * pow(rho_cm3_over_g, 1.0 / 2) / T_loc_8;
+        double s;
+        if (u > 5)
+        {
+            s = Pi * Pi / (6 * u);
+        }
+        else
+        {
+            s = 1.0 - u / 4 + pow(u, 2.0) / 36 - pow(u, 4.0) / 3600 +
+                pow(u, 6.0) / 211680 - pow(u, 8.0) / 10886400 + pow(u, 10.0) / 526901760;
+        }
+
+        // rho_scale_cm3_over_g > rho_cm3_over_g && T_melt_8 >= T_loc_8 now hold
+        return 1.0 / (exp(z) * s + exp(y) * T_loc_8) * erg_over_cm_s_k_gev2;
     };
 }
 
