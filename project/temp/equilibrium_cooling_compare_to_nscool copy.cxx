@@ -106,6 +106,8 @@ int main()
             return nbar_interpolator(cache[0], cache[1], r);
         });
 
+    // Cooling
+
     double r_ns = tov(0.0)[4];
     double m_ns = tov(r_ns)[0];
 
@@ -119,14 +121,10 @@ int main()
         return pow(1 - 2 * constants::scientific::G * tov(r)[0] / r, -0.5);
     };
 
-    // cooling settings
+    // photon luminosity
+    auto photon_luminosity = cooling::predefined::photonic::surface_luminosity(r_ns, m_ns, crust_eta);
 
-    auto te_tb = [&r_ns, &m_ns](double T_binf)
-    {
-        return auxiliaries::phys::te_tb_relation(T_binf, r_ns, m_ns, crust_eta);
-    };
-
-    // internal emission
+    // neutrino luminosity
     auto hadron_durca_emissivity = cooling::predefined::neutrinic::hadron_durca_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, exp_phi, superfluid_n_1s0,
         superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp);
@@ -195,22 +193,13 @@ int main()
         return result * exp_phi(r) * exp_phi(r);
     };
 
-    // microscopics
+    auto neutrino_luminosity = auxiliaries::math::integrate_volume<double, double>(
+        std::function<double(double, double, double)>(Q_nu), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p, radius_step);
+
+    // specific heat
     auto fermi_specific_heat_dens = auxiliaries::phys::fermi_specific_heat_density(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, exp_phi, superfluid_n_1s0,
         superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp, superconduct_q_gap);
-
-    auto thermal_conductivity = auxiliaries::phys::thermal_conductivity_FI(energy_density_of_nbar,
-                                                                           nbar, exp_phi);
-
-    // equilibrium cooling settings
-
-    // photon luminosity
-    auto photon_luminosity = cooling::predefined::photonic::surface_luminosity(r_ns, m_ns, crust_eta);
-
-    // neutrino luminosity
-    auto neutrino_luminosity = auxiliaries::math::integrate_volume<double, double>(
-        std::function<double(double, double, double)>(Q_nu), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p, radius_step);
 
     auto heat_capacity = auxiliaries::math::integrate_volume<double, double>(
         std::function<double(double, double, double)>(fermi_specific_heat_dens), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p, radius_step);
@@ -221,28 +210,10 @@ int main()
         return -(photon_luminosity(t, T) + neutrino_luminosity(t, T)) / heat_capacity(t, T);
     };
 
-    // solve cooling equations
+    // solve cooling equation
     double exp_phi_at_R = pow(1 - 2 * constants::scientific::G * m_ns / r_ns, 0.5);
 
-    auto initial_profile = [&nbar, &exp_phi, exp_phi_at_R](double r)
-    {
-        using namespace constants::conversion;
-        /*if (nbar(r) > nbar_core_limit)
-            return 1E10 * exp_phi(r) / gev_over_k;
-        else if (nbar(r) > nbar_crust_limit)
-            return 8E9 * exp_phi(r) / gev_over_k;
-        else*/
-        return 5E9 * exp_phi_at_R / gev_over_k;
-    };
-
-    // tabulate initial profile and radii
-    double cooling_radius_step = 10 * radius_step;
-    std::vector<double> radii, profile;
-    for (double r = cooling_radius_step / 2.0; r < r_ns; r += cooling_radius_step)
-    {
-        radii.push_back(r);
-        profile.push_back(initial_profile(r));
-    }
+    double T_init = T_init_local * exp_phi_at_R;
 
     // plot the solution (assumes exp_rate_estim > 1)
     std::vector<double> x;
@@ -255,14 +226,11 @@ int main()
               << "\tL_ph [erg/s] "
               << "\tL_nu [erg/s] " << std::endl;
     x.push_back(t_init);
-    y.push_back(profile.end()[-2]);
+    y.push_back(T_init);
     double t_step = base_t_step;
     while (x.back() < t_end)
     {
-        auto t_l_profiles = cooling::solver::nonequilibrium_cooling(
-            x.back(), t_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
-            exp_lambda, exp_phi, radii, profile, te_tb);
-        double next_T = t_l_profiles[0].end()[-2];
+        double next_T = cooling::solver::equilibrium_cooling(x.back(), t_step, cooling_rhs, y.back());
         double max_diff = std::abs((y.back() - next_T) / y.back());
         if (max_diff > 0.05)
         {
@@ -270,10 +238,8 @@ int main()
             continue;
         }
         y.push_back(next_T);
-        profile = t_l_profiles[0];
         x.push_back(x.back() + t_step);
         t_step *= exp_rate_estim;
-
         // print in understandable units
         std::cout << 1.0E6 * x.back() / (constants::conversion::myr_over_s * constants::conversion::gev_s) << "\t" << auxiliaries::phys::te_tb_relation(y.back(), r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k << "\t" << photon_luminosity(x.back(), y.back()) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << neutrino_luminosity(x.back(), y.back()) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << '\n';
     }

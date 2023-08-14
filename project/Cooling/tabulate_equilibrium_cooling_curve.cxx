@@ -53,7 +53,7 @@ int main()
     // TOV solver
 
     auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
-                                              const std::function<double(double)> &, double, double, double, double>(tov_solver::tov_solution);
+                                                    const std::function<double(double)> &, double, double, double, double>(tov_solver::tov_solution);
     auto tov = [&tov_cached, &eos_cached](double r)
     {
         // TOV solution cached
@@ -201,43 +201,45 @@ int main()
     auto cooling_rhs = [&heat_capacity, &photon_luminosity, &neutrino_luminosity](double t, double T)
     {
         // std::cout << t << " " << photon_luminosity(t, T) << " " << neutrino_luminosity(t, T) << " " << heat_capacity(t, T) << '\n';
-        return -(photon_luminosity(t + t_init, T) + neutrino_luminosity(t + t_init, T)) / heat_capacity(t + t_init, T);
+        return -(photon_luminosity(t, T) + neutrino_luminosity(t, T)) / heat_capacity(t, T);
     };
 
     // solve cooling equation
-
-    auto cooling_solver = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double, const std::function<double(double, double)> &, double, double, double,
-                                                  const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &>(cooling::solver::stationary_cooling_cached);
-
     double exp_phi_at_R = pow(1 - 2 * constants::scientific::G * m_ns / r_ns, 0.5);
 
     double T_init = T_init_local * exp_phi_at_R;
 
-    // invoke the solver once to cache the solution
-    cooling_solver(t_end - t_init, cooling_rhs, T_init, base_t_step, exp_rate_estim, cooling_interpolator);
-
     // plot the solution (assumes exp_rate_estim > 1)
-    std::vector<double> x(cooling_n_points_estimate, 0);
-    std::vector<double> y(cooling_n_points_estimate, 0);
+    std::vector<double> x;
+    std::vector<double> y;
+    x.reserve(cooling_n_points_estimate);
+    y.reserve(cooling_n_points_estimate);
     std::cout << "M/Msol " << m_ns * constants::conversion::gev_over_msol << std::endl;
     std::cout << "t [years] "
               << "\tTe^inf [K] "
               << "\tL_ph [erg/s] "
               << "\tL_nu [erg/s] " << std::endl;
-    for (int i = 0;; ++i)
+    x.push_back(t_init);
+    y.push_back(T_init);
+    double t_step = base_t_step;
+    while (x.back() < t_end)
     {
-        x[i] = base_t_step * (pow(exp_rate_estim, i + 1) - 1) / (exp_rate_estim - 1);
-        if (x[i] > t_end)
+        double next_T = cooling::solver::equilibrium_cooling(x.back(), t_step, cooling_rhs, y.back());
+        double max_diff = std::abs((y.back() - next_T) / y.back());
+        if (max_diff > 0.05)
         {
-            x.resize(i);
-            y.resize(i);
-            break;
+            t_step /= 2.0;
+            continue;
         }
-        y[i] = cooling_solver(x[i], cooling_rhs, T_init, base_t_step, exp_rate_estim, cooling_interpolator);
+        y.push_back(next_T);
+        x.push_back(x.back() + t_step);
+        t_step *= exp_rate_estim;
         // print in understandable units
-        std::cout << 1.0E6 * (x[i] + t_init) / (constants::conversion::myr_over_s * constants::conversion::gev_s) << "\t" << auxiliaries::phys::te_tb_relation(y[i], r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k << "\t" << photon_luminosity(x[i], y[i]) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << neutrino_luminosity(x[i], y[i]) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << '\n';
-        // rescale
-        x[i] += t_init;
+        std::cout << 1.0E6 * x.back() / (constants::conversion::myr_over_s * constants::conversion::gev_s) << "\t" << auxiliaries::phys::te_tb_relation(y.back(), r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k << "\t" << photon_luminosity(x.back(), y.back()) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << neutrino_luminosity(x.back(), y.back()) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << '\n';
+    }
+    // rescale to same units as in the printout
+    for (size_t i = 0; i < x.size(); ++i)
+    {
         x[i] *= 1.0E6 / (constants::conversion::myr_over_s * constants::conversion::gev_s);
         y[i] = auxiliaries::phys::te_tb_relation(y[i], r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k;
     }

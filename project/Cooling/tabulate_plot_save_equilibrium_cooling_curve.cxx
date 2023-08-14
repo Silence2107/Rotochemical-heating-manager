@@ -18,10 +18,17 @@
 #include <TGraph.h>
 #include <TAxis.h>
 #include <TLegend.h>
+#include <TFile.h>
 #include <TStyle.h>
 
-int main()
+int main(int argc, char **argv)
 {
+    if (argc == 1)
+    {
+        std::cout << "Usage: " << argv[0] << " <pdf_path=Cooling.pdf> <rootfile_path=None>" << std::endl;
+    }
+    std::string pdf_path = (argc > 1) ? argv[1] : "Cooling.pdf";
+    bool rootfile_creation = (argc > 2);
     using namespace inputfile;
 
     // RUN --------------------------------------------------------------------------
@@ -59,7 +66,7 @@ int main()
     // TOV solver
 
     auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
-                                                    const std::function<double(double)> &, double, double, double, double>(tov_solver::tov_solution);
+                                              const std::function<double(double)> &, double, double, double, double>(tov_solver::tov_solution);
     auto tov = [&tov_cached, &eos_cached](double r)
     {
         // TOV solution cached
@@ -106,6 +113,8 @@ int main()
             return nbar_interpolator(cache[0], cache[1], r);
         });
 
+    // Cooling
+
     double r_ns = tov(0.0)[4];
     double m_ns = tov(r_ns)[0];
 
@@ -119,14 +128,10 @@ int main()
         return pow(1 - 2 * constants::scientific::G * tov(r)[0] / r, -0.5);
     };
 
-    // cooling settings
+    // photon luminosity
+    auto photon_luminosity = cooling::predefined::photonic::surface_luminosity(r_ns, m_ns, crust_eta);
 
-    auto te_tb = [&r_ns, &m_ns](double T_binf)
-    {
-        return auxiliaries::phys::te_tb_relation(T_binf, r_ns, m_ns, crust_eta);
-    };
-
-    // internal emission
+    // neutrino luminosity
     auto hadron_durca_emissivity = cooling::predefined::neutrinic::hadron_durca_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, exp_phi, superfluid_n_1s0,
         superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp);
@@ -142,7 +147,7 @@ int main()
     auto hadron_PBF_emissivity = cooling::predefined::neutrinic::hadron_pbf_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, exp_phi, superfluid_n_1s0,
         superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp);
-
+    
     bool has_quarks = false;
     for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
     {
@@ -154,19 +159,13 @@ int main()
     }
 
     auto quark_durca_emissivity = (has_quarks ? cooling::predefined::neutrinic::quark_durca_emissivity(
-                                                    k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap)
-                                              : [](double, double, double)
-                                       { return 0.0; });
+        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap) : [](double, double, double) { return 0.0; });
 
     auto quark_murca_emissivity = (has_quarks ? cooling::predefined::neutrinic::quark_murca_emissivity(
-                                                    k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap)
-                                              : [](double, double, double)
-                                       { return 0.0; });
+        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap) : [](double, double, double) { return 0.0; });
 
     auto quark_bremsstrahlung_emissivity = (has_quarks ? cooling::predefined::neutrinic::quark_bremsstrahlung_emissivity(
-                                                             k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap)
-                                                       : [](double, double, double)
-                                                { return 0.0; });
+        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap) : [](double, double, double) { return 0.0; });
 
     auto electron_bremsstrahlung_emissivity = cooling::predefined::neutrinic::electron_bremsstrahlung_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi);
@@ -195,54 +194,27 @@ int main()
         return result * exp_phi(r) * exp_phi(r);
     };
 
-    // microscopics
+    auto neutrino_luminosity = auxiliaries::math::integrate_volume<double, double>(
+        std::function<double(double, double, double)>(Q_nu), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p, radius_step);
+
+    // specific heat
     auto fermi_specific_heat_dens = auxiliaries::phys::fermi_specific_heat_density(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_core_limit, exp_phi, superfluid_n_1s0,
         superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp, superconduct_q_gap);
-
-    auto thermal_conductivity = auxiliaries::phys::thermal_conductivity_FI(energy_density_of_nbar,
-                                                                           nbar, exp_phi);
-
-    // equilibrium cooling settings
-
-    // photon luminosity
-    auto photon_luminosity = cooling::predefined::photonic::surface_luminosity(r_ns, m_ns, crust_eta);
-
-    // neutrino luminosity
-    auto neutrino_luminosity = auxiliaries::math::integrate_volume<double, double>(
-        std::function<double(double, double, double)>(Q_nu), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p, radius_step);
 
     auto heat_capacity = auxiliaries::math::integrate_volume<double, double>(
         std::function<double(double, double, double)>(fermi_specific_heat_dens), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p, radius_step);
 
     auto cooling_rhs = [&heat_capacity, &photon_luminosity, &neutrino_luminosity](double t, double T)
     {
-        // std::cout << t << " " << photon_luminosity(t, T) << " " << neutrino_luminosity(t, T) << " " << heat_capacity(t, T) << '\n';
+        //std::cout << t << " " << photon_luminosity(t, T) << " " << neutrino_luminosity(t, T) << " " << heat_capacity(t, T) << '\n';
         return -(photon_luminosity(t, T) + neutrino_luminosity(t, T)) / heat_capacity(t, T);
     };
 
-    // solve cooling equations
+    // solve cooling equation
     double exp_phi_at_R = pow(1 - 2 * constants::scientific::G * m_ns / r_ns, 0.5);
 
-    auto initial_profile = [&nbar, &exp_phi, exp_phi_at_R](double r)
-    {
-        using namespace constants::conversion;
-        /*if (nbar(r) > nbar_core_limit)
-            return 1E10 * exp_phi(r) / gev_over_k;
-        else if (nbar(r) > nbar_crust_limit)
-            return 8E9 * exp_phi(r) / gev_over_k;
-        else*/
-        return 5E9 * exp_phi_at_R / gev_over_k;
-    };
-
-    // tabulate initial profile and radii
-    double cooling_radius_step = 10 * radius_step;
-    std::vector<double> radii, profile;
-    for (double r = cooling_radius_step / 2.0; r < r_ns; r += cooling_radius_step)
-    {
-        radii.push_back(r);
-        profile.push_back(initial_profile(r));
-    }
+    double T_init = T_init_local * exp_phi_at_R;
 
     // plot the solution (assumes exp_rate_estim > 1)
     std::vector<double> x;
@@ -255,14 +227,11 @@ int main()
               << "\tL_ph [erg/s] "
               << "\tL_nu [erg/s] " << std::endl;
     x.push_back(t_init);
-    y.push_back(profile.end()[-2]);
+    y.push_back(T_init);
     double t_step = base_t_step;
     while (x.back() < t_end)
     {
-        auto t_l_profiles = cooling::solver::nonequilibrium_cooling(
-            x.back(), t_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
-            exp_lambda, exp_phi, radii, profile, te_tb);
-        double next_T = t_l_profiles[0].end()[-2];
+        double next_T = cooling::solver::equilibrium_cooling(x.back(), t_step, cooling_rhs, y.back());
         double max_diff = std::abs((y.back() - next_T) / y.back());
         if (max_diff > 0.05)
         {
@@ -270,10 +239,8 @@ int main()
             continue;
         }
         y.push_back(next_T);
-        profile = t_l_profiles[0];
         x.push_back(x.back() + t_step);
         t_step *= exp_rate_estim;
-
         // print in understandable units
         std::cout << 1.0E6 * x.back() / (constants::conversion::myr_over_s * constants::conversion::gev_s) << "\t" << auxiliaries::phys::te_tb_relation(y.back(), r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k << "\t" << photon_luminosity(x.back(), y.back()) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << neutrino_luminosity(x.back(), y.back()) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << '\n';
     }
@@ -284,27 +251,7 @@ int main()
         y[i] = auxiliaries::phys::te_tb_relation(y[i], r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k;
     }
 
-    // compare with nscool
-    std::ifstream apr_nscool("../../data/Teff_2.0_nopairing.dat");
-    std::vector<double> x_nscool, y_nscool;
-    // iterate over file, but skip 26 lines
-    for (int i = 0; i < 26; ++i)
-    {
-        std::string line;
-        std::getline(apr_nscool, line);
-    }
-    while (apr_nscool.good())
-    {
-        std::string line;
-        std::getline(apr_nscool, line);
-        line = auxiliaries::io::retrieve_cleared_line(line);
-        std::stringstream ss(line);
-        double step, t, T;
-        ss >> step >> t >> T;
-        x_nscool.push_back(t);
-        y_nscool.push_back(T);
-    }
-
+    //draw
     TCanvas *c1 = new TCanvas("c1", "c1");
     gPad->SetLogy();
     gPad->SetLogx();
@@ -337,15 +284,8 @@ int main()
     gr->GetYaxis()->SetRangeUser(7e2, 7e6);
     gr->GetXaxis()->SetLimits(1e-12, 1e7);
 
-    auto gr_ns_cool = new TGraph(x_nscool.size(), x_nscool.data(), y_nscool.data());
-    gr_ns_cool->SetLineColor(kRed);
-    gr_ns_cool->SetLineWidth(2);
-    gr_ns_cool->SetLineStyle(9);
-    gr_ns_cool->Draw("L");
-
     auto legend = new TLegend(0.15, 0.1, 0.43, 0.38);
     legend->AddEntry(gr, "RH Manager", "l");
-    legend->AddEntry(gr_ns_cool, "NSCool", "l");
     legend->SetBorderSize(0);
     legend->SetTextFont(43);
     legend->SetTextSize(27);
@@ -354,5 +294,5 @@ int main()
 
     legend->Draw();
 
-    c1->SaveAs("cooling.pdf");
+    c1->SaveAs(pdf_path.c_str());
 }
