@@ -12,55 +12,30 @@
 #include <algorithm>
 #include <iostream>
 
-double cooling::solver::stationary_cooling_cached(std::vector<std::vector<double>> &cache, double t, const std::function<double(double, double)> &cooling_rhs, double initial_temperature, double base_time_step, double exp_rate,
-                                                  const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &interpolator)
+double cooling::solver::equilibrium_cooling(
+    double t_curr, double t_step, const std::function<double(double, double)> &cooling_rhs, double initial_temperature)
 {
-    // times must be positive
-    if (t < 0 || base_time_step <= 0)
-        throw std::invalid_argument("Evolution time must be positive");
     // inverse euler solver; I want this method to be stable for any time step, including huge ones
-    auto back_euler_step = [&cooling_rhs](double t, double T, double time_step)
+    // solve T_{n+1} - T_n - dt * F(t_{n+1}, T_{n+1}) = 0 with Newton's steps
+        
+    double eps = 1e-5;
+    double t_next = t_curr + t_step;
+    size_t max_iter = 50, iter = 0;
+    double T_new = initial_temperature;
+    double F, F_shift;
+    double update;
+    do
     {
-        // solve T_{n+1} - T_n - dt * a^n * F(t_{n+1}, T_{n+1}) = 0 with Newton's steps
-        double eps = 1e-5;
-        size_t max_iter = 100, iter = 0;
-        double T_new = T;
-        double F, F_shift;
-        do
-        {
-            ++iter;
-            F = cooling_rhs(t + time_step, T_new);
-            auto temp_step = time_step / (t + time_step) * T_new;
-            F_shift = cooling_rhs(t + time_step, T_new + temp_step) - F;
-            T_new -= (T_new - T - time_step * F) / (1 - time_step * F_shift / temp_step);
-            if (T_new < 0)
-                throw std::runtime_error("Reached negative temperature with current method; Encountered in cooling::solver::stationary_cooling_cached");
-            if (iter > max_iter)
-                break;
-        } while (std::abs(T_new - T - time_step * F) > eps * T);
-        return T_new;
-    };
-
-    // if we conduct a first calculation (or time exceeded existing cache), we need to fill the cache
-    if (cache.empty() || cache[0].back() < t)
-    {
-        // create two empty vectors
-        cache = std::vector<std::vector<double>>(2, std::vector<double>());
-        // fill the cache[0] with time exp. growing values, and the cache[1] with the corresponding temperatures
-        cache[0].push_back(0.0);
-        cache[1].push_back(initial_temperature);
-        double t_curr = 0.0, time_step = base_time_step;
-        do
-        {
-            cache[1].push_back(back_euler_step(t_curr, cache[1].back(), time_step));
-            t_curr += time_step;
-            cache[0].push_back(t_curr);
-            time_step *= exp_rate;
-            // std::cout << cache[0].back() << " " << cache[1].back() << '\n';
-        } while (t > t_curr);
-    }
-    // now we're sure the time is in the cache, we just interpolate
-    return interpolator(cache[0], cache[1], t);
+        ++iter;
+        F = cooling_rhs(t_next, T_new);
+        auto temp_step = t_step / t_next * T_new;
+        F_shift = cooling_rhs(t_next, T_new + temp_step) - F;
+        update = -(T_new - initial_temperature - t_step * F) / (1 - t_step * F_shift / temp_step);
+        T_new += update;
+        if (T_new < 0)
+            throw std::runtime_error("Reached negative temperature with current method; Encountered in cooling::solver::stationary_cooling_cached");
+    } while (std::abs(update / initial_temperature) > eps && ++iter < max_iter);
+    return T_new;
 }
 
 std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
@@ -193,7 +168,7 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
                 max_diff_index = i;
             }
         }
-    } while (max_diff > 1e-5 && ++iter > max_iter);
+    } while (max_diff > 1e-5 && ++iter < max_iter);
 
     // return the profiles
     return {t_profile, l_profile};

@@ -13,20 +13,14 @@ namespace cooling
     /// @brief Cooling equation solver
     namespace solver
     {
-        /// @brief Solves the cooling equation dT^inf/dt = F(t,T^inf) for a rhs function and a given initial temperature (inf means in distant frame)
-        /// @param cache cache support via CachedFunction wrapper; Contains of (t, T) pairs in exponential differencing scheme; If t > last cached time, gets reevaluated!
-        /// @param t time at which the temperature is to be calculated [GeV^{-1}] (initial time is assumed to be 0)
+        /// @brief Solves the equilibrium cooling equation dT^inf/dt = F(t,T^inf) for a rhs function and a given initial temperature (inf means in distant frame)
+        /// @param t_curr time at which the initial temperature profile was calculated [GeV^{-1}]
+        /// @param t_step time step at which the next profiles are to be calculated [GeV^{-1}]
         /// @param cooling_rhs right hand side term F(t,T^inf) of the cooling equation, i.e. L^inf/Cv^inf [GeV^{2}]
-        /// @param initial_temperature Temperature^inf at t=0 [GeV]
-        /// @param base_time_step initial time step [GeV^{-1}]
-        /// @param exp_rate a constant multiplying the time step at each iteration to cover multiple timescales
-        /// @param interpolator interpolation function for the cache. It is safe to use cached version here. Remember to have sufficient amount of points for the interpolation
-        /// @return Temperature^inf at given t [GeV]
-        double stationary_cooling_cached(
-            std::vector<std::vector<double>> &cache, double t, const std::function<double(double, double)> &cooling_rhs, double initial_temperature, double base_time_step, double exp_rate,
-            const std::function<double(const std::vector<double> &, const std::vector<double> &, double)> &interpolator =
-                [](const std::vector<double> &x, const std::vector<double> &y, double val)
-            { return auxiliaries::math::interpolate(x, y, auxiliaries::math::InterpolationMode::kLinear, val); });
+        /// @param initial_temperature Temperature^inf at t=t_curr [GeV]
+        /// @return Temperature^inf at t_curr + t_step [GeV]
+        double equilibrium_cooling(
+            double t_curr, double t_step, const std::function<double(double, double)> &cooling_rhs, double initial_temperature);
 
         /// @brief Evolves the nonequilibrium cooling equation cv * dT^inf/dt = -Qv^inf + e^{-Lambda} / (4pir^2) d/dr Ld^inf; -lambda dT^inf/dr = Ld^inf/(4pir^2) e^{Lambda-Phi}
         /// @brief via 1 + 1D differencing scheme (backward exponential in time, forward linear in space). BCs are applied automatically, however, the initial profile must be set.
