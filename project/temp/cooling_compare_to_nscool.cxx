@@ -257,20 +257,44 @@ int main()
     x.push_back(t_init);
     y.push_back(profile.end()[-2]);
     double t_step = base_t_step;
+
+    auto switch_to_equilibrium = [](double t_curr, const std::vector<double>& t_profile)
+    {
+        return 1E-5 * constants::conversion::myr_over_s * constants::conversion::gev_s < t_curr && 
+                std::abs(t_profile.end()[-2] - t_profile.front()) / t_profile.end()[-2] < 0.01;
+    };
     while (x.back() < t_end)
     {
-        auto t_l_profiles = cooling::solver::nonequilibrium_cooling(
-            x.back(), t_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
-            exp_lambda, exp_phi, radii, profile, te_tb);
-        double next_T = t_l_profiles[0].end()[-2];
-        double max_diff = std::abs((y.back() - next_T) / y.back());
-        if (max_diff > 0.05)
+        double next_T; // predicted T
+
+        // non-equilibrium stage
+        if (!switch_to_equilibrium(x.back(), profile))
         {
-            t_step /= 2.0;
-            continue;
+            auto t_l_profiles = cooling::solver::nonequilibrium_cooling(
+                x.back(), t_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
+                exp_lambda, exp_phi, radii, profile, te_tb);
+            next_T = t_l_profiles[0].end()[-2];
+            double max_diff = std::abs((y.back() - next_T) / y.back());
+            if (max_diff > 0.05)
+            {
+                t_step /= 2.0;
+                continue;
+            }
+            profile = t_l_profiles[0];
+        }
+        
+        // equilibrium stage
+        else
+        {
+            next_T = cooling::solver::equilibrium_cooling(x.back(), t_step, cooling_rhs, y.back());
+            double max_diff = std::abs((y.back() - next_T) / y.back());
+            if (max_diff > 0.05)
+            {
+                t_step /= 2.0;
+                continue;
+            }
         }
         y.push_back(next_T);
-        profile = t_l_profiles[0];
         x.push_back(x.back() + t_step);
         t_step *= exp_rate_estim;
 

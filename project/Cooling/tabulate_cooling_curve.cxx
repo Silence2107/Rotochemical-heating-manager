@@ -14,21 +14,8 @@
 #include <sstream>
 #include <fstream>
 
-#include <TCanvas.h>
-#include <TGraph.h>
-#include <TAxis.h>
-#include <TLegend.h>
-#include <TFile.h>
-#include <TStyle.h>
-
 int main(int argc, char **argv)
 {
-    if (argc == 1)
-    {
-        std::cout << "Usage: " << argv[0] << " <pdf_path=Cooling.pdf> <rootfile_path=None>" << std::endl;
-    }
-    std::string pdf_path = (argc > 1) ? argv[1] : "Cooling.pdf";
-    bool rootfile_creation = (argc > 2);
     using namespace inputfile;
 
     // RUN --------------------------------------------------------------------------
@@ -314,49 +301,4 @@ int main(int argc, char **argv)
         x[i] *= 1.0E6 / (constants::conversion::myr_over_s * constants::conversion::gev_s);
         y[i] = auxiliaries::phys::te_tb_relation(y[i], r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k;
     }
-
-    // draw
-    TCanvas *c1 = new TCanvas("c1", "c1");
-    gPad->SetLogy();
-    gPad->SetLogx();
-    gPad->SetTicks();
-    gPad->SetTopMargin(0.05);
-    gPad->SetLeftMargin(0.11);
-    gPad->SetRightMargin(0.05);
-    gPad->SetBottomMargin(0.1);
-    gStyle->SetOptStat(0);
-    gStyle->SetOptTitle(0);
-
-    auto gr = new TGraph(x.size(), x.data(), y.data());
-    gr->SetLineColor(kBlue);
-    gr->SetLineWidth(2);
-    gr->SetLineStyle(1);
-    gr->Draw("AL");
-    gr->GetYaxis()->SetTitleOffset(1.5);
-    gr->GetXaxis()->SetTitle("t [yr]");
-    gr->GetYaxis()->SetTitle("T^{#infty}_{s} [K]");
-    gr->GetYaxis()->SetLabelFont(43);
-    gr->GetYaxis()->SetLabelSize(22);
-    gr->GetYaxis()->SetTitleFont(43);
-    gr->GetYaxis()->SetTitleSize(26);
-    gr->GetYaxis()->SetTitleOffset(0.5);
-    gr->GetXaxis()->SetLabelFont(43);
-    gr->GetXaxis()->SetLabelSize(22);
-    gr->GetXaxis()->SetTitleFont(43);
-    gr->GetXaxis()->SetTitleSize(26);
-    gr->GetXaxis()->SetTitleOffset(0.9);
-    gr->GetYaxis()->SetRangeUser(7e2, 7e6);
-    gr->GetXaxis()->SetLimits(1e-12, 1e7);
-
-    auto legend = new TLegend(0.15, 0.1, 0.43, 0.38);
-    legend->AddEntry(gr, "RH Manager", "l");
-    legend->SetBorderSize(0);
-    legend->SetTextFont(43);
-    legend->SetTextSize(27);
-    legend->SetFillStyle(0);
-    legend->SetMargin(0.35);
-
-    legend->Draw();
-
-    c1->SaveAs(pdf_path.c_str());
 }
