@@ -159,13 +159,6 @@ namespace inputfile
     // (3) Cooling solver
 
     // Cooling solver setup
-    auto cooling_interpolator_cached = auxiliaries::math::CachedFunc<std::function<double(double)>,
-                                                                     double, const std::vector<double> &, const std::vector<double> &,
-                                                                     auxiliaries::math::InterpolationMode, double, bool, bool>(auxiliaries::math::interpolate_cached);
-    auto cooling_interpolator = [](const std::vector<double> &x, const std::vector<double> &y, double val)
-    {
-        return cooling_interpolator_cached(x, y, auxiliaries::math::InterpolationMode::kCubic, val, false, true);
-    };
 
     // Cooling settings
     double crust_eta = 2.26E-18;
@@ -207,9 +200,25 @@ namespace inputfile
     double t_init = 0.0 * constants::conversion::myr_over_s * constants::conversion::gev_s,
            t_end = 6.1E-0 * constants::conversion::myr_over_s * constants::conversion::gev_s,
            base_t_step = 1.0E-18 * constants::conversion::myr_over_s * constants::conversion::gev_s;
-    // estimate for the number of time points (used for time step expansion, if enabled)
+    // estimate for the number of time points (is also used for time step expansion, if enabled)
     double cooling_n_points_estimate = 1000;
-    double T_init_local = 5E9 / constants::conversion::gev_over_k;
+    // initial temperature profile
+    auto initial_t_profile_inf = [](double r, double exp_phi_at_R)
+    {
+        using namespace constants::conversion;
+        return 5E9 * exp_phi_at_R / gev_over_k;
+    };
+    // cooling grid step
+    double cooling_radius_step = 10 * radius_step;
+    // condition on which to switch to equilibrium cooling
+    auto switch_to_equilibrium = [](double t_curr, const std::vector<double> &t_profile)
+    {
+        return false; // pure non-equilibrium
+        // return true; // pure equilibrium
+        // switch at "rather plain profile" and "relevantly late"
+        return 1E-5 * constants::conversion::myr_over_s * constants::conversion::gev_s < t_curr &&
+               std::abs(t_profile.end()[-2] - t_profile.front()) / t_profile.end()[-2] < 0.01;
+    };
 
     // time step expansion rate (set to 1.0 for constant time step)
     double exp_rate_estim = pow((t_end - t_init) / base_t_step, 1.0 / cooling_n_points_estimate) *

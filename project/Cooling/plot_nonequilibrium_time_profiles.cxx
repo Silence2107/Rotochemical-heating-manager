@@ -209,24 +209,15 @@ int main(int argc, char **argv)
     auto thermal_conductivity = auxiliaries::phys::thermal_conductivity_FI(energy_density_of_nbar,
                                                                            nbar, exp_phi);
 
-    auto initial_profile = [&nbar, &exp_phi](double r)
-    {
-        using namespace constants::conversion;
-        /*if (nbar(r) > nbar_core_limit)
-            return 1E10 * exp_phi(r) / gev_over_k;
-        else if (nbar(r) > nbar_crust_limit)
-            return 8E9 * exp_phi(r) / gev_over_k;
-        else*/
-        return 5E9 / gev_over_k;
-    };
+    // solve cooling equations
+    double exp_phi_at_R = pow(1 - 2 * constants::scientific::G * m_ns / r_ns, 0.5);
 
     // tabulate initial profile and radii
-    double cooling_radius_step = 10 * radius_step;
     std::vector<double> radii, profile;
-    for(double r = cooling_radius_step / 2.0; r < r_ns; r += cooling_radius_step)
+    for (double r = cooling_radius_step / 2.0; r < r_ns; r += cooling_radius_step)
     {
         radii.push_back(r);
-        profile.push_back(initial_profile(r));
+        profile.push_back(initial_t_profile_inf(r, exp_phi_at_R));
     }
 
     std::vector<std::vector<double>> xs, ys;
@@ -234,9 +225,10 @@ int main(int argc, char **argv)
 
     double t_curr = 0, time_step = base_t_step;
     double write_time = base_t_step;
-    while (t_curr + time_step < 0.1 * t_end)
+    while (t_curr + time_step < t_end)
     {
-        std::cout << "t = " << t_curr << ", prof[0] = " << profile[0] << ", prof[-1] = " << profile.back() << '\n';
+        using namespace constants::conversion;
+        std::cout << "t(yr) = " << t_curr * 1E6 / (myr_over_s * gev_s) << ", prof[0](K) = " << profile[0] * gev_over_k << ", prof[-2](K) = " << profile.end()[-2] * gev_over_k << '\n';
 
         if (t_curr >= write_time)
         {
@@ -257,10 +249,26 @@ int main(int argc, char **argv)
         // update
         while (true)
         {
-            
-            auto new_profile = cooling::solver::nonequilibrium_cooling(
-                t_curr, time_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
-                exp_lambda, exp_phi, radii, profile, te_tb)[0];
+            std::vector<double> new_profile;
+            try{
+                new_profile = cooling::solver::nonequilibrium_cooling(
+                    t_curr, time_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
+                    exp_lambda, exp_phi, radii, profile, te_tb)[0];
+            }
+            catch(const std::exception &e)
+            {
+                std::cout << e.what() << '\n';
+                error = true;
+                using namespace constants::conversion;
+                xs.push_back(radii);
+                ys.push_back(profile);
+                for (size_t i = 0; i < radii.size(); ++i)
+                {
+                    xs.back()[i] /= km_gev;
+                    ys.back()[i] *= gev_over_k;
+                }
+                break;
+            }
             double max_diff = 0;
             for (size_t i = 0; i < radii.size(); ++i)
             {

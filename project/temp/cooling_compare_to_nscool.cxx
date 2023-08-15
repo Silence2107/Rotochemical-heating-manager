@@ -224,24 +224,12 @@ int main()
     // solve cooling equations
     double exp_phi_at_R = pow(1 - 2 * constants::scientific::G * m_ns / r_ns, 0.5);
 
-    auto initial_profile = [&nbar, &exp_phi, exp_phi_at_R](double r)
-    {
-        using namespace constants::conversion;
-        /*if (nbar(r) > nbar_core_limit)
-            return 1E10 * exp_phi(r) / gev_over_k;
-        else if (nbar(r) > nbar_crust_limit)
-            return 8E9 * exp_phi(r) / gev_over_k;
-        else*/
-        return 5E9 * exp_phi_at_R / gev_over_k;
-    };
-
     // tabulate initial profile and radii
-    double cooling_radius_step = 10 * radius_step;
     std::vector<double> radii, profile;
     for (double r = cooling_radius_step / 2.0; r < r_ns; r += cooling_radius_step)
     {
         radii.push_back(r);
-        profile.push_back(initial_profile(r));
+        profile.push_back(initial_t_profile_inf(r, exp_phi_at_R));
     }
 
     // plot the solution (assumes exp_rate_estim > 1)
@@ -258,11 +246,6 @@ int main()
     y.push_back(profile.end()[-2]);
     double t_step = base_t_step;
 
-    auto switch_to_equilibrium = [](double t_curr, const std::vector<double>& t_profile)
-    {
-        return 1E-5 * constants::conversion::myr_over_s * constants::conversion::gev_s < t_curr && 
-                std::abs(t_profile.end()[-2] - t_profile.front()) / t_profile.end()[-2] < 0.01;
-    };
     while (x.back() < t_end)
     {
         double next_T; // predicted T
@@ -282,7 +265,7 @@ int main()
             }
             profile = t_l_profiles[0];
         }
-        
+
         // equilibrium stage
         else
         {
