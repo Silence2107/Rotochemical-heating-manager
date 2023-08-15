@@ -253,7 +253,7 @@ int main(int argc, char **argv)
             try{
                 new_profile = cooling::solver::nonequilibrium_cooling(
                     t_curr, time_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
-                    exp_lambda, exp_phi, radii, profile, te_tb)[0];
+                    exp_lambda, exp_phi, radii, profile, te_tb, cooling_newton_step_eps, cooling_newton_max_iter)[0];
             }
             catch(const std::exception &e)
             {

@@ -252,7 +252,7 @@ int main(int argc, char **argv)
     x.push_back(t_init);
     y.push_back(profile.end()[-2]);
     double t_step = base_t_step;
-    
+
     while (x.back() < t_end)
     {
         double next_T; // predicted T
@@ -262,7 +262,7 @@ int main(int argc, char **argv)
         {
             auto t_l_profiles = cooling::solver::nonequilibrium_cooling(
                 x.back(), t_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
-                exp_lambda, exp_phi, radii, profile, te_tb);
+                exp_lambda, exp_phi, radii, profile, te_tb, cooling_newton_step_eps, cooling_newton_max_iter);
             next_T = t_l_profiles[0].end()[-2];
             double max_diff = std::abs((y.back() - next_T) / y.back());
             if (max_diff > 0.05)
@@ -276,7 +276,7 @@ int main(int argc, char **argv)
         // equilibrium stage
         else
         {
-            next_T = cooling::solver::equilibrium_cooling(x.back(), t_step, cooling_rhs, y.back());
+            next_T = cooling::solver::equilibrium_cooling(x.back(), t_step, cooling_rhs, y.back(), cooling_newton_step_eps, cooling_newton_max_iter);
             double max_diff = std::abs((y.back() - next_T) / y.back());
             if (max_diff > 0.05)
             {

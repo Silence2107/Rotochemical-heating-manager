@@ -18,9 +18,11 @@ namespace cooling
         /// @param t_step time step at which the next profiles are to be calculated [GeV^{-1}]
         /// @param cooling_rhs right hand side term F(t,T^inf) of the cooling equation, i.e. L^inf/Cv^inf [GeV^{2}]
         /// @param initial_temperature Temperature^inf at t=t_curr [GeV]
+        /// @param newton_eps desirable relative accuracy of the solution
+        /// @param newton_iter_max maximum number of iterations for the Newton-Raphson method
         /// @return Temperature^inf at t_curr + t_step [GeV]
         double equilibrium_cooling(
-            double t_curr, double t_step, const std::function<double(double, double)> &cooling_rhs, double initial_temperature);
+            double t_curr, double t_step, const std::function<double(double, double)> &cooling_rhs, double initial_temperature, double newton_eps, size_t newton_iter_max);
 
         /// @brief Evolves the nonequilibrium cooling equation cv * dT^inf/dt = -Qv^inf + e^{-Lambda} / (4pir^2) d/dr Ld^inf; -lambda dT^inf/dr = Ld^inf/(4pir^2) e^{Lambda-Phi}
         /// @brief via 1 + 1D differencing scheme (backward exponential in time, forward linear in space). BCs are applied automatically, however, the initial profile must be set.
@@ -34,11 +36,13 @@ namespace cooling
         /// @param radii reper radii [GeV^{-1}] at which the profiles are calculated
         /// @param initial_profile initial temperature profile T^inf(r, t=t_curr) [GeV] as an array corresponding to radii
         /// @param te_tb Local surface temperature [GeV] as a function of undercrustal T_b^inf [GeV]
+        /// @param newton_eps desirable relative accuracy of the solution
+        /// @param newton_iter_max maximum number of iterations for the Newton-Raphson method
         /// @return Temperature, luminosity profiles [T^inf(r, t), Ld^inf(r, t)] as an [2][i_m + 1] array corresponding to radii
         std::vector<std::vector<double>> nonequilibrium_cooling(
             double t_curr, double t_step, const std::function<double(double, double, double)> &neutrino_rate, const std::function<double(double, double, double)> &cv, const std::function<double(double, double, double)> &lambda,
             const std::function<double(double)> &exp_lambda, const std::function<double(double)> &exp_phi, const std::vector<double> &radii, const std::vector<double> &initial_profile,
-            const std::function<double(double)> &te_tb);
+            const std::function<double(double)> &te_tb, double newton_eps, size_t newton_iter_max);
     }
     /// @brief Predefined functionality, including cooling luminosities
     namespace predefined

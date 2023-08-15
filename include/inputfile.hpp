@@ -160,6 +160,12 @@ namespace inputfile
 
     // Cooling solver setup
 
+    // desirable relative accuracy of the cooling solvers
+    double cooling_newton_step_eps = 1e-5;
+
+    // maximum number of iterations of the cooling solvers
+    size_t cooling_newton_max_iter = 50;
+
     // Cooling settings
     double crust_eta = 2.26E-18;
 
@@ -213,7 +219,7 @@ namespace inputfile
     // condition on which to switch to equilibrium cooling
     auto switch_to_equilibrium = [](double t_curr, const std::vector<double> &t_profile)
     {
-        return false; // pure non-equilibrium
+        // return false; // pure non-equilibrium
         // return true; // pure equilibrium
         // switch at "rather plain profile" and "relevantly late"
         return 1E-5 * constants::conversion::myr_over_s * constants::conversion::gev_s < t_curr &&

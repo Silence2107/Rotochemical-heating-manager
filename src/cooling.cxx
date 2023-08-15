@@ -13,14 +13,13 @@
 #include <iostream>
 
 double cooling::solver::equilibrium_cooling(
-    double t_curr, double t_step, const std::function<double(double, double)> &cooling_rhs, double initial_temperature)
+    double t_curr, double t_step, const std::function<double(double, double)> &cooling_rhs, double initial_temperature, double newton_eps, size_t newton_iter_max)
 {
     // inverse euler solver; I want this method to be stable for any time step, including huge ones
     // solve T_{n+1} - T_n - dt * F(t_{n+1}, T_{n+1}) = 0 with Newton's steps
         
-    double eps = 1e-5;
     double t_next = t_curr + t_step;
-    size_t max_iter = 50, iter = 0;
+    size_t iter = 0;
     double T_new = initial_temperature;
     double F, F_shift;
     double update;
@@ -34,14 +33,14 @@ double cooling::solver::equilibrium_cooling(
         T_new += update;
         if (T_new < 0)
             throw std::runtime_error("Reached negative temperature with current method; Encountered in cooling::solver::stationary_cooling_cached");
-    } while (std::abs(update / initial_temperature) > eps && ++iter < max_iter);
+    } while (std::abs(update / initial_temperature) > newton_eps && ++iter < newton_iter_max);
     return T_new;
 }
 
 std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
     double t_curr, double t_step, const std::function<double(double, double, double)> &neutrino_rate, const std::function<double(double, double, double)> &cv, const std::function<double(double, double, double)> &lambda,
     const std::function<double(double)> &exp_lambda, const std::function<double(double)> &exp_phi, const std::vector<double> &radii, const std::vector<double> &initial_profile,
-    const std::function<double(double)> &te_tb)
+    const std::function<double(double)> &te_tb, double newton_eps, size_t newton_iter_max)
 {
     // biggest available radius zone (therefore i_m + 1 is the number of zones)
     size_t i_m = radii.size() - 1;
@@ -93,7 +92,7 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
     // biggest difference between old and new profile
     double max_diff;
     size_t max_diff_index;
-    size_t max_iter = 50, iter = 0;
+    size_t iter = 0;
     do
     {
         // Unfortunately, the system is not linear, so we have to solve it iteratively.
@@ -168,7 +167,7 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
                 max_diff_index = i;
             }
         }
-    } while (max_diff > 1e-5 && ++iter < max_iter);
+    } while (max_diff > newton_eps && ++iter < newton_iter_max);
 
     // return the profiles
     return {t_profile, l_profile};
