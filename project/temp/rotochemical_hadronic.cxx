@@ -10,7 +10,6 @@
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
-
 #include <sstream>
 #include <fstream>
 
@@ -38,7 +37,7 @@ int main(int argc, char **argv)
         [&](std::vector<std::vector<double>> &cache, double rho)
         {
             if (rho < 0 || rho > edensity_upp)
-                throw std::runtime_error("Data request out of range; Encountered in main::eos_cached");
+                THROW(std::runtime_error, "Data request out of range.");
             if (rho <= edensity_low)
                 return 0.0;
             if (cache.empty() || cache[0].size() != discr_size_EoS)
@@ -322,7 +321,7 @@ int main(int argc, char **argv)
         {
             // times must be positive
             if (t < 0 || base_time_step <= 0)
-                throw std::invalid_argument("Evolution time must be positive");
+                THROW(std::invalid_argument, "Evolution time must be positive");
             // inverse euler solver; I want this method to be stable for any time step, including huge ones
             auto back_euler_step = [&rhs_T, &rhs_eta_e](double t, double T, double eta_e, double time_step)
             {
@@ -349,7 +348,7 @@ int main(int argc, char **argv)
                     T_new -= (dG_over_deta * F - dF_over_deta * G) / (dF_over_dT * dG_over_deta - dF_over_deta * dG_over_dT);
                     eta_new -= (dF_over_dT * G - dG_over_dT * F) / (dF_over_dT * dG_over_deta - dF_over_deta * dG_over_dT);
                     if (T_new < 0)
-                        throw std::runtime_error("Reached negative temperature with current method; Encountered in stationary_cooling_cached");
+                        THROW(std::runtime_error, "Reached negative temperature with current method.");
                     if (iter > max_iter)
                         break;
                 } while (std::abs(F) > eps * T);

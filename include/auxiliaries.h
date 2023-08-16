@@ -5,6 +5,8 @@
 #include <vector>
 #include <functional>
 #include <map>
+#include <stdexcept>
+#include <exception>
 
 /// @brief various auxiliary functionality
 namespace auxiliaries
@@ -25,6 +27,12 @@ namespace auxiliaries
         /// @param line line to clear out
         /// @return line, cleared of auxiliary symbols, preceeding, trailing or excessive whitespaces; separation between words is done with whitespaces
         std::string retrieve_cleared_line(const std::string &line);
+
+        /// @brief A throw-like macro that acknowledges the position of the exception
+        /// @brief Note it is not actually enclosed by the namespace!
+        /// @param exceptionClass exception class
+        /// @param message exception message
+        #define THROW(exceptionClass, message) throw exceptionClass("Encountered in " + std::string(__FILE__) + "//" + std::string(__func__) + ", line " + std::to_string(__LINE__) + " : " + message)
     }
 
     /// @brief Math auxiliary functionality.
@@ -181,7 +189,7 @@ namespace auxiliaries
                     return result;
                 }
                 default:
-                    throw std::runtime_error("Unimplemented integration mode; Encountered in auxiliaries::integrate_volume");
+                    THROW(std::runtime_error, "Unimplemented integration mode.");
                 }
             };
         }

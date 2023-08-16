@@ -4,7 +4,7 @@
 #include "../include/auxiliaries.h"
 
 #include <vector>
-#include <iostream>
+// #include <iostream>
 #include <cmath>
 
 std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &cache, const std::function<double(double)> &eos, double r, double center_density, double radius_step, double density_step)
@@ -22,7 +22,7 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &c
 		}
 		catch (const std::exception &e)
 		{
-			throw std::runtime_error("Pressure derivative computation failed; Encountered in tov_solver::tov_solution; " + std::string(e.what()));
+			THROW(std::runtime_error, "Pressure derivative computation failed; Encountered in tov_solver::tov_solution; " + std::string(e.what()));
 		}
 		// maybe should implement leap-frog as well/instead
 	};

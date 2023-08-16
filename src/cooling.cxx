@@ -10,7 +10,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <algorithm>
-#include <iostream>
+// #include <iostream>
 
 double cooling::solver::equilibrium_cooling(
     double t_curr, double t_step, const std::function<double(double, double)> &cooling_rhs, double initial_temperature, double newton_eps, size_t newton_iter_max)
@@ -32,7 +32,7 @@ double cooling::solver::equilibrium_cooling(
         update = -(T_new - initial_temperature - t_step * F) / (1 - t_step * F_shift / temp_step);
         T_new += update;
         if (T_new < 0)
-            throw std::runtime_error("Reached negative temperature with current method; Encountered in cooling::solver::stationary_cooling_cached");
+            THROW(std::runtime_error, "Reached negative temperature with current method.");
     } while (std::abs(update / initial_temperature) > newton_eps && ++iter < newton_iter_max);
     return T_new;
 }
@@ -159,7 +159,7 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
             t_profile[i] += updates[2 * i + 1];
             l_profile[i] += updates[2 * i];
             if (t_profile[i] < 0.0)
-                throw std::runtime_error("Reached negative temperature with current method; Encountered in cooling::solver::nonequilibrium_cooling");
+                THROW(std::runtime_error, "Reached negative temperature with current method.");
             // calculate the abs.-maximum update of the vector
             if (std::abs(updates[2 * i]) > max_diff)
             {
@@ -604,7 +604,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
             a_t = 3.18;
         }
         else
-            throw std::runtime_error("Unexpected species: " + std::to_string(static_cast<int>(hadron.identify())) + "; Encountered in hadron_PBF_emissivity");
+            THROW(std::runtime_error, "Unexpected species: " + std::to_string(static_cast<int>(hadron.identify())) + ".");
         double T_loc = T / exp_phi(r);
         int n_flavours = 3;
         double base_dens = 1.17E21 * (mst / M_N) * (pf / M_N) * n_flavours *

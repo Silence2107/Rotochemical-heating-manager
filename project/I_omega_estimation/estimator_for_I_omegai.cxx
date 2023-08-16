@@ -36,7 +36,7 @@ int main(int argc, char **argv)
         [&](std::vector<std::vector<double>> &cache, double rho)
         {
             if (rho < 0 || rho > edensity_upp)
-                throw std::runtime_error("Data request out of range; Encountered in main::eos_cached");
+                THROW(std::runtime_error, "Data request out of range.");
             if (rho <= edensity_low)
                 return 0.0;
             if (cache.empty() || cache[0].size() != discr_size_EoS)
