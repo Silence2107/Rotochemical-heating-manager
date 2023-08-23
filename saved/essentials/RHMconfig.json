@@ -9,7 +9,7 @@
         },
         "Datafile" :
         {
-            "Path" : "../../data/APR_EOS_Acc_Fe.dat",
+            "Path" : "../../saved/EoS_bank/APR_EOS_Acc_Fe.dat",
             "Rows" : [7, 236],
             "Interpolation" : "Linear"
         },
