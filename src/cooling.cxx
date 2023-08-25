@@ -604,7 +604,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
             a_t = 3.18;
         }
         else
-            THROW(std::runtime_error, "Unexpected species: " + std::to_string(static_cast<int>(hadron.identify())) + ".");
+            THROW(std::runtime_error, "Unexpected species: " + hadron.name() + ".");
         double T_loc = T / exp_phi(r);
         int n_flavours = 3;
         double base_dens = 1.17E21 * (mst / M_N) * (pf / M_N) * n_flavours *

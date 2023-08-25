@@ -324,8 +324,8 @@ double auxiliaries::math::interpolate_cached(std::function<double(double)> &cach
     return cache(x);
 }
 
-auxiliaries::phys::Species::Species(auxiliaries::phys::Species::ParticleType type, auxiliaries::phys::Species::ParticleClassification classification)
-    : m_type(type), m_classification(classification)
+auxiliaries::phys::Species::Species(auxiliaries::phys::Species::ParticleType type, auxiliaries::phys::Species::ParticleClassification classification, const std::string& name)
+    : m_type(type), m_classification(classification), m_name(name)
 {
 }
 
