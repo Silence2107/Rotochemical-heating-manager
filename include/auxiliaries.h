@@ -326,6 +326,8 @@ namespace auxiliaries
             ParticleType m_type;
             /// @brief species classification
             ParticleClassification m_classification;
+            /// @brief string namings for species
+            std::string m_name;
 
         public:
             /// @brief Expected particle types
@@ -353,7 +355,7 @@ namespace auxiliaries
             /// @brief Constructor
             /// @param naming particle type
             /// @param classification particle classification
-            Species(ParticleType naming, ParticleClassification classification);
+            Species(ParticleType naming, ParticleClassification classification, const std::string& name);
             /// @brief Comparison operator
             /// @param other other species
             /// @return true if species are the same
@@ -371,6 +373,11 @@ namespace auxiliaries
             ParticleClassification classify() const
             {
                 return m_classification;
+            }
+            /// @brief Get particle name
+            std::string name() const
+            {
+                return m_name;
             }
         };
 
