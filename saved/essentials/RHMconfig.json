@@ -13,6 +13,7 @@
             "Rows" : [7, 236],
             "Interpolation" : "Linear"
         },
+        "Particles" : ["Electron", "Muon", "Neutron", "Proton"],
         "Quantities" :
         {
             "EnergyDensity" : 
@@ -30,13 +31,36 @@
                 "Upp" : 1.89,
                 "CoreLimit" : 9E-02,
                 "CrustLimit" : 2.096E-02
+            },
+            "BarionicDensities" :
+            {
+                "Electron" :
+                {
+                    "Column" : 3,
+                    "ProvidedAs" : "Density" 
+                },
+                "Muon" :
+                {
+                    "Column" : 4,
+                    "ProvidedAs" : "Density" 
+                },
+                "Neutron" :
+                {
+                    "Column" : 5,
+                    "ProvidedAs" : "Density" 
+                },
+                "Proton" :
+                {
+                    "Column" : 6,
+                    "ProvidedAs" : "Density" 
+                }
             }
         }
     },
     "TOVSolver" :
     {
-        "EOSInterpolation" : "Linear",
-        "EOSDiscretization" : 1000,
+        "EoSInterpolation" : "Linear",
+        "EoSDiscretization" : 1000,
         "RadiusStep" : 0.01,
         "DensityStep" : 1E-8,
         "CenterDensity" : 0.2166

@@ -381,7 +381,7 @@ namespace inputfile
         // TOV solver setup
 
         auxiliaries::math::InterpolationMode eos_interp_mode;
-        auto eos_interp_mode_read = j["TOVSolver"]["EOSInterpolation"];
+        auto eos_interp_mode_read = j["TOVSolver"]["EoSInterpolation"];
         if (eos_interp_mode_read.is_null())
             eos_interp_mode = auxiliaries::math::InterpolationMode::kLinear;
         else if (!(eos_interp_mode_read.is_string()))
@@ -411,7 +411,7 @@ namespace inputfile
         };
 
         // EoS linspace discretization
-        auto discr_size_EoS_read = j["TOVSolver"]["EOSDiscretization"];
+        auto discr_size_EoS_read = j["TOVSolver"]["EoSDiscretization"];
         if (discr_size_EoS_read.is_null())
             discr_size_EoS = 1000;
         else if (!(discr_size_EoS_read.is_number_integer()))
@@ -443,6 +443,41 @@ namespace inputfile
             THROW(std::runtime_error, "UI error: TOV solver center density must be provided as a number.");
         else
             center_density = center_density_read.get<double>() * edensity_upp;
+
+        // provided particles
+        auto particles_read = j["EoSSetup"]["Particles"];
+        if(particles_read.size() < 1)
+            return; // no particles provided -> user expresses no interest in cooling
+        if(!particles_read.is_array())
+            THROW(std::runtime_error, "UI error: Particle types must be provided as an array.");
+        
+        std::vector<auxiliaries::phys::Species> particles;
+        for(auto particle : particles_read)
+        {
+            if(particle.is_string())
+            {
+                using namespace constants::species;
+                // I guess we'd need to improve Species class later on
+                auto particle_string = particle.get<std::string>();
+                if(particle_string == "Neutron")
+                    particles.push_back(neutron);
+                else if(particle_string == "Proton")
+                    particles.push_back(proton);
+                else if(particle_string == "Electron")
+                    particles.push_back(electron);
+                else if(particle_string == "Muon")
+                    particles.push_back(muon);
+                else if(particle_string == "Tau")
+                    particles.push_back(tau);
+                else
+                    THROW(std::runtime_error, "UI error: Unrecognized particle type provided.");
+            }
+            else
+                THROW(std::runtime_error, "UI error: Particle type must be provided as a string.");
+        }
+
+        // baryonic density fraction functions of baryonic density (natural units)
+        
     }
 }
 
