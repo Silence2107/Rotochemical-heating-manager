@@ -22,7 +22,7 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &c
 		}
 		catch (const std::exception &e)
 		{
-			THROW(std::runtime_error, "Pressure derivative computation failed; Encountered in tov_solver::tov_solution; " + std::string(e.what()));
+			THROW(std::runtime_error, "Pressure derivative computation failed. Reason : " + std::string(e.what()));
 		}
 		// maybe should implement leap-frog as well/instead
 	};
