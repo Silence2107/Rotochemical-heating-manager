@@ -49,7 +49,7 @@ namespace inputfile
         pressure_upp;
 
     // baryonic density fraction functions of baryonic density (natural units)
-    std::map<auxiliaries::phys::Species, std::function<double(double)>> Y_i_functions_of_nbar;
+    std::map<auxiliaries::phys::Species, std::function<double(double)>> bar_densities_of_nbar;
 
     // fermi momentum functions of baryonic density (natural units)
     std::map<auxiliaries::phys::Species, std::function<double(double)>> k_fermi_of_nbar;
@@ -128,7 +128,7 @@ namespace inputfile
 
     /// @brief instantiate the inputfile from json input
     /// @param json_input json inputfile path
-    void instantiate_system(const std::string& json_input)
+    void instantiate_system(const std::string &json_input)
     {
         using namespace inputfile;
         using json = nlohmann::json;
@@ -147,7 +147,7 @@ namespace inputfile
 
         // read json input
         std::ifstream i(json_input);
-        if (!i.is_open()) 
+        if (!i.is_open())
         {
             THROW(std::runtime_error, "UI inputfile requested, but the path is invalid.");
         }
@@ -155,91 +155,9 @@ namespace inputfile
 
         // (1) EoS setup
 
-        // conversion factors from datafile units to natural units
-        keys names = {"EnergyDensity", "Pressure", "BarionicDensity"};
-
-        for (size_t count = 0; count < names.size(); ++count)
-        {
-            auto name = names[count];
-            auto temp = j["EosSetup"]["Units"][name];
-            if (temp.is_number())
-                switch (count)
-                {
-                case 0:
-                    energy_density_conversion = temp.get<double>();
-                    break;
-                case 1:
-                    pressure_conversion = temp.get<double>();
-                    break;
-                case 2:
-                    nbar_conversion = temp.get<double>();
-                    break;
-                default:
-                    THROW(std::runtime_error, "UI error: Unexpected convertable quantity.");
-                }
-            else if (temp.is_string())
-                switch (count)
-                {
-                case 0:
-                    if (temp == "Gev4")
-                    {
-                        energy_density_conversion = 1.0;
-                    }
-                    else if (temp == "MevOverFm3")
-                    {
-                        energy_density_conversion = constants::conversion::mev_over_fm3_gev4;
-                    }
-                    else if (temp == "GOverCm3")
-                    {
-                        energy_density_conversion = constants::conversion::g_over_cm3_gev4;
-                    }
-                    else
-                    {
-                        THROW(std::runtime_error, "UI error: Unexpected conversion unit for energy density.");
-                    }
-                    break;
-                case 1:
-                    if (temp == "Gev4")
-                    {
-                        pressure_conversion = 1.0;
-                    }
-                    else if (temp == "MevOverFm3")
-                    {
-                        pressure_conversion = constants::conversion::mev_over_fm3_gev4;
-                    }
-                    else if (temp == "DyneOverCm2")
-                    {
-                        pressure_conversion = constants::conversion::dyne_over_cm2_gev4;
-                    }
-                    else
-                    {
-                        THROW(std::runtime_error, "UI error: Unexpected conversion unit for pressure.");
-                    }
-                    break;
-                case 2:
-                    if (temp == "Gev3")
-                    {
-                        nbar_conversion = 1.0;
-                    }
-                    else if (temp == "Fm-3")
-                    {
-                        nbar_conversion = 1.0 / constants::conversion::fm3_gev3;
-                    }
-                    else
-                    {
-                        THROW(std::runtime_error, "UI error: Unexpected conversion unit for barionic density.");
-                    }
-                    break;
-                default:
-                    THROW(std::runtime_error, "UI error: Unexpected convertable quantity.");
-                }
-            else 
-                THROW(std::runtime_error, "UI error: Unparsable conversion unit provided.");
-        }
-
         // filereader
-        auto eos_datafile = j["EosSetup"]["Datafile"]["Path"];
-        auto eos_datafile_rows = j["EosSetup"]["Datafile"]["Rows"];
+        auto eos_datafile = j["EoSSetup"]["Datafile"]["Path"];
+        auto eos_datafile_rows = j["EoSSetup"]["Datafile"]["Rows"];
         if (!(eos_datafile_rows.size() == 2))
         {
             if (eos_datafile_rows.is_null())
@@ -247,8 +165,8 @@ namespace inputfile
             else
                 THROW(std::runtime_error, "UI error: Datafile rows must be a pair-array.");
         }
-            
-        auto eos_datafile_cols = j["EosSetup"]["Datafile"]["Columns"];
+
+        auto eos_datafile_cols = j["EoSSetup"]["Datafile"]["Columns"];
         if (!(eos_datafile_cols.size() == 2))
         {
             if (eos_datafile_cols.is_null())
@@ -258,7 +176,7 @@ namespace inputfile
         }
 
         auxiliaries::math::InterpolationMode eos_datafile_interp_mode;
-        auto eos_datafile_interp_read = j["EosSetup"]["Datafile"]["Interpolation"];
+        auto eos_datafile_interp_read = j["EoSSetup"]["Datafile"]["Interpolation"];
         if (eos_datafile_interp_read.is_null())
             eos_datafile_interp_mode = auxiliaries::math::InterpolationMode::kLinear;
         else if (!(eos_datafile_interp_read.is_string()))
@@ -266,22 +184,42 @@ namespace inputfile
         else
             eos_datafile_interp_mode = get_interpolation_mode(eos_datafile_interp_read);
 
-        auto nbar_index = j["EosSetup"]["Quantities"]["BarionicDensity"]["Column"];
+        auto nbar_index = j["EoSSetup"]["Quantities"]["BarionicDensity"]["Column"];
+        auto nbar_conversion_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["Units"];
         if (!(nbar_index.is_number_integer()))
             THROW(std::runtime_error, "UI error: Barionic density column number must be provided as an integer.");
+        if (nbar_conversion_read.is_number())
+            nbar_conversion = nbar_conversion_read.get<double>();
+        else if (nbar_conversion_read.is_string())
+        {
+            if (nbar_conversion_read == "Gev3")
+            {
+                nbar_conversion = 1.0;
+            }
+            else if (nbar_conversion_read == "Fm-3")
+            {
+                nbar_conversion = 1.0 / constants::conversion::fm3_gev3;
+            }
+            else
+            {
+                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for barionic density.");
+            }
+        }
+        else
+            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for barionic density.");
 
         // read datafile
         static auto table = auxiliaries::io::read_tabulated_file(eos_datafile, eos_datafile_cols, eos_datafile_rows);
 
         // data_reader takes input vector and outputs vector of outputs from EoS datafile
         static auto data_reader = auxiliaries::math::CachedFunc<std::vector<auxiliaries::math::CachedFunc<std::function<double(double)>,
-                                                                                                    double, const std::vector<double> &, const std::vector<double> &,
-                                                                                                    auxiliaries::math::InterpolationMode, double, bool, bool>>,
-                                                            double, const std::vector<double> &, size_t>(
+                                                                                                          double, const std::vector<double> &, const std::vector<double> &,
+                                                                                                          auxiliaries::math::InterpolationMode, double, bool, bool>>,
+                                                                double, const std::vector<double> &, size_t>(
             [nbar_index, eos_datafile_interp_mode](std::vector<auxiliaries::math::CachedFunc<std::function<double(double)>,
-                                                            double, const std::vector<double> &, const std::vector<double> &,
-                                                            auxiliaries::math::InterpolationMode, double, bool, bool>> &cache,
-                const std::vector<double> &input, size_t index)
+                                                                                             double, const std::vector<double> &, const std::vector<double> &,
+                                                                                             auxiliaries::math::InterpolationMode, double, bool, bool>> &cache,
+                                                   const std::vector<double> &input, size_t index)
             {
                 if (cache.empty())
                 {
@@ -289,8 +227,8 @@ namespace inputfile
                     for (size_t i = 0; i < table.size(); ++i)
                     {
                         auto interpolator_cached = auxiliaries::math::CachedFunc<std::function<double(double)>,
-                                                                                    double, const std::vector<double> &, const std::vector<double> &,
-                                                                                    auxiliaries::math::InterpolationMode, double, bool, bool>(auxiliaries::math::interpolate_cached);
+                                                                                 double, const std::vector<double> &, const std::vector<double> &,
+                                                                                 auxiliaries::math::InterpolationMode, double, bool, bool>(auxiliaries::math::interpolate_cached);
                         cache.push_back(interpolator_cached);
                     }
                 }
@@ -301,28 +239,76 @@ namespace inputfile
             });
 
         // energy density function of baryonic density (natural units)
-        auto energy_density_index = j["EosSetup"]["Quantities"]["EnergyDensity"]["Column"];
+        auto energy_density_index = j["EoSSetup"]["Quantities"]["EnergyDensity"]["Column"];
+        auto energy_density_conversion_read = j["EoSSetup"]["Quantities"]["EnergyDensity"]["Units"];
         if (!(energy_density_index.is_number_integer()))
             THROW(std::runtime_error, "UI error: Energy density column number must be provided as an integer.");
+        if (energy_density_conversion_read.is_number())
+            energy_density_conversion = energy_density_conversion_read.get<double>();
+        else if (energy_density_conversion_read.is_string())
+        {
+            if (energy_density_conversion_read == "Gev4")
+            {
+                energy_density_conversion = 1.0;
+            }
+            else if (energy_density_conversion_read == "MevOverFm3")
+            {
+                energy_density_conversion = constants::conversion::mev_over_fm3_gev4;
+            }
+            else if (energy_density_conversion_read == "GOverCm3")
+            {
+                energy_density_conversion = constants::conversion::g_over_cm3_gev4;
+            }
+            else
+            {
+                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for energy density.");
+            }
+        }
+        else
+            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for energy density.");
         energy_density_of_nbar = [energy_density_index](double nbar)
         { return data_reader({nbar}, energy_density_index) * energy_density_conversion; };
 
         // pressure function of baryonic density (natural units)
-        auto pressure_index = j["EosSetup"]["Quantities"]["Pressure"]["Column"];
+        auto pressure_index = j["EoSSetup"]["Quantities"]["Pressure"]["Column"];
+        auto pressure_conversion_read = j["EoSSetup"]["Quantities"]["Pressure"]["Units"];
         if (!(pressure_index.is_number_integer()))
             THROW(std::runtime_error, "UI error: Pressure column number must be provided as an integer.");
+        if (pressure_conversion_read.is_number())
+            pressure_conversion = pressure_conversion_read.get<double>();
+        else if (pressure_conversion_read.is_string())
+        {
+            if (pressure_conversion_read == "Gev4")
+            {
+                pressure_conversion = 1.0;
+            }
+            else if (pressure_conversion_read == "MevOverFm3")
+            {
+                pressure_conversion = constants::conversion::mev_over_fm3_gev4;
+            }
+            else if (pressure_conversion_read == "DyneOverCm2")
+            {
+                pressure_conversion = constants::conversion::dyne_over_cm2_gev4;
+            }
+            else
+            {
+                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for pressure.");
+            }
+        }
+        else
+            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for pressure.");
         pressure_of_nbar = [pressure_index](double nbar)
         { return data_reader({nbar}, pressure_index) * pressure_conversion; };
 
         // baryonic density limits in natural units. _low and _upp represent limits of EoS itself
         // while _core_limit, _crust_limit represent phase transition boundaries
-        auto nbar_low_read = j["EosSetup"]["Quantities"]["BarionicDensity"]["Low"],
-             nbar_upp_read = j["EosSetup"]["Quantities"]["BarionicDensity"]["Upp"],
-             nbar_core_limit_read = j["EosSetup"]["Quantities"]["BarionicDensity"]["CoreLimit"],
-             nbar_crust_limit_read = j["EosSetup"]["Quantities"]["BarionicDensity"]["CrustLimit"];
+        auto nbar_low_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["Low"],
+             nbar_upp_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["Upp"],
+             nbar_core_limit_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["CoreLimit"],
+             nbar_crust_limit_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["CrustLimit"];
         if (!(nbar_low_read.is_number() && nbar_upp_read.is_number() && nbar_core_limit_read.is_number()))
             THROW(std::runtime_error, "UI error: Barionic density limits must be provided as numbers.");
-        
+
         if (!nbar_crust_limit_read.is_number() && !nbar_crust_limit_read.is_null())
             THROW(std::runtime_error, "UI error: Barionic density crust limit may only be provided as a number.");
         if (nbar_crust_limit_read.is_null())
@@ -335,48 +321,48 @@ namespace inputfile
 
         // energy density limits in natural units. _low and _upp represent limits of EoS itself <para></para>
         // while _core_limit represents phase transition boundary
-        auto edensity_low_read = j["EosSetup"]["Quantities"]["EnergyDensity"]["Low"],
-             edensity_core_limit_read = j["EosSetup"]["Quantities"]["EnergyDensity"]["CoreLimit"],
-             edensity_upp_read = j["EosSetup"]["Quantities"]["EnergyDensity"]["Upp"];
-            
+        auto edensity_low_read = j["EoSSetup"]["Quantities"]["EnergyDensity"]["Low"],
+             edensity_core_limit_read = j["EoSSetup"]["Quantities"]["EnergyDensity"]["CoreLimit"],
+             edensity_upp_read = j["EoSSetup"]["Quantities"]["EnergyDensity"]["Upp"];
+
         if (edensity_low_read.is_null() || edensity_low_read == "Deduce")
             edensity_low = energy_density_of_nbar(nbar_low);
         else if (edensity_low_read.is_number())
             edensity_low = edensity_low_read.get<double>() * energy_density_conversion;
         else
-            THROW(std::runtime_error, "UI error: Energy density low limit must be provided as a number or \"Deduce\".");
-        
+            THROW(std::runtime_error, "UI error: Energy density low limit may only be provided as a number or \"Deduce\".");
+
         if (edensity_core_limit_read.is_null() || edensity_core_limit_read == "Deduce")
             edensity_core_limit = energy_density_of_nbar(nbar_core_limit);
         else if (edensity_core_limit_read.is_number())
             edensity_core_limit = edensity_core_limit_read.get<double>() * energy_density_conversion;
         else
-            THROW(std::runtime_error, "UI error: Energy density core limit must be provided as a number or \"Deduce\".");
-        
+            THROW(std::runtime_error, "UI error: Energy density core limit may only be provided as a number or \"Deduce\".");
+
         if (edensity_upp_read.is_null() || edensity_upp_read == "Deduce")
             edensity_upp = energy_density_of_nbar(nbar_upp);
         else if (edensity_upp_read.is_number())
             edensity_upp = edensity_upp_read.get<double>() * energy_density_conversion;
         else
-            THROW(std::runtime_error, "UI error: Energy density upp limit must be provided as a number or \"Deduce\".");
+            THROW(std::runtime_error, "UI error: Energy density upp limit may only be provided as a number or \"Deduce\".");
 
         // pressure limits in natural units. _low and _upp represent limits of EoS itself
-        auto pressure_low_read = j["EosSetup"]["Quantities"]["Pressure"]["Low"],
-             pressure_upp_read = j["EosSetup"]["Quantities"]["Pressure"]["Upp"];
+        auto pressure_low_read = j["EoSSetup"]["Quantities"]["Pressure"]["Low"],
+             pressure_upp_read = j["EoSSetup"]["Quantities"]["Pressure"]["Upp"];
 
         if (pressure_low_read.is_null() || pressure_low_read == "Deduce")
             pressure_low = pressure_of_nbar(nbar_low);
         else if (pressure_low_read.is_number())
             pressure_low = pressure_low_read.get<double>() * pressure_conversion;
         else
-            THROW(std::runtime_error, "UI error: Pressure low limit must be provided as a number or \"Deduce\".");
+            THROW(std::runtime_error, "UI error: Pressure low limit may only be provided as a number or \"Deduce\".");
 
         if (pressure_upp_read.is_null() || pressure_upp_read == "Deduce")
             pressure_upp = pressure_of_nbar(nbar_upp);
         else if (pressure_upp_read.is_number())
             pressure_upp = pressure_upp_read.get<double>() * pressure_conversion;
         else
-            THROW(std::runtime_error, "UI error: Pressure upp limit must be provided as a number or \"Deduce\".");
+            THROW(std::runtime_error, "UI error: Pressure upp limit may only be provided as a number or \"Deduce\".");
 
         // TOV solver setup
 
@@ -446,38 +432,118 @@ namespace inputfile
 
         // provided particles
         auto particles_read = j["EoSSetup"]["Particles"];
-        if(particles_read.size() < 1)
+        if (particles_read.size() < 1)
             return; // no particles provided -> user expresses no interest in cooling
-        if(!particles_read.is_array())
+        if (!particles_read.is_array())
             THROW(std::runtime_error, "UI error: Particle types must be provided as an array.");
-        
+
         std::vector<auxiliaries::phys::Species> particles;
-        for(auto particle : particles_read)
+        for (auto particle_name : particles_read)
         {
-            if(particle.is_string())
+            using namespace constants::species;
+            std::vector<auxiliaries::phys::Species> known_particles =
+                {neutron, proton, electron, muon, tau, uquark, dquark, squark};
+            if (particle_name.is_string())
             {
-                using namespace constants::species;
-                // I guess we'd need to improve Species class later on
-                auto particle_string = particle.get<std::string>();
-                if(particle_string == "Neutron")
-                    particles.push_back(neutron);
-                else if(particle_string == "Proton")
-                    particles.push_back(proton);
-                else if(particle_string == "Electron")
-                    particles.push_back(electron);
-                else if(particle_string == "Muon")
-                    particles.push_back(muon);
-                else if(particle_string == "Tau")
-                    particles.push_back(tau);
-                else
-                    THROW(std::runtime_error, "UI error: Unrecognized particle type provided.");
+                // identify particle with the list of known ones
+                for (const auto &known_particle : known_particles)
+                {
+                    if (particle_name == known_particle.name())
+                    {
+                        particles.push_back(known_particle);
+                        break;
+                    }
+                }
             }
             else
                 THROW(std::runtime_error, "UI error: Particle type must be provided as a string.");
         }
 
-        // baryonic density fraction functions of baryonic density (natural units)
-        
+        // baryonic density functions of baryonic density (natural units) &&
+        // fermi momentum functions of baryonic density (natural units)
+        auto particle_density_conversion_read = j["EoSSetup"]["Quantities"]["BarionicDensities"]["Units"];
+        double particle_density_conversion;
+        if (particle_density_conversion_read.is_null())
+            particle_density_conversion = nbar_conversion;
+        else if (particle_density_conversion_read.is_number())
+        {
+            particle_density_conversion = particle_density_conversion_read.get<double>();
+        }
+        else if (particle_density_conversion_read.is_string())
+        {
+            // for "Density"
+            if (particle_density_conversion_read == "Gev3")
+            {
+                particle_density_conversion = 1.0;
+            }
+            else if (particle_density_conversion_read == "Fm-3")
+            {
+                particle_density_conversion = 1.0 / constants::conversion::fm3_gev3;
+            }
+            // for "DensityFraction"
+            else if (particle_density_conversion_read == "DimLess")
+            {
+                particle_density_conversion = 1.0;
+            }
+            // for "KFermi"
+            else if (particle_density_conversion_read == "Gev")
+            {
+                particle_density_conversion = 1.0;
+            }
+            else if (particle_density_conversion_read == "Fm-1")
+            {
+                particle_density_conversion = pow(1.0 / constants::conversion::fm3_gev3, 1.0 / 3.0);
+            }
+            else
+            {
+                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for particle density.");
+            }
+        }
+        else
+            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for particle density.");
+        for (const auto &particle : particles)
+        {
+            auto particle_name = particle.name();
+            auto particle_density_read = j["EoSSetup"]["Quantities"]["BarionicDensities"][particle_name];
+            
+            // I for now assume that only mesons are not fermions, which is of course very brave. Consider TODO
+            if (particle_density_read.is_null() && !(particle.classify() == auxiliaries::phys::Species::ParticleClassification::kMeson))
+                THROW(std::runtime_error, "UI error: Particle density info is not provided for " + particle.name() + ".");
+            
+            auto particle_density_column_read = particle_density_read["Column"];
+            if (!(particle_density_column_read.is_number_integer()))
+                THROW(std::runtime_error, "UI error: Particle density column number must be provided as an integer.");
+            
+            auto particle_density_provided_as_read = particle_density_read["ProvidedAs"];
+            if (particle_density_provided_as_read.is_null())
+                particle_density_provided_as_read = "Density";
+
+            bar_densities_of_nbar.insert(
+                {particle, [particle_density_column_read, particle_density_provided_as_read, particle_density_conversion](double nbar)
+                 {
+                     if (particle_density_provided_as_read == "Density")
+                     {
+                         return data_reader({nbar}, particle_density_column_read) * particle_density_conversion;
+                     }
+                     else if (particle_density_provided_as_read == "DensityFraction")
+                     {
+                         return data_reader({nbar}, particle_density_column_read) * particle_density_conversion * nbar;
+                     }
+                     else if (particle_density_provided_as_read == "KFermi")
+                     {
+                         using constants::scientific::Pi;
+                         return pow(data_reader({nbar}, particle_density_column_read) * particle_density_conversion, 3.0) / (3.0 * Pi * Pi);
+                     }
+                     else
+                        THROW(std::runtime_error, "UI error: Particle density may only be provided in \"Density\", \"DensityFraction\" or \"KFermi\" modes.");
+                 }});
+            k_fermi_of_nbar.insert(
+                {particle, [particle](double nbar) 
+                 {
+                    using constants::scientific::Pi;
+                    return pow(3.0 * Pi * Pi * bar_densities_of_nbar[particle](nbar), 1.0 / 3.0);
+                 }});
+        }
     }
 }
 

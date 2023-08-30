@@ -1,15 +1,9 @@
 {
-    "EosSetup" : 
+    "EoSSetup" : 
     {
-        "Units" :
-        {
-            "EnergyDensity" : "GOverCm3",
-            "Pressure" : "DyneOverCm2",
-            "BarionicDensity" : "Fm-3"
-        },
         "Datafile" :
         {
-            "Path" : "../../saved/EoS_bank/APR_EOS_Acc_Fe.dat",
+            "Path" : "../../saved/EoS_bank/APR_EOS_Acc_Fe_RHMstandard.dat",
             "Rows" : [7, 236],
             "Interpolation" : "Linear"
         },
@@ -18,14 +12,17 @@
         {
             "EnergyDensity" : 
             {
+                "Units" : "GOverCm3",
                 "Column" : 0
             },
             "Pressure" : 
             {
+                "Units" : "DyneOverCm2",
                 "Column" : 1
             },
             "BarionicDensity" : 
             {
+                "Units" : "Fm-3",
                 "Column" : 2,
                 "Low" : 6.023E-13,
                 "Upp" : 1.89,
@@ -34,25 +31,26 @@
             },
             "BarionicDensities" :
             {
+                "Units" : 1.0,
                 "Electron" :
                 {
                     "Column" : 3,
-                    "ProvidedAs" : "Density" 
+                    "ProvidedAs" : "DensityFraction" 
                 },
                 "Muon" :
                 {
                     "Column" : 4,
-                    "ProvidedAs" : "Density" 
+                    "ProvidedAs" : "DensityFraction" 
                 },
                 "Neutron" :
                 {
                     "Column" : 5,
-                    "ProvidedAs" : "Density" 
+                    "ProvidedAs" : "DensityFraction" 
                 },
                 "Proton" :
                 {
                     "Column" : 6,
-                    "ProvidedAs" : "Density" 
+                    "ProvidedAs" : "DensityFraction" 
                 }
             }
         }
