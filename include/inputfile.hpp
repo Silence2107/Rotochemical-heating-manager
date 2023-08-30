@@ -104,13 +104,13 @@ namespace inputfile
     std::map<auxiliaries::phys::Species, std::function<double(double)>> m_stars_of_nbar =
         {
             {constants::species::electron, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? sqrt(constants::scientific::M_e * constants::scientific::M_e + pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 3) * nbar, 2.0 / 3)) : constants::scientific::M_e; }},
+             { return (nbar >= nbar_core_limit) ? sqrt(constants::species::electron.mass() * constants::species::electron.mass() + pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 3) * nbar, 2.0 / 3)) : constants::species::electron.mass(); }},
             {constants::species::muon, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? sqrt(constants::scientific::M_mu * constants::scientific::M_mu + pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 4) * nbar, 2.0 / 3)) : constants::scientific::M_mu; }},
+             { return (nbar >= nbar_core_limit) ? sqrt(constants::species::muon.mass() * constants::species::muon.mass() + pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 4) * nbar, 2.0 / 3)) : constants::species::muon.mass(); }},
             {constants::species::neutron, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? data_reader({nbar}, 12) * constants::scientific::M_N : constants::scientific::M_N; }},
+             { return (nbar >= nbar_core_limit) ? data_reader({nbar}, 12) * constants::species::neutron.mass() : constants::species::neutron.mass(); }},
             {constants::species::proton, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? data_reader({nbar}, 11) * constants::scientific::M_N : constants::scientific::M_N; }}};
+             { return (nbar >= nbar_core_limit) ? data_reader({nbar}, 11) * constants::species::proton.mass() : constants::species::proton.mass(); }}};
 
     std::function<double(double)> ion_volume_fr = [](double nbar)
     {
@@ -118,7 +118,7 @@ namespace inputfile
             return 0.0;
         using namespace constants::conversion;
         using namespace constants::scientific;
-        auto eta_ion = 4.0 / 3 * Pi * pow(1.1, 3.0) * fm3_gev3 * energy_density_of_nbar(nbar) / M_N;
+        auto eta_ion = 4.0 / 3 * Pi * pow(1.1, 3.0) * fm3_gev3 * energy_density_of_nbar(nbar) / constants::species::neutron.mass();
         return std::min(1.0, eta_ion);
     };
 

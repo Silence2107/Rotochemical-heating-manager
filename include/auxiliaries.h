@@ -328,6 +328,12 @@ namespace auxiliaries
             ParticleClassification m_classification;
             /// @brief string namings for species
             std::string m_name;
+            /// @brief particle mass
+            double m_mass;
+            /// @brief particle charge
+            double m_qcharge;
+            /// @brief particle baryon number
+            double m_bcharge;
 
         public:
             /// @brief Expected particle types
@@ -355,7 +361,7 @@ namespace auxiliaries
             /// @brief Constructor
             /// @param naming particle type
             /// @param classification particle classification
-            Species(ParticleType naming, ParticleClassification classification, const std::string& name);
+            Species(ParticleType naming, ParticleClassification classification, const std::string& name, double mass, double qcharge, double bcharge);
             /// @brief Comparison operator
             /// @param other other species
             /// @return true if species are the same
@@ -379,6 +385,22 @@ namespace auxiliaries
             {
                 return m_name;
             }
+            /// @brief Get particle mass
+            double mass() const
+            {
+                return m_mass;
+            }
+            /// @brief Get particle charge
+            double qcharge() const
+            {
+                return m_qcharge;
+            }
+            /// @brief Get particle baryon number
+            double bcharge() const
+            {
+                return m_bcharge;
+            }
+            
         };
 
         /// @brief Specific heat of substance, based on Fermi gas model
