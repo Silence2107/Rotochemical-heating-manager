@@ -24,10 +24,17 @@ int main(int argc, char **argv)
 {
     if (argc == 1)
     {
-        std::cout << "Usage: " << argv[0] << " <pdf_path=Cooling.pdf> <rootfile_path=None>" << std::endl;
+        std::cout << "Usage: " << argv[0] << " <inputfile_path=None> <pdf_path=Cooling.pdf> <rootfile_path=None>" << std::endl;
     }
-    std::string pdf_path = (argc > 1) ? argv[1] : "Cooling.pdf";
-    bool rootfile_creation = (argc > 2);
+
+    if (argc > 1)
+    {
+        std::string inputfile_path = argv[1];
+        inputfile::instantiate_system(inputfile_path);
+    }
+
+    std::string pdf_path = (argc > 2) ? argv[1] : "Cooling.pdf";
+    bool rootfile_creation = (argc > 3);
     using namespace inputfile;
 
     // RUN --------------------------------------------------------------------------

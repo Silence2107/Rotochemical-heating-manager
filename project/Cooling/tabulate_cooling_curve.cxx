@@ -17,6 +17,12 @@ int main(int argc, char **argv)
 {
     using namespace inputfile;
 
+    if (argc > 1)
+    {
+        std::string inputfile_path = argv[1];
+        inputfile::instantiate_system(inputfile_path);
+    }
+
     // RUN --------------------------------------------------------------------------
 
     // EoS definition

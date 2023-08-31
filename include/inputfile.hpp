@@ -364,7 +364,7 @@ namespace inputfile
         else
             THROW(std::runtime_error, "UI error: Pressure upp limit may only be provided as a number or \"Deduce\".");
 
-        // TOV solver setup
+        // (2) TOV solver setup
 
         auxiliaries::math::InterpolationMode eos_interp_mode;
         auto eos_interp_mode_read = j["TOVSolver"]["EoSInterpolation"];
@@ -407,18 +407,14 @@ namespace inputfile
 
         // TOV solver radius step size in GeV
         auto radius_step_read = j["TOVSolver"]["RadiusStep"]; // reads in km
-        if (radius_step_read.is_null())
-            radius_step = 0.01 * constants::conversion::km_gev; // default value is 10 meters
-        else if (!(radius_step_read.is_number()))
+        if (!(radius_step_read.is_number()))
             THROW(std::runtime_error, "UI error: TOV solver radius step must be provided as a number.");
         else
             radius_step = radius_step_read.get<double>() * constants::conversion::km_gev;
 
         // TOV solver density step size in GeV^4
         auto density_step_read = j["TOVSolver"]["DensityStep"]; // reads in fraction of maxima
-        if (density_step_read.is_null())
-            density_step = 1E-8 * edensity_upp; // default value is 1E-8 of maxima
-        else if (!(density_step_read.is_number()))
+        if (!(density_step_read.is_number()))
             THROW(std::runtime_error, "UI error: TOV solver density step must be provided as a number.");
         else
             density_step = density_step_read.get<double>() * edensity_upp;
@@ -430,6 +426,7 @@ namespace inputfile
         else
             center_density = center_density_read.get<double>() * edensity_upp;
 
+        // (->1) EoS Setup
         // provided particles
         auto particles_read = j["EoSSetup"]["Particles"];
         if (particles_read.size() < 1)
@@ -505,45 +502,333 @@ namespace inputfile
         {
             auto particle_name = particle.name();
             auto particle_density_read = j["EoSSetup"]["Quantities"]["BarionicDensities"][particle_name];
-            
+
             // I for now assume that only mesons are not fermions, which is of course very brave. Consider TODO
             if (particle_density_read.is_null() && !(particle.classify() == auxiliaries::phys::Species::ParticleClassification::kMeson))
                 THROW(std::runtime_error, "UI error: Particle density info is not provided for " + particle.name() + ".");
-            
+
             auto particle_density_column_read = particle_density_read["Column"];
             if (!(particle_density_column_read.is_number_integer()))
                 THROW(std::runtime_error, "UI error: Particle density column number must be provided as an integer.");
-            
+
             auto particle_density_provided_as_read = particle_density_read["ProvidedAs"];
             if (particle_density_provided_as_read.is_null())
                 particle_density_provided_as_read = "Density";
 
-            bar_densities_of_nbar.insert(
-                {particle, [particle_density_column_read, particle_density_provided_as_read, particle_density_conversion](double nbar)
-                 {
-                     if (particle_density_provided_as_read == "Density")
+            if (particle_density_provided_as_read == "Density")
+            {
+                bar_densities_of_nbar.insert(
+                    {particle, [particle_density_column_read, particle_density_conversion](double nbar)
                      {
                          return data_reader({nbar}, particle_density_column_read) * particle_density_conversion;
-                     }
-                     else if (particle_density_provided_as_read == "DensityFraction")
+                     }});
+            }
+            else if (particle_density_provided_as_read == "DensityFraction")
+            {
+                bar_densities_of_nbar.insert(
+                    {particle, [particle_density_column_read, particle_density_conversion](double nbar)
                      {
                          return data_reader({nbar}, particle_density_column_read) * particle_density_conversion * nbar;
-                     }
-                     else if (particle_density_provided_as_read == "KFermi")
+                     }});
+            }
+            else if (particle_density_provided_as_read == "KFermi")
+            {
+                bar_densities_of_nbar.insert(
+                    {particle, [particle_density_column_read, particle_density_conversion](double nbar)
                      {
                          using constants::scientific::Pi;
                          return pow(data_reader({nbar}, particle_density_column_read) * particle_density_conversion, 3.0) / (3.0 * Pi * Pi);
-                     }
-                     else
-                        THROW(std::runtime_error, "UI error: Particle density may only be provided in \"Density\", \"DensityFraction\" or \"KFermi\" modes.");
-                 }});
+                     }});
+            }
+            else
+                THROW(std::runtime_error, "UI error: Particle density may only be provided in \"Density\", \"DensityFraction\" or \"KFermi\" modes.");
             k_fermi_of_nbar.insert(
-                {particle, [particle](double nbar) 
+                {particle, [particle](double nbar)
                  {
-                    using constants::scientific::Pi;
-                    return pow(3.0 * Pi * Pi * bar_densities_of_nbar[particle](nbar), 1.0 / 3.0);
+                     using constants::scientific::Pi;
+                     return pow(3.0 * Pi * Pi * bar_densities_of_nbar[particle](nbar), 1.0 / 3.0);
                  }});
         }
+
+        // effective mass functions of baryonic density (natural units)
+        auto particle_mst_conversion_read = j["EoSSetup"]["Quantities"]["EffectiveMasses"]["Units"];
+        double particle_mst_conversion;
+        if (particle_mst_conversion_read.is_null())
+            THROW(std::runtime_error, "UI error: Effective mass units must be provided.");
+        else if (particle_mst_conversion_read.is_number())
+        {
+            particle_mst_conversion = particle_mst_conversion_read.get<double>();
+        }
+        else if (particle_mst_conversion_read.is_string())
+        {
+            if (particle_mst_conversion_read == "Gev")
+            {
+                particle_mst_conversion = 1.0;
+            }
+            else if (particle_mst_conversion_read == "Mev")
+            {
+                particle_mst_conversion = 1.0 / constants::conversion::gev_over_mev;
+            }
+            else if (particle_mst_conversion_read == "NucleonMass")
+            {
+                particle_mst_conversion = constants::species::neutron.mass();
+            }
+            else
+            {
+                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for particle effective mass.");
+            }
+        }
+        else
+            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for particle effective mass.");
+        for (const auto &particle : particles)
+        {
+            auto particle_name = particle.name();
+            auto particle_mst_read = j["EoSSetup"]["Quantities"]["EffectiveMasses"][particle_name];
+            // I for now assume that only mesons are not fermions, which is of course very brave. Consider TODO
+            if (particle_mst_read.is_null() && !(particle.classify() == auxiliaries::phys::Species::ParticleClassification::kMeson))
+                THROW(std::runtime_error, "UI error: Particle effective mass info is not provided for " + particle.name() + ".");
+            auto particle_mst_column_read = particle_mst_read["Column"];
+            auto particle_mst_provided_as_read = particle_mst_read["ProvidedAs"];
+            if (!(particle_mst_column_read.is_number_integer()) && particle_mst_provided_as_read != "FermiEnergy")
+                THROW(std::runtime_error, "UI error: Particle effective mass column number must be provided as an integer.");
+            if (particle_mst_provided_as_read == "FermiEnergy")
+            {
+                m_stars_of_nbar.insert(
+                    {particle, [particle](double nbar)
+                     {
+                         return sqrt(pow(k_fermi_of_nbar[particle](nbar), 2.0) + pow(particle.mass(), 2.0));
+                     }});
+            }
+            else if (particle_mst_provided_as_read == "EffectiveMass")
+            {
+                m_stars_of_nbar.insert(
+                    {particle, [particle_mst_column_read, particle_mst_conversion](double nbar)
+                     {
+                         return data_reader({nbar}, particle_mst_column_read) * particle_mst_conversion;
+                     }});
+            }
+            else
+                THROW(std::runtime_error, "UI error: Particle effective mass may only be provided in \"FermiEnergy\" or \"EffectiveMass\" modes.");
+        }
+
+        // ion volume fraction function of baryonic density (natural units)
+
+        auto ion_volume_fr_read = j["EoSSetup"]["Quantities"]["IonVolumeFraction"];
+
+        auto ion_volume_provided_as_read = ion_volume_fr_read["ProvidedAs"];
+        if (ion_volume_provided_as_read.is_null() || ion_volume_provided_as_read == "Absent")
+            ion_volume_fr = [](double nbar)
+            { return 0.0; };
+        else if (ion_volume_provided_as_read == "ExcludedVolume")
+            ion_volume_fr = [](double nbar)
+            {
+                if (nbar >= nbar_crust_limit)
+                    return 0.0;
+                using namespace constants::conversion;
+                using namespace constants::scientific;
+                auto eta_ion = 4.0 / 3 * Pi * pow(1.1, 3.0) * fm3_gev3 * energy_density_of_nbar(nbar) / constants::species::neutron.mass();
+                return std::min(1.0, eta_ion);
+            };
+        else if (ion_volume_provided_as_read == "IonVolumeFraction")
+        {
+            auto ion_volume_column_read = ion_volume_fr_read["Column"];
+            if (!(ion_volume_column_read.is_number_integer()))
+                THROW(std::runtime_error, "UI error: Ion volume fraction column number must be provided as an integer.");
+            ion_volume_fr = [ion_volume_column_read](double nbar)
+            {
+                return data_reader({nbar}, ion_volume_column_read);
+            };
+        }
+        else
+            THROW(std::runtime_error, "UI error: Ion volume fraction may only be provided in \"Absent\", \"ExcludedVolume\" or \"IonVolumeFraction\" modes.");
+
+        // (3) Cooling solver
+
+        // Cooling solver setup
+
+        // desirable relative accuracy of the cooling solvers
+        auto cooling_newton_step_eps_read = j["CoolingSolver"]["NewtonTolerance"];
+        if (cooling_newton_step_eps_read.is_null())
+            cooling_newton_step_eps = 1E-5;
+        else if (!(cooling_newton_step_eps_read.is_number()))
+            THROW(std::runtime_error, "UI error: Cooling solver Newton relative tolerance must be provided as a number.");
+        else
+            cooling_newton_step_eps = cooling_newton_step_eps_read.get<double>();
+
+        // maximum number of iterations of the cooling solvers
+        auto cooling_newton_max_iter_read = j["CoolingSolver"]["NewtonMaxIter"];
+        if (cooling_newton_max_iter_read.is_null())
+            cooling_newton_max_iter = 50;
+        else if (!(cooling_newton_max_iter_read.is_number_integer()))
+            THROW(std::runtime_error, "UI error: Cooling solver Newton max iter must be provided as an integer.");
+        else
+            cooling_newton_max_iter = cooling_newton_max_iter_read.get<size_t>();
+
+        // initial temperature profile
+        auto initial_t_profile_read = j["CoolingSolver"]["TemperatureProfile"];
+        if (!initial_t_profile_read.is_array())
+            THROW(std::runtime_error, "UI error: Initial temperature profile settings must be provided as an array.");
+        else
+        {
+            auto initial_t_profile_provided_as_read = initial_t_profile_read[0];
+            if (initial_t_profile_provided_as_read == "InfiniteFlat")
+            {
+                auto initial_t_profile_T_read = initial_t_profile_read[1];
+                if (!(initial_t_profile_T_read.is_number()))
+                    THROW(std::runtime_error, "UI error: Initial temperature profile temperature must be provided as a number.");
+                else
+                {
+                    double temp = initial_t_profile_T_read.get<double>() / constants::conversion::gev_over_k;
+                    initial_t_profile_inf = [temp](double r, double exp_phi_at_R)
+                    {
+                        return temp;
+                    };
+                }
+            }
+            else if (initial_t_profile_provided_as_read == "InfiniteFlatSurfaceRedshifted")
+            {
+                auto initial_t_profile_T_read = initial_t_profile_read[1];
+                if (!(initial_t_profile_T_read.is_number()))
+                    THROW(std::runtime_error, "UI error: Initial temperature profile temperature must be provided as a number.");
+                else
+                {
+                    double temp = initial_t_profile_T_read.get<double>() / constants::conversion::gev_over_k;
+                    initial_t_profile_inf = [temp](double r, double exp_phi_at_R)
+                    {
+                        return temp * exp_phi_at_R;
+                    };
+                }
+            }
+            else
+                THROW(std::runtime_error, "UI error: Initial temperature profile must be provided in \"InfiniteFlat\" or \"InfiniteFlatSurfaceRedshifted\" modes.");
+        }
+
+        // Evolution settings
+        auto time_init_read = j["CoolingSolver"]["TimeInit"];
+        if (time_init_read.is_null())
+            t_init = 0.0 * 1E-6 * constants::conversion::myr_over_s * constants::conversion::gev_s;
+        else if (!(time_init_read.is_number()))
+            THROW(std::runtime_error, "UI error: Initial time may only be provided as a number.");
+        else
+            t_init = time_init_read.get<double>() * 1E-6 * constants::conversion::myr_over_s * constants::conversion::gev_s;
+
+        auto time_end_read = j["CoolingSolver"]["TimeEnd"];
+        if (!(time_end_read.is_number()))
+            THROW(std::runtime_error, "UI error: Final time must be provided as a number.");
+        else
+            t_end = time_end_read.get<double>() * 1E-6 * constants::conversion::myr_over_s * constants::conversion::gev_s;
+
+        auto base_time_step_read = j["CoolingSolver"]["TimeBaseStep"];
+        if (!(base_time_step_read.is_number()))
+            THROW(std::runtime_error, "UI error: Base time step must be provided as a number.");
+        else
+            base_t_step = base_time_step_read.get<double>() * 1E-6 * constants::conversion::myr_over_s * constants::conversion::gev_s;
+
+        // estimate for the number of time points (is also used for time step expansion, if enabled)
+        auto n_points_estimate_read = j["CoolingSolver"]["NumberPointsEstimate"];
+        if (!(n_points_estimate_read.is_number_integer()))
+            THROW(std::runtime_error, "UI error: Estimate of number of cooling time stamps must be provided as an integer.");
+        else
+            cooling_n_points_estimate = n_points_estimate_read.get<size_t>();
+
+        // time step expansion factor
+        auto time_step_expansion_factor_read = j["CoolingSolver"]["ExpansionRate"];
+        if (time_step_expansion_factor_read.is_null() || time_step_expansion_factor_read == "Deduce")
+            exp_rate_estim = pow((t_end - t_init) / base_t_step, 1.0 / cooling_n_points_estimate) *
+                             pow((pow((t_end - t_init) / base_t_step, 1.0 / cooling_n_points_estimate) - 1), 1.0 / cooling_n_points_estimate);
+        else if (!(time_step_expansion_factor_read.is_number()))
+            THROW(std::runtime_error, "UI error: Time step expansion factor may only be provided as a number or \"Deduce\".");
+        else
+            exp_rate_estim = time_step_expansion_factor_read.get<double>();
+
+        // cooling grid setup
+        auto cooling_radius_step_read = j["CoolingSolver"]["RadiusStep"]; // reads in km
+        if (!(cooling_radius_step_read.is_number()))
+            THROW(std::runtime_error, "UI error: Cooling solver radius step must be provided as a number.");
+        else
+            cooling_radius_step = cooling_radius_step_read.get<double>() * constants::conversion::km_gev;
+
+        // condition on which to switch to equilibrium cooling
+        auto cooling_enable_equilibrium_mode_read = j["CoolingSolver"]["EnableEquilibrium"]["Mode"];
+        if (!(cooling_enable_equilibrium_mode_read.is_string()))
+            switch_to_equilibrium = [](double, const std::vector<double> &)
+            { return false; };
+        else
+        {
+            if (cooling_enable_equilibrium_mode_read == "Immediately")
+                switch_to_equilibrium = [](double, const std::vector<double> &)
+                { return true; };
+            else if (cooling_enable_equilibrium_mode_read == "Never")
+                switch_to_equilibrium = [](double, const std::vector<double> &)
+                { return false; };
+            else if (cooling_enable_equilibrium_mode_read == "Conditional")
+            {
+                auto cooling_enable_equilibrium_condition1_read = j["CoolingSolver"]["EnableEquilibrium"]["Conditions"]["UponReachingTime"];
+                auto cooling_enable_equilibrium_condition2_read = j["CoolingSolver"]["EnableEquilibrium"]["Conditions"]["UponProfileFlattening"];
+
+                // let's make it less efficient but more readable
+                switch_to_equilibrium = [cooling_enable_equilibrium_condition1_read,
+                                         cooling_enable_equilibrium_condition2_read](double t_curr, const std::vector<double> &t_profile)
+                {
+                    using namespace constants::conversion;
+                    if (!cooling_enable_equilibrium_condition1_read.is_null())
+                    {
+                        if (!(cooling_enable_equilibrium_condition1_read.is_number()))
+                            THROW(std::runtime_error, "UI error: Time for switching to equilibrium may only be provided as a number.");
+                        else if (t_curr < cooling_enable_equilibrium_condition1_read.get<double>() * 1E-6 * myr_over_s * gev_s)
+                            return false;
+                    }
+                    if (!cooling_enable_equilibrium_condition2_read.is_null())
+                    {
+                        if (!(cooling_enable_equilibrium_condition2_read.is_number()))
+                            THROW(std::runtime_error, "UI error: Profile flattening ratio for switching to equilibrium may only be provided as a number.");
+                        else if (std::abs(t_profile.end()[-2] - t_profile.front()) / t_profile.end()[-2] > cooling_enable_equilibrium_condition2_read.get<double>())
+                            return false;
+                    }
+                    return true;
+                    /* return 1E-5 * constants::conversion::myr_over_s * constants::conversion::gev_s < t_curr &&
+                           std::abs(t_profile.end()[-2] - t_profile.front()) / t_profile.end()[-2] < 0.01;*/
+                };
+            }
+            else
+                THROW(std::runtime_error, "UI error: Equilibrium condition may only be provided in \"Immediately\", \"Never\" or \"Conditional\" modes.");
+        }
+
+        // Cooling settings
+        crust_eta = 2.26E-18;
+
+        // Critical phenomena settings
+
+        superfluid_p_1s0 = false;
+        superfluid_n_3p2 = false;
+        superfluid_n_1s0 = false;
+
+        superfluid_p_temp = [](double k_fermi)
+        {
+            if (superfluid_p_1s0)
+            {
+                using namespace auxiliaries::phys;
+                return critical_temperature(k_fermi, CriticalTemperatureModel::kAO);
+            }
+            return 0.0;
+        };
+        superfluid_n_temp = [](double k_fermi)
+        {
+            if (superfluid_n_3p2 || superfluid_n_1s0)
+            {
+                using namespace auxiliaries::phys;
+                using constants::species::neutron;
+                if (superfluid_n_1s0 && (k_fermi <= k_fermi_of_nbar[neutron](nbar_core_limit)))
+                    return critical_temperature(k_fermi, CriticalTemperatureModel::kCCDK);
+                else
+                    return critical_temperature(k_fermi, CriticalTemperatureModel::kC);
+            }
+            return 0.0;
+        };
+        superconduct_q_gap = [](double nbar)
+        {
+            return 0.0;
+        };
     }
 }
 
