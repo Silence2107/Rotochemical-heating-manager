@@ -11,12 +11,6 @@ namespace constants
 	{
 		/// @brief Gravitational constant in GeV^-2 units
 		const double G = 6.709E-39;
-		/// @brief Nucleon mass in GeV units
-		const double M_N = 0.93956563;
-		/// @brief Electron mass in GeV units
-		const double M_e = 0.0005109989461;
-		/// @brief Muon mass in GeV units
-		const double M_mu = 0.1056583745;
 		/// @brief Value of pi
 		const double Pi = 3.14159265359;
 		/// @brief Stefan-Boltzmann constant in natural units
@@ -57,25 +51,25 @@ namespace constants
 	namespace species
 	{
 		/// @brief Neutron species
-		const auxiliaries::phys::Species neutron(auxiliaries::phys::Species::ParticleType::kNeutron, auxiliaries::phys::Species::ParticleClassification::kBaryon, "Neutron");
+		const auxiliaries::phys::Species neutron(auxiliaries::phys::Species::ParticleType::kNeutron, auxiliaries::phys::Species::ParticleClassification::kBaryon, "Neutron", 0.939565, 0.0, 1.0);
 		/// @brief Proton species
-		const auxiliaries::phys::Species proton(auxiliaries::phys::Species::ParticleType::kProton, auxiliaries::phys::Species::ParticleClassification::kBaryon, "Proton");
+		const auxiliaries::phys::Species proton(auxiliaries::phys::Species::ParticleType::kProton, auxiliaries::phys::Species::ParticleClassification::kBaryon, "Proton", 0.938272, 1.0, 1.0);
 		/// @brief Electron species
-		const auxiliaries::phys::Species electron(auxiliaries::phys::Species::ParticleType::kElectron, auxiliaries::phys::Species::ParticleClassification::kLepton, "Electron");
+		const auxiliaries::phys::Species electron(auxiliaries::phys::Species::ParticleType::kElectron, auxiliaries::phys::Species::ParticleClassification::kLepton, "Electron", 0.000510998, -1.0, 0.0);
 		/// @brief Muon species
-		const auxiliaries::phys::Species muon(auxiliaries::phys::Species::ParticleType::kMuon, auxiliaries::phys::Species::ParticleClassification::kLepton, "Muon");
+		const auxiliaries::phys::Species muon(auxiliaries::phys::Species::ParticleType::kMuon, auxiliaries::phys::Species::ParticleClassification::kLepton, "Muon", 0.105658, -1.0, 0.0);
 		/// @brief Tau species
-		const auxiliaries::phys::Species tau(auxiliaries::phys::Species::ParticleType::kTau, auxiliaries::phys::Species::ParticleClassification::kLepton, "Tau");
+		const auxiliaries::phys::Species tau(auxiliaries::phys::Species::ParticleType::kTau, auxiliaries::phys::Species::ParticleClassification::kLepton, "Tau", 1.77686, -1.0, 0.0);
 		/*/// @brief Pion species
 		const auxiliaries::phys::Species pion(auxiliaries::phys::Species::ParticleType::kPion, auxiliaries::phys::Species::ParticleClassification::kMeson);
 		/// @brief Kaon species
 		const auxiliaries::phys::Species kaon(auxiliaries::phys::Species::ParticleType::kKaon, auxiliaries::phys::Species::ParticleClassification::kMeson);*/
 		/// @brief Up quark species
-		const auxiliaries::phys::Species uquark(auxiliaries::phys::Species::ParticleType::kUquark, auxiliaries::phys::Species::ParticleClassification::kQuark, "Uquark");
+		const auxiliaries::phys::Species uquark(auxiliaries::phys::Species::ParticleType::kUquark, auxiliaries::phys::Species::ParticleClassification::kQuark, "Uquark", 0.0022, 2.0 / 3.0, 1.0 / 3.0);
 		/// @brief Down quark species
-		const auxiliaries::phys::Species dquark(auxiliaries::phys::Species::ParticleType::kDquark, auxiliaries::phys::Species::ParticleClassification::kQuark, "Dquark");
+		const auxiliaries::phys::Species dquark(auxiliaries::phys::Species::ParticleType::kDquark, auxiliaries::phys::Species::ParticleClassification::kQuark, "Dquark", 0.0047, -1.0 / 3.0, 1.0 / 3.0);
 		/// @brief Strange quark species
-		const auxiliaries::phys::Species squark(auxiliaries::phys::Species::ParticleType::kSquark, auxiliaries::phys::Species::ParticleClassification::kQuark, "Squark");
+		const auxiliaries::phys::Species squark(auxiliaries::phys::Species::ParticleType::kSquark, auxiliaries::phys::Species::ParticleClassification::kQuark, "Squark", 0.095, -1.0 / 3.0, 1.0 / 3.0);
 	}
 }
 

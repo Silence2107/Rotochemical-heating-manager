@@ -206,7 +206,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         double k0 = pow(3 * Pi * Pi * N_sat, 1.0 / 3);
         if (pf_l + pf_p - pf_n <= 0)
             return 0.0;
-        double dens = 4.00E27 * (mst_n / M_N) * (mst_p / M_N) * (mst_l / k0) *
+        double dens = 4.00E27 * (mst_n / neutron.mass()) * (mst_p / proton.mass()) * (mst_l / k0) *
                       pow(T_loc * gev_over_k / 1.0E9, 6) * erg_over_cm3_s_gev5;
 
         // Superfluid factors
@@ -389,11 +389,11 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         double k0 = pow(3 * Pi * Pi * N_sat, 1.0 / 3);
         double alpha = 1.76 - 0.63 * pow(N_sat / nbar_val, 2.0 / 3), beta = 0.68,
                v_fl = pf_l / mst_l;
-        double dens_n = 8.1E21 * v_fl * pow(mst_n / M_N, 3) * (mst_p / M_N) * (pf_p / k0) *
+        double dens_n = 8.1E21 * v_fl * pow(mst_n / neutron.mass(), 3) * (mst_p / proton.mass()) * (pf_p / k0) *
                         pow(T_loc * gev_over_k / 1.0E9, 8) * alpha * beta * erg_over_cm3_s_gev5;
         // manually cross out pf_l and pf_p in numerator and denominator to avoid numerical issues
         double dens_p = (pf_l + 3 * pf_p - pf_n > 0 ? (pow(pf_l + 3 * pf_p - pf_n, 2) / (8 * mst_l)) *
-                                                          8.1E21 * pow(mst_p / M_N, 3) * (mst_n / M_N) * (1.0 / k0) *
+                                                          8.1E21 * pow(mst_p / proton.mass(), 3) * (mst_n / neutron.mass()) * (1.0 / k0) *
                                                           pow(T_loc * gev_over_k / 1.0E9, 8) * alpha * beta * erg_over_cm3_s_gev5
                                                     : 0.0);
 
@@ -483,13 +483,13 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
         double T_loc = T / exp_phi(r);
         double k0 = pow(3 * Pi * Pi * N_sat, 1.0 / 3);
         int n_flavours = 3;
-        double dens_nn = 7.5E19 * pow(mst_n / M_N, 4) * (pf_n / k0) * n_flavours *
+        double dens_nn = 7.5E19 * pow(mst_n / neutron.mass(), 4) * (pf_n / k0) * n_flavours *
                          pow(T_loc * gev_over_k / 1.0E9, 8) * alpha_nn * beta_nn *
                          erg_over_cm3_s_gev5,
-               dens_pp = 7.5E19 * pow(mst_p / M_N, 4) * (pf_p / k0) * n_flavours *
+               dens_pp = 7.5E19 * pow(mst_p / proton.mass(), 4) * (pf_p / k0) * n_flavours *
                          pow(T_loc * gev_over_k / 1.0E9, 8) * alpha_pp * beta_pp *
                          erg_over_cm3_s_gev5,
-               dens_np = 1.5E20 * pow(mst_p / M_N, 2) * pow(mst_n / M_N, 2) * (pf_p / k0) * n_flavours *
+               dens_np = 1.5E20 * pow(mst_p / proton.mass(), 2) * pow(mst_n / neutron.mass(), 2) * (pf_p / k0) * n_flavours *
                          pow(T_loc * gev_over_k / 1.0E9, 8) * alpha_np * beta_np *
                          erg_over_cm3_s_gev5;
 
@@ -591,7 +591,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
             if (mst == 0.0)
                 return 0.0;
             // From Page
-            a_s = 1.0 + 1.588 * pow(pf / M_N, 2.0) * (1.0 + 0.262 * pow(mst / M_N, -2.0));
+            a_s = 1.0 + 1.588 * pow(pf / neutron.mass(), 2.0) * (1.0 + 0.262 * pow(mst / neutron.mass(), -2.0));
             a_t = 4.17;
         }
         else if (hadron == proton)
@@ -599,7 +599,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
             if (mst == 0.0)
                 return 0.0;
             // Yakovlev's formula appear to include more corrections in a_ps
-            a_s = 0.0064 + 1.588 * pow(pf / M_N, 2.0) * (1.0 + 0.262 * pow(mst / M_N, -2.0));
+            a_s = 0.0064 + 1.588 * pow(pf / proton.mass(), 2.0) * (1.0 + 0.262 * pow(mst / proton.mass(), -2.0));
             // We do not include proton triplet superfluidity, but the value follows
             a_t = 3.18;
         }
@@ -607,7 +607,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
             THROW(std::runtime_error, "Unexpected species: " + hadron.name() + ".");
         double T_loc = T / exp_phi(r);
         int n_flavours = 3;
-        double base_dens = 1.17E21 * (mst / M_N) * (pf / M_N) * n_flavours *
+        double base_dens = 1.17E21 * (mst / hadron.mass()) * (pf / hadron.mass()) * n_flavours *
                            pow(T_loc * gev_over_k / 1.0E9, 7) * erg_over_cm3_s_gev5;
 
         // Superfluid factors
@@ -682,7 +682,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         double pf_l = 0.0,
                pf_l_mult_onemincos = 0.0;
         // rough estimates for the strong coupling and squark mass (natural units)
-        double alpha_c = 1.0, m_s = 0.01;
+        double alpha_c = 1.0, m_s = squark.mass();
         double T_loc = T / exp_phi(r);
 
         // ud
