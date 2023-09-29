@@ -184,7 +184,7 @@ namespace inputfile
         }
         return 0.0;
     };
-    std::function<double(double)> superfluid_n_temp = superfluid_n_temp = [](double k_fermi)
+    std::function<double(double)> superfluid_n_temp = [](double k_fermi)
     {
         using namespace auxiliaries::phys;
         using constants::species::neutron;
