@@ -78,7 +78,19 @@
             "IonVolumeFraction" :
             {
                 "ProvidedAs" : "ExcludedVolume"
+            },
+            "#QuarkSuperconductingGap" :  
+            {
+                "Units" : "MeV",
+                "Column" : 13
             }
+        },
+        "Misc" :
+        {
+            "#ProtonSuperfluidity1S0" : "AO",
+            "#NeutronSuperfluidity1S0" : "CCDK",
+            "#NeutronSuperfluidity3P2" : "C",
+            "CrustalEta" : 2.26E-18
         }
     },
     "TOVSolver" :
@@ -101,7 +113,7 @@
         "TemperatureProfile" : ["InfiniteFlatSurfaceRedshifted", 5E9],
         "EnableEquilibrium" : 
         {
-            "Mode" : "Never",
+            "Mode" : "Conditional",
             "Conditions" : 
             {
                 "UponReachingTime" : 10,

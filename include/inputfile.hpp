@@ -795,40 +795,131 @@ namespace inputfile
         }
 
         // Cooling settings
-        crust_eta = 2.26E-18;
+        auto crust_eta_read = j["EoSSetup"]["Misc"]["CrustalEta"];
+        if (crust_eta_read.is_null() || !(crust_eta_read.is_number()))
+            THROW(std::runtime_error, "UI error: Light element share (crustal #eta) must be provided as a number.");
+        else
+            crust_eta = crust_eta_read.get<double>();
 
         // Critical phenomena settings
+        auto superfluid_p_1s0_read = j["EoSSetup"]["Misc"]["ProtonSuperfluidity1S0"];
+        auto superfluid_n_3p2_read = j["EoSSetup"]["Misc"]["NeutronSuperfluidity3P2"];
+        auto superfluid_n_1s0_read = j["EoSSetup"]["Misc"]["NeutronSuperfluidity1S0"];
 
-        superfluid_p_1s0 = false;
-        superfluid_n_3p2 = false;
-        superfluid_n_1s0 = false;
+        superfluid_p_1s0 = !superfluid_p_1s0_read.is_null();
+        superfluid_n_3p2 = !superfluid_n_3p2_read.is_null();
+        superfluid_n_1s0 = !superfluid_n_1s0_read.is_null();
 
-        superfluid_p_temp = [](double k_fermi)
+        auto select_crit_temp_model = [](const std::string &model_name)
+        {
+            /*kAO,
+            kCCDK,
+            kA,
+            kB,
+            kC,
+            kA2,
+            kHadronToQGP*/
+            using namespace auxiliaries::phys;
+            if (model_name == "AO")
+                return CriticalTemperatureModel::kAO;
+            else if (model_name == "CCDK")
+                return CriticalTemperatureModel::kCCDK;
+            else if (model_name == "A")
+                return CriticalTemperatureModel::kA;
+            else if (model_name == "B")
+                return CriticalTemperatureModel::kB;
+            else if (model_name == "C")
+                return CriticalTemperatureModel::kC;
+            else if (model_name == "A2")
+                return CriticalTemperatureModel::kA2;
+            else if (model_name == "HadronToQGP")
+                return CriticalTemperatureModel::kHadronToQGP;
+            else
+                THROW(std::runtime_error, "UI error: Critical temperature model must be provided as a string among \"AO\", \"CCDK\", \"A\", \"B\", \"C\", \"A2\" or \"HadronToQGP\".");
+        };
+
+        if (!superfluid_p_1s0_read.is_string() && superfluid_p_1s0)
+            THROW(std::runtime_error, "UI error: Proton superfluidity may only be provided as a string (namely model name).");
+        if (!superfluid_n_3p2_read.is_string() && superfluid_n_3p2)
+            THROW(std::runtime_error, "UI error: Neutron superfluidity may only be provided as a string (namely model name).");
+        if (!superfluid_n_1s0_read.is_string() && superfluid_n_1s0)
+            THROW(std::runtime_error, "UI error: Neutron superfluidity may only be provided as a string (namely model name).");
+
+        superfluid_p_temp = [select_crit_temp_model, superfluid_p_1s0_read](double k_fermi)
         {
             if (superfluid_p_1s0)
             {
                 using namespace auxiliaries::phys;
-                return critical_temperature(k_fermi, CriticalTemperatureModel::kAO);
+                return critical_temperature(k_fermi, select_crit_temp_model(superfluid_p_1s0_read.get<std::string>()));
             }
             return 0.0;
         };
-        superfluid_n_temp = [](double k_fermi)
+        superfluid_n_temp = [select_crit_temp_model, superfluid_n_3p2_read, superfluid_n_1s0_read](double k_fermi)
         {
-            if (superfluid_n_3p2 || superfluid_n_1s0)
+            using namespace auxiliaries::phys;
+            using constants::species::neutron;
+            if (superfluid_n_3p2 && superfluid_n_1s0)
             {
-                using namespace auxiliaries::phys;
-                using constants::species::neutron;
-                if (superfluid_n_1s0 && (k_fermi <= k_fermi_of_nbar[neutron](nbar_core_limit)))
-                    return critical_temperature(k_fermi, CriticalTemperatureModel::kCCDK);
+                if (k_fermi <= k_fermi_of_nbar[neutron](nbar_core_limit))
+                    return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_1s0_read.get<std::string>()));
                 else
-                    return critical_temperature(k_fermi, CriticalTemperatureModel::kC);
+                    return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_3p2_read.get<std::string>()));
             }
-            return 0.0;
+            else if (superfluid_n_3p2)
+                return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_3p2_read.get<std::string>()));
+            else if (superfluid_n_1s0)
+                return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_1s0_read.get<std::string>()));
+            else
+                return 0.0;
         };
-        superconduct_q_gap = [](double nbar)
+
+        // superconducting gap
+        auto superconduct_gap_conversion_read = j["EoSSetup"]["Quantities"]["QuarkSuperconductingGap"]["Units"];
+        auto superconduct_gap_column_read = j["EoSSetup"]["Quantities"]["QuarkSuperconductingGap"]["Column"];
+        if (!superconduct_gap_column_read.is_null() && !superconduct_gap_column_read.is_number_integer())
+            THROW(std::runtime_error, "UI error: Quark superconducting gap column number may only be provided as an integer.");
+
+        double superconduct_gap_conversion;
+        if (superconduct_gap_conversion_read.is_number())
         {
-            return 0.0;
-        };
+            superconduct_gap_conversion = superconduct_gap_conversion_read.get<double>();
+        }
+        else if (superconduct_gap_conversion_read.is_string())
+        {
+            if (superconduct_gap_conversion_read == "Gev")
+            {
+                superconduct_gap_conversion = 1.0;
+            }
+            else if (superconduct_gap_conversion_read == "Mev")
+            {
+                superconduct_gap_conversion = 1.0 / constants::conversion::gev_over_mev;
+            }
+            else if (superconduct_gap_conversion_read == "Fm-1")
+            {
+                superconduct_gap_conversion = pow(1.0 / constants::conversion::fm3_gev3, 1.0 / 3.0);
+            }
+            else
+            {
+                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for quark superconducting gap.");
+            }
+        }
+        else if (!superconduct_gap_column_read.is_null())
+            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for quark superconducting gap.");
+
+        if (!superconduct_gap_column_read.is_null())
+        {
+            superconduct_q_gap = [superconduct_gap_column_read, superconduct_gap_conversion](double nbar)
+            {
+                return data_reader({nbar}, superconduct_gap_column_read) * superconduct_gap_conversion;
+            };
+        }
+        else
+        {
+            superconduct_q_gap = [](double nbar)
+            {
+                return 0.0;
+            };
+        }
     }
 }
 
