@@ -1,5 +1,5 @@
 
-#include "../../include/inputfile.hpp"
+#include "../../include/instantiator.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -7,6 +7,6 @@
 
 int main()
 {
-    inputfile::instantiate_system("../../data/json_test.json");
-    std::cout << "pressure_upp: " << inputfile::pressure_upp << std::endl;
+    instantiator::instantiate_system("../../data/json_test.json");
+    std::cout << "pressure_upp: " << instantiator::pressure_upp << std::endl;
 }

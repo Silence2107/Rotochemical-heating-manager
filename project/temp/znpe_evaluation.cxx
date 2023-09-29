@@ -3,7 +3,7 @@
 #include "../../include/cooling.h"
 #include "../../include/constants.h"
 #include "../../include/tov_solver.h"
-#include "../../include/inputfile.hpp"
+#include "../../include/instantiator.hpp"
 
 #include <vector>
 #include <functional>
@@ -28,7 +28,7 @@ int main(int argc, char **argv)
     }
     std::string pdf_path = (argc > 1) ? argv[1] : "znpe.pdf";
     bool rootfile_creation = (argc > 2);
-    using namespace inputfile;
+    using namespace instantiator;
 
     // RUN --------------------------------------------------------------------------
 

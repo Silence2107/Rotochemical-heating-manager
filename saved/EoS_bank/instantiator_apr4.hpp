@@ -1,9 +1,10 @@
-#ifndef INPUTFILE_H
-#define INPUTFILE_H
+#ifndef INSTANTIATOR_H
+#define INSTANTIATOR_H
 
 #include "../include/auxiliaries.h"
 #include "../include/constants.h"
 #include "../include/cooling.h"
+#include "../3rd-party/json/single_include/nlohmann/json.hpp"
 
 #include <fstream>
 #include <functional>
@@ -13,8 +14,8 @@
 #include <string>
 #include <sstream>
 
-/// @brief inputfile powering the rotochemical manager
-namespace inputfile
+/// @brief global data powering RHM
+namespace instantiator
 {
     // (1) EoS setup
 
@@ -24,7 +25,7 @@ namespace inputfile
            nbar_conversion = 1.0 / constants::conversion::fm3_gev3;
 
     // read datafile
-    auto table = auxiliaries::io::read_tabulated_file("data/APR_EOS_Acc_Fe.dat", {0, 0}, {7, 236});
+    auto table = auxiliaries::io::read_tabulated_file("../../saved/EoS_bank/APR_EOS_Acc_Fe_RHMstandard.dat", {0, 0}, {7, 236});
 
     // data_reader takes input vector and outputs vector of outputs from EoS datafile
     auto data_reader = auxiliaries::math::CachedFunc<std::vector<auxiliaries::math::CachedFunc<std::function<double(double)>,
@@ -77,40 +78,40 @@ namespace inputfile
            pressure_upp = pressure_of_nbar(nbar_upp);
 
     // baryonic density fraction functions of baryonic density (natural units)
-    std::map<auxiliaries::phys::Species, std::function<double(double)>> Y_i_functions_of_nbar =
+    std::map<auxiliaries::phys::Species, std::function<double(double)>> bar_densities_of_nbar =
         {
             {constants::species::electron, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? data_reader({nbar}, 3) : 0.0; }},
+             { return data_reader({nbar}, 3) * nbar; }},
             {constants::species::muon, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? data_reader({nbar}, 4) : 0.0; }},
+             { return data_reader({nbar}, 4) * nbar; }},
             {constants::species::neutron, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? data_reader({nbar}, 5) : 1.0; }},
+             { return data_reader({nbar}, 5) * nbar; }},
             {constants::species::proton, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? data_reader({nbar}, 6) : 0.0; }}};
+             { return data_reader({nbar}, 6) * nbar; }}};
 
     // fermi momentum functions of baryonic density (natural units)
     std::map<auxiliaries::phys::Species, std::function<double(double)>> k_fermi_of_nbar =
         {
             {constants::species::electron, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 3) * nbar, 1.0 / 3) : 0.0; }},
+             { return pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 3) * nbar, 1.0 / 3); }},
             {constants::species::muon, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 4) * nbar, 1.0 / 3) : 0.0; }},
+             { return pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 4) * nbar, 1.0 / 3); }},
             {constants::species::neutron, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 5) * nbar, 1.0 / 3) : pow(3 * constants::scientific::Pi * constants::scientific::Pi * nbar, 1.0 / 3); }},
+             { return pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 5) * nbar, 1.0 / 3); }},
             {constants::species::proton, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 6) * nbar, 1.0 / 3) : 0.0; }}};
+             { return pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 6) * nbar, 1.0 / 3); }}};
 
     // effective mass functions of baryonic density (natural units)
     std::map<auxiliaries::phys::Species, std::function<double(double)>> m_stars_of_nbar =
         {
             {constants::species::electron, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? sqrt(constants::species::electron.mass() * constants::species::electron.mass() + pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 3) * nbar, 2.0 / 3)) : constants::species::electron.mass(); }},
+             { return sqrt(constants::species::electron.mass() * constants::species::electron.mass() + pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 3) * nbar, 2.0 / 3)); }},
             {constants::species::muon, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? sqrt(constants::species::muon.mass() * constants::species::muon.mass() + pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 4) * nbar, 2.0 / 3)) : constants::species::muon.mass(); }},
+             { return sqrt(constants::species::muon.mass() * constants::species::muon.mass() + pow(3 * constants::scientific::Pi * constants::scientific::Pi * data_reader({nbar}, 4) * nbar, 2.0 / 3)); }},
             {constants::species::neutron, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? data_reader({nbar}, 12) * constants::species::neutron.mass() : constants::species::neutron.mass(); }},
+             { return data_reader({nbar}, 12) * constants::species::neutron.mass(); }},
             {constants::species::proton, [](double nbar)
-             { return (nbar >= nbar_core_limit) ? data_reader({nbar}, 11) * constants::species::proton.mass() : constants::species::proton.mass(); }}};
+             { return data_reader({nbar}, 11) * constants::species::proton.mass(); }}};
 
     std::function<double(double)> ion_volume_fr = [](double nbar)
     {
@@ -234,6 +235,13 @@ namespace inputfile
     // time step expansion rate (set to 1.0 for constant time step)
     double exp_rate_estim = pow((t_end - t_init) / base_t_step, 1.0 / cooling_n_points_estimate) *
                             pow((pow((t_end - t_init) / base_t_step, 1.0 / cooling_n_points_estimate) - 1), 1.0 / cooling_n_points_estimate);
+
+    /// @brief instantiate the system from json input
+    /// @param json_input json inputfile path
+    void instantiate_system(const std::string &json_input)
+    {
+        return;
+    }
 }
 
 #endif

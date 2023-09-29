@@ -3,7 +3,7 @@
 #include "../../include/cooling.h"
 #include "../../include/constants.h"
 #include "../../include/tov_solver.h"
-#include "../../include/inputfile.hpp"
+#include "../../include/instantiator.hpp"
 
 #include <vector>
 #include <functional>
@@ -30,12 +30,12 @@ int main(int argc, char **argv)
     if (argc > 1)
     {
         std::string inputfile_path = argv[1];
-        inputfile::instantiate_system(inputfile_path);
+        instantiator::instantiate_system(inputfile_path);
     }
 
     std::string pdf_path = (argc > 2) ? argv[1] : "Cooling.pdf";
     bool rootfile_creation = (argc > 3);
-    using namespace inputfile;
+    using namespace instantiator;
 
     // RUN --------------------------------------------------------------------------
 

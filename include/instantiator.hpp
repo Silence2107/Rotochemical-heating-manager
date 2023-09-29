@@ -1,5 +1,5 @@
-#ifndef INPUTFILE_H
-#define INPUTFILE_H
+#ifndef INSTANTIATOR_H
+#define INSTANTIATOR_H
 
 #include "../include/auxiliaries.h"
 #include "../include/constants.h"
@@ -14,8 +14,8 @@
 #include <string>
 #include <sstream>
 
-/// @brief inputfile powering the rotochemical manager
-namespace inputfile
+/// @brief global data powering RHM
+namespace instantiator
 {
     // (1) EoS setup
 
@@ -126,11 +126,11 @@ namespace inputfile
     // time step expansion rate (set to 1.0 for constant time step)
     double exp_rate_estim;
 
-    /// @brief instantiate the inputfile from json input
+    /// @brief instantiate the system from json input
     /// @param json_input json inputfile path
     void instantiate_system(const std::string &json_input)
     {
-        using namespace inputfile;
+        using namespace instantiator;
         using json = nlohmann::json;
 
         // bunch of simplifying definitions

@@ -2,7 +2,7 @@
 #include "../../include/cooling.h"
 #include "../../include/constants.h"
 #include "../../include/tov_solver.h"
-#include "../../include/inputfile.hpp"
+#include "../../include/instantiator.hpp"
 
 #include <vector>
 #include <functional>
@@ -14,12 +14,12 @@
 
 int main(int argc, char **argv)
 {
-    using namespace inputfile;
+    using namespace instantiator;
 
     if (argc > 1)
     {
         std::string inputfile_path = argv[1];
-        inputfile::instantiate_system(inputfile_path);
+        instantiator::instantiate_system(inputfile_path);
     }
 
     // RUN --------------------------------------------------------------------------
