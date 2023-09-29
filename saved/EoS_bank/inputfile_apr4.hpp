@@ -184,18 +184,23 @@ namespace inputfile
         }
         return 0.0;
     };
-    std::function<double(double)> superfluid_n_temp = [](double k_fermi)
+    std::function<double(double)> superfluid_n_temp = superfluid_n_temp = [](double k_fermi)
     {
-        if (superfluid_n_3p2 || superfluid_n_1s0)
+        using namespace auxiliaries::phys;
+        using constants::species::neutron;
+        if (superfluid_n_3p2 && superfluid_n_1s0)
         {
-            using namespace auxiliaries::phys;
-            using constants::species::neutron;
-            if (superfluid_n_1s0 && (k_fermi <= k_fermi_of_nbar[neutron](nbar_core_limit)))
+            if (k_fermi <= k_fermi_of_nbar[neutron](nbar_core_limit))
                 return critical_temperature(k_fermi, CriticalTemperatureModel::kCCDK);
             else
                 return critical_temperature(k_fermi, CriticalTemperatureModel::kC);
         }
-        return 0.0;
+        else if (superfluid_n_3p2)
+            return critical_temperature(k_fermi, CriticalTemperatureModel::kC);
+        else if (superfluid_n_1s0)
+            return critical_temperature(k_fermi, CriticalTemperatureModel::kCCDK);
+        else
+            return 0.0;
     };
     std::function<double(double)> superconduct_q_gap = [](double nbar)
     {
