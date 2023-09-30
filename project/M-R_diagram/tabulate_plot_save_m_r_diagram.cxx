@@ -4,6 +4,8 @@
 #include "../../include/tov_solver.h"
 #include "../../include/instantiator.hpp"
 
+#include "../../3rd-party/argparse/argparse.hpp"
+
 #include <vector>
 #include <functional>
 #include <cmath>
@@ -21,20 +23,21 @@
 
 int main(int argc, char** argv)
 {
-    if (argc == 1)
-    {
-        std::cout << "Usage: " << argv[0] << " <inputfile_path=None> <pdf_path=M-R-diagram.pdf> <rootfile_path=None>" << std::endl;
-    }
+    argparse::ArgumentParser parser("tabulate_plot_save_m_r_diagram", "tabulate_plot_save_m_r_diagram", "Argparse powered by SiLeader");
 
-    if (argc > 1)
-    {
-        std::string inputfile_path = argv[1];
-        instantiator::instantiate_system(inputfile_path);
-    }
+    parser.addArgument({"--inputfile"}, "json input file path (optional)");
+    parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: M-R-diagram.pdf)");
+    parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
+    auto args = parser.parseArgs(argc, argv);
 
-    std::string pdf_path = (argc > 2) ? argv[1] : "M-R-diagram.pdf";
-    bool rootfile_creation = (argc > 3);
     using namespace instantiator;
+    if (args.has("inputfile"))
+        instantiator::instantiate_system(args.get<std::string>("inputfile"));
+
+    std::string pdf_path = args.safeGet<std::string>("pdf_path", "M-R-diagram.pdf");
+    TFile *rootfile = nullptr;
+    if (args.has("rootfile_path"))
+        rootfile = new TFile(args.get<std::string>("rootfile_path").c_str(), "RECREATE");
 
     // RUN --------------------------------------------------------------------------
 
@@ -106,12 +109,10 @@ int main(int argc, char** argv)
     // draw
     TCanvas *c1 = new TCanvas("c1", "c1");
     auto gr = new TGraph(x.size(), x.data(), y.data());
-    if (rootfile_creation)
+    if (rootfile)
     {
-        std::string rootfile_path = argv[2];
-        TFile *f = new TFile(rootfile_path.c_str(), "RECREATE");
         gr->Write();
-        f->Close();
+        rootfile->Close();
     }
     gr->SetLineColor(kBlue);
     gr->Draw("AL");

@@ -4,6 +4,8 @@
 #include "../../include/tov_solver.h"
 #include "../../include/instantiator.hpp"
 
+#include "../../3rd-party/argparse/argparse.hpp"
+
 #include <vector>
 #include <functional>
 #include <cmath>
@@ -14,13 +16,14 @@
 
 int main(int argc, char **argv)
 {
-    using namespace instantiator;
+    argparse::ArgumentParser parser("tabulate_m_r_diagram", "tabulate_m_r_diagram", "Argparse powered by SiLeader");
 
-    if (argc > 1)
-    {
-        std::string inputfile_path = argv[1];
-        instantiator::instantiate_system(inputfile_path);
-    }
+    parser.addArgument({"--inputfile"}, "json input file path (optional)");
+    auto args = parser.parseArgs(argc, argv);
+
+    using namespace instantiator;
+    if (args.has("inputfile"))
+        instantiator::instantiate_system(args.get<std::string>("inputfile"));
 
     // RUN --------------------------------------------------------------------------
 

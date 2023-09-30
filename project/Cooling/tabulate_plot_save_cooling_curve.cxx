@@ -5,6 +5,8 @@
 #include "../../include/tov_solver.h"
 #include "../../include/instantiator.hpp"
 
+#include "../../3rd-party/argparse/argparse.hpp"
+
 #include <vector>
 #include <functional>
 #include <cmath>
@@ -22,13 +24,21 @@
 
 int main(int argc, char **argv)
 {
-    if (argc == 1)
-    {
-        std::cout << "Usage: " << argv[0] << " <pdf_path=Cooling.pdf> <rootfile_path=None>" << std::endl;
-    }
-    std::string pdf_path = (argc > 1) ? argv[1] : "Cooling.pdf";
-    bool rootfile_creation = (argc > 2);
+    argparse::ArgumentParser parser("tabulate_plot_save_cooling_curve", "tabulate_plot_save_cooling_curve", "Argparse powered by SiLeader");
+
+    parser.addArgument({"--inputfile"}, "json input file path (optional)");
+    parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: Cooling.pdf)");
+    parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
+    auto args = parser.parseArgs(argc, argv);
+
     using namespace instantiator;
+    if (args.has("inputfile"))
+        instantiator::instantiate_system(args.get<std::string>("inputfile"));
+
+    std::string pdf_path = args.safeGet<std::string>("pdf_path", "Cooling.pdf");
+    TFile *rootfile = nullptr;
+    if (args.has("rootfile_path"))
+        rootfile = new TFile(args.get<std::string>("rootfile_path").c_str(), "RECREATE");
 
     // RUN --------------------------------------------------------------------------
 
@@ -310,6 +320,11 @@ int main(int argc, char **argv)
     gStyle->SetOptTitle(0);
 
     auto gr = new TGraph(x.size(), x.data(), y.data());
+    if (rootfile)
+    {
+        gr->Write();
+        rootfile->Close();
+    }
     gr->SetLineColor(kBlue);
     gr->SetLineWidth(2);
     gr->SetLineStyle(1);
