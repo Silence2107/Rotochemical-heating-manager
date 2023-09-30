@@ -25,7 +25,7 @@ namespace instantiator
            nbar_conversion = 1.0 / constants::conversion::fm3_gev3;
 
     // read datafile
-    auto table = auxiliaries::io::read_tabulated_file("../../saved/EoS_bank/APR_EOS_Acc_Fe_RHMstandard.dat", {0, 0}, {7, 236});
+    auto table = auxiliaries::io::read_tabulated_file("../../saved/EoS_bank/APR_EOS_Acc_Fe_RHMstandard.dat", {0, 0}, {7, 237});
 
     // data_reader takes input vector and outputs vector of outputs from EoS datafile
     auto data_reader = auxiliaries::math::CachedFunc<std::vector<auxiliaries::math::CachedFunc<std::function<double(double)>,
@@ -149,13 +149,13 @@ namespace instantiator
     size_t discr_size_EoS = 1000;
 
     // TOV solver radius step size in GeV
-    double radius_step = 0.001 * 5E19;
+    double radius_step = 0.01 * constants::conversion::km_gev;
 
     // TOV solver density step size in GeV^4
     double density_step = 1E-8 * edensity_upp;
 
     // TOV solver center density in GeV^4
-    double center_density = 108.3 / 500.0 * edensity_upp;
+    double center_density = 0.2166 * edensity_upp;
 
     // (3) Cooling solver
 
