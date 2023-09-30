@@ -12,18 +12,38 @@
 #include <stdexcept>
 #include <iostream>
 #include <sstream>
+#include <string>
 #include <fstream>
 
-int main(int argc, char **argv)
+#if RHM_HAS_ROOT
+#include <TCanvas.h>
+#include <TGraph.h>
+#include <TAxis.h>
+#include <TLegend.h>
+#include <TFile.h>
+#endif
+
+int main(int argc, char** argv)
 {
-    argparse::ArgumentParser parser("tabulate_m_r_diagram", "tabulate_m_r_diagram", "Argparse powered by SiLeader");
+    argparse::ArgumentParser parser("m_r_diagram", "Evaluates mass-radius diagram based on EoS", "Argparse powered by SiLeader");
 
     parser.addArgument({"--inputfile"}, "json input file path (optional)");
+    #if RHM_HAS_ROOT
+    parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: M-R-diagram.pdf)");
+    parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
+    #endif
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
     if (args.has("inputfile"))
         instantiator::instantiate_system(args.get<std::string>("inputfile"));
+
+    #if RHM_HAS_ROOT
+    std::string pdf_path = args.safeGet<std::string>("pdf_path", "M-R-diagram.pdf");
+    TFile *rootfile = nullptr;
+    if (args.has("rootfile_path"))
+        rootfile = new TFile(args.get<std::string>("rootfile_path").c_str(), "RECREATE");
+    #endif
 
     // RUN --------------------------------------------------------------------------
 
@@ -91,4 +111,33 @@ int main(int argc, char **argv)
         y.push_back(point[1] * gev_over_msol);
         std::cout << "At " << count << " out of " << n << " cycles. M = " << y.back() << " Ms, R = " << x.back() << " km\n";
     }
+
+    #if RHM_HAS_ROOT
+    // draw
+    TCanvas *c1 = new TCanvas("c1", "c1");
+    auto gr = new TGraph(x.size(), x.data(), y.data());
+    if (rootfile)
+    {
+        gr->Write();
+        rootfile->Close();
+    }
+    gr->SetLineColor(kBlue);
+    gr->Draw("AL");
+    // title offset
+    gr->GetYaxis()->SetTitleOffset(1.5);
+    gr->GetXaxis()->SetLimits(0, 20.0);
+    gr->GetYaxis()->SetRangeUser(0, 3.0);
+    // gPad->SetLogx();
+    // gPad->SetLogy();
+
+    gr->GetXaxis()->SetTitle("R [km]");
+    gr->GetYaxis()->SetTitle("M [Ms]");
+
+    //auto legend = new TLegend(0.1, 0.1, 0.38, 0.38);
+    //legend->AddEntry(gr, "RH Manager", "l");
+
+    //legend->Draw();
+
+    c1->SaveAs(pdf_path.c_str());
+    #endif
 }

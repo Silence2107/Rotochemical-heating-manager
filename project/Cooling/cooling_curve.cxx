@@ -15,16 +15,36 @@
 #include <sstream>
 #include <fstream>
 
+#if RHM_HAS_ROOT
+#include <TCanvas.h>
+#include <TGraph.h>
+#include <TAxis.h>
+#include <TLegend.h>
+#include <TFile.h>
+#include <TStyle.h>
+#endif
+
 int main(int argc, char **argv)
 {
-    argparse::ArgumentParser parser("tabulate_cooling_curve", "tabulate_cooling_curve", "Argparse powered by SiLeader");
+    argparse::ArgumentParser parser("cooling_curve", "Evaluates temperature-time dependency based on EoS", "Argparse powered by SiLeader");
 
     parser.addArgument({"--inputfile"}, "json input file path (optional)");
+    #if RHM_HAS_ROOT
+    parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: Cooling.pdf)");
+    parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
+    #endif
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
     if (args.has("inputfile"))
         instantiator::instantiate_system(args.get<std::string>("inputfile"));
+
+    #if RHM_HAS_ROOT
+    std::string pdf_path = args.safeGet<std::string>("pdf_path", "Cooling.pdf");
+    TFile *rootfile = nullptr;
+    if (args.has("rootfile_path"))
+        rootfile = new TFile(args.get<std::string>("rootfile_path").c_str(), "RECREATE");
+    #endif
 
     // RUN --------------------------------------------------------------------------
 
@@ -228,7 +248,7 @@ int main(int argc, char **argv)
 
     // tabulate initial profile and radii
     std::vector<double> radii, profile;
-    for (double r = cooling_radius_step / 2.0; r < r_ns; r += cooling_radius_step)
+    for(double r = cooling_radius_step / 2.0; r < r_ns; r += cooling_radius_step)
     {
         radii.push_back(r);
         profile.push_back(initial_t_profile_inf(r, exp_phi_at_R));
@@ -292,4 +312,56 @@ int main(int argc, char **argv)
         x[i] *= 1.0E6 / (constants::conversion::myr_over_s * constants::conversion::gev_s);
         y[i] = auxiliaries::phys::te_tb_relation(y[i], r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k;
     }
+
+    #if RHM_HAS_ROOT
+    // draw
+    TCanvas *c1 = new TCanvas("c1", "c1");
+    gPad->SetLogy();
+    gPad->SetLogx();
+    gPad->SetTicks();
+    gPad->SetTopMargin(0.05);
+    gPad->SetLeftMargin(0.11);
+    gPad->SetRightMargin(0.05);
+    gPad->SetBottomMargin(0.1);
+    gStyle->SetOptStat(0);
+    gStyle->SetOptTitle(0);
+
+    auto gr = new TGraph(x.size(), x.data(), y.data());
+    if (rootfile)
+    {
+        gr->Write();
+        rootfile->Close();
+    }
+    gr->SetLineColor(kBlue);
+    gr->SetLineWidth(2);
+    gr->SetLineStyle(1);
+    gr->Draw("AL");
+    gr->GetYaxis()->SetTitleOffset(1.5);
+    gr->GetXaxis()->SetTitle("t [yr]");
+    gr->GetYaxis()->SetTitle("T^{#infty}_{s} [K]");
+    gr->GetYaxis()->SetLabelFont(43);
+    gr->GetYaxis()->SetLabelSize(22);
+    gr->GetYaxis()->SetTitleFont(43);
+    gr->GetYaxis()->SetTitleSize(26);
+    gr->GetYaxis()->SetTitleOffset(0.5);
+    gr->GetXaxis()->SetLabelFont(43);
+    gr->GetXaxis()->SetLabelSize(22);
+    gr->GetXaxis()->SetTitleFont(43);
+    gr->GetXaxis()->SetTitleSize(26);
+    gr->GetXaxis()->SetTitleOffset(0.9);
+    gr->GetYaxis()->SetRangeUser(7e2, 7e6);
+    gr->GetXaxis()->SetLimits(1e-12, 1e7);
+
+    auto legend = new TLegend(0.15, 0.1, 0.43, 0.38);
+    legend->AddEntry(gr, "RH Manager", "l");
+    legend->SetBorderSize(0);
+    legend->SetTextFont(43);
+    legend->SetTextSize(27);
+    legend->SetFillStyle(0);
+    legend->SetMargin(0.35);
+
+    legend->Draw();
+
+    c1->SaveAs(pdf_path.c_str());
+    #endif
 }
