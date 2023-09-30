@@ -4,7 +4,7 @@
         "Datafile" :
         {
             "Path" : "saved/EoS_bank/APR_EOS_Acc_Fe_RHMstandard.dat",
-            "Rows" : [7, 236],
+            "Rows" : [7, 237],
             "Interpolation" : "Linear"
         },
         "Particles" : ["Electron", "Muon", "Neutron", "Proton"],
