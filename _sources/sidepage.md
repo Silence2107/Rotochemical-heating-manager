@@ -1,1 +1,0 @@
-# Welcome to RHM side page!
