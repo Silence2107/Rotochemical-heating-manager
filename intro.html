@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Installing RHM &#8212; Rotochemical Heating Manager</title>
+    <title>Welcome to RHM webpage! &#8212; Rotochemical Heating Manager</title>
   
   
   
@@ -63,11 +63,10 @@ const thebe_selector_input = "pre"
 const thebe_selector_output = ".output, .cell_output"
 </script>
     <script async="async" src="_static/sphinx-thebe.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'installation';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'intro';</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="First run" href="first_run.html" />
-    <link rel="prev" title="Welcome to RHM webpage!" href="intro.html" />
+    <link rel="next" title="Installing RHM" href="installation.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -142,7 +141,7 @@ const thebe_selector_output = ".output, .cell_output"
         <div class="sidebar-primary-item">
   
 
-<a class="navbar-brand logo" href="intro.html">
+<a class="navbar-brand logo" href="#">
   
   
   
@@ -155,15 +154,15 @@ const thebe_selector_output = ".output, .cell_output"
     <div class="bd-toc-item navbar-nav active">
         
         <ul class="nav bd-sidenav bd-sidenav__home-link">
-            <li class="toctree-l1">
-                <a class="reference internal" href="intro.html">
+            <li class="toctree-l1 current active">
+                <a class="reference internal" href="#">
                     Welcome to RHM webpage!
                 </a>
             </li>
         </ul>
         <p aria-level="2" class="caption" role="heading"><span class="caption-text">Getting started</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Installing RHM</a></li>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installing RHM</a></li>
 <li class="toctree-l1"><a class="reference internal" href="first_run.html">First run</a></li>
 </ul>
 
@@ -236,7 +235,7 @@ const thebe_selector_output = ".output, .cell_output"
       
       
       
-      <li><a href="https://github.com/Silence2107/Rotochemical-heating-manager/issues/new?title=Issue%20on%20page%20%2Finstallation.html&body=Your%20issue%20content%20here." target="_blank"
+      <li><a href="https://github.com/Silence2107/Rotochemical-heating-manager/issues/new?title=Issue%20on%20page%20%2Fintro.html&body=Your%20issue%20content%20here." target="_blank"
    class="btn btn-sm btn-source-issues-button dropdown-item"
    title="Open an issue"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -266,7 +265,7 @@ const thebe_selector_output = ".output, .cell_output"
       
       
       
-      <li><a href="_sources/installation.md" target="_blank"
+      <li><a href="_sources/intro.md" target="_blank"
    class="btn btn-sm btn-download-source-button dropdown-item"
    title="Download source file"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -335,9 +334,7 @@ document.write(`
   </button>
 `);
 </script>
-<label class="sidebar-toggle secondary-toggle btn btn-sm" for="__secondary"title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <span class="fa-solid fa-list"></span>
-</label>
+
 </div></div>
       
     </div>
@@ -348,19 +345,11 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Installing RHM</h1>
+    <h1>Welcome to RHM webpage!</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
             
-            <div>
-                <h2> Contents </h2>
-            </div>
-            <nav aria-label="Page">
-                <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#prerequisites">Prerequisites</a></li>
-</ul>
-            </nav>
         </div>
     </div>
 </div>
@@ -370,22 +359,30 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section class="tex2jax_ignore mathjax_ignore" id="installing-rhm">
-<h1>Installing RHM<a class="headerlink" href="#installing-rhm" title="Permalink to this heading">#</a></h1>
-<section id="prerequisites">
-<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading">#</a></h2>
-<p>In order to install RHM onto your machine, following requirements suffice</p>
+  <section class="tex2jax_ignore mathjax_ignore" id="welcome-to-rhm-webpage">
+<h1>Welcome to RHM webpage!<a class="headerlink" href="#welcome-to-rhm-webpage" title="Permalink to this heading">#</a></h1>
+<p>Rotochemical Heating Manager (RHM) is a simulation toolset for compact star matter based on provided equation of state (EoS). RHM is currently capable of:</p>
 <ul class="simple">
-<li><p>unix terminal</p></li>
-<li><p>gcc installation of C++14 or higher (might even work with C++11)</p></li>
-<li><p>git installation</p></li>
-<li><p>a few megabytes of free space</p></li>
-<li><p>ROOT CERN installation (optional; if available, is enabled automatically)</p></li>
+<li><p>constructing mass-radius diagram</p></li>
+<li><p>constructing surface temperature-time cooling curve</p>
+<ul>
+<li><p>Supports non-equilibrium cooling</p></li>
+<li><p>Supports equilibrium cooling</p></li>
 </ul>
-<p>Select an appropriate directory and run:</p>
-<p><code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">https://github.com/Silence2107/Rotochemical-heating-manager.git</span></code></p>
-<p>Now enter a newly created <code><i>Rotochemical-heating-manager</i></code> directory. In what follows all the commands are presented as if run from this directory.</p>
-</section>
+</li>
+<li><p>constructing non-equilibrium temperature profiles (ROOT only)</p></li>
+<li><p>various easy-to-setup functionality (may or may not be implemented)</p>
+<ul>
+<li><p>Tabulate/plot any EoS function as a radial dependence</p></li>
+<li><p>Investigate sophisticated quantities based on these radial dependencies</p></li>
+<li><p>Compare against other simulators</p></li>
+</ul>
+</li>
+<li><p>Limited support for taking rotochemical heating effect into account (electron-related only yet)</p></li>
+</ul>
+<p>This webpage is dedicated to the documentation of RHM. The page is under construction and will evolve alongside with the development of RHM.</p>
+<div class="toctree-wrapper compound">
+</div>
 </section>
 
     <script type="text/x-thebe-config">
@@ -418,21 +415,12 @@ document.write(`
                 <footer class="prev-next-footer">
                   <!-- Previous / next buttons -->
 <div class="prev-next-area">
-    <a class="left-prev"
-       href="intro.html"
-       title="previous page">
-      <i class="fa-solid fa-angle-left"></i>
-      <div class="prev-next-info">
-        <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Welcome to RHM webpage!</p>
-      </div>
-    </a>
     <a class="right-next"
-       href="first_run.html"
+       href="installation.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">First run</p>
+        <p class="prev-next-title">Installing RHM</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -442,20 +430,6 @@ document.write(`
             </div>
             
             
-              
-                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
-
-  <div class="sidebar-secondary-item">
-  <div class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> Contents
-  </div>
-  <nav class="bd-toc-nav page-toc">
-    <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#prerequisites">Prerequisites</a></li>
-</ul>
-  </nav></div>
-
-</div></div>
               
             
           </div>
