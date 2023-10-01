@@ -11,7 +11,7 @@ The toolset is capable of constructing
 
 In order to setup the EoS, one must fill in the instantiator under include/instantiator.hpp . Currently we have no definitive guide on how to construct one, so at best you can replicate the one we provide for APR4 EoS. EoS datafile itself must be supplemented by user.
 
-UI support is provided via instantiator::instantiate_system() call, but the cook book is yet underway.
+UI support is provided via instantiator::instantiate_system() call, but the cook book is yet underway. Default instantiator relies on json inputfile being provided.
 
 ## Compilation
 
