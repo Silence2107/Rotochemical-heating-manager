@@ -1,0 +1,30 @@
+
+# Learn more at https://jupyterbook.org/customize/config.html
+
+title: RHM test webpage
+# theme: jekyll-theme-minimal
+# description: keep an eye on updates..
+# author: RHM team
+# logo: logo.png
+
+# Force re-execution of notebooks on each build.
+# See https://jupyterbook.org/content/execute.html
+execute:
+  execute_notebooks: force
+
+# parse:
+#   myst_enable_extensions:
+#     # don't forget to list any other extensions you want enabled,
+#     # including those that are enabled by default!
+#     - dollarmath
+#     - amsmath
+
+repository:
+  url: https://github.com/Silence2107/Rotochemical-heating-manager
+  path_to_book: docs  # Optional path to your book, relative to the repository root
+#  branch: master  # Which branch of the repository should be used when creating links (optional)
+
+# See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
+html:
+  use_issues_button: true
+  use_repository_button: true
