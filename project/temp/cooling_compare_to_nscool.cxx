@@ -3,7 +3,7 @@
 #include "../../include/cooling.h"
 #include "../../include/constants.h"
 #include "../../include/tov_solver.h"
-#include "../../include/inputfile.hpp"
+#include "../../include/instantiator.hpp"
 
 #include <vector>
 #include <functional>
@@ -21,7 +21,7 @@
 
 int main()
 {
-    using namespace inputfile;
+    using namespace instantiator;
 
     // RUN --------------------------------------------------------------------------
 

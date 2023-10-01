@@ -3,7 +3,9 @@
 #include "../../include/cooling.h"
 #include "../../include/constants.h"
 #include "../../include/tov_solver.h"
-#include "../../include/inputfile.hpp"
+#include "../../include/instantiator.hpp"
+
+#include "../../3rd-party/argparse/argparse.hpp"
 
 #include <vector>
 #include <functional>
@@ -22,13 +24,21 @@
 
 int main(int argc, char **argv)
 {
-    if (argc == 1)
-    {
-        std::cout << "Usage: " << argv[0] << " <pdf_path=Cooling.pdf> <rootfile_path=None>" << std::endl;
-    }
-    std::string pdf_path = (argc > 1) ? argv[1] : "Cooling.pdf";
-    bool rootfile_creation = (argc > 2);
-    using namespace inputfile;
+    argparse::ArgumentParser parser("plot_nonequilibrium_time_profiles", "plot_nonequilibrium_time_profiles", "Argparse powered by SiLeader");
+
+    parser.addArgument({"--inputfile"}, "json input file path (optional)");
+    parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: Cooling.pdf)");
+    parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
+    auto args = parser.parseArgs(argc, argv);
+
+    using namespace instantiator;
+    if (args.has("inputfile"))
+        instantiator::instantiate_system(args.get<std::string>("inputfile"));
+
+    std::string pdf_path = args.safeGet<std::string>("pdf_path", "Cooling.pdf");
+    TFile *rootfile = nullptr;
+    if (args.has("rootfile_path"))
+        rootfile = new TFile(args.get<std::string>("rootfile_path").c_str(), "RECREATE");
 
     // RUN --------------------------------------------------------------------------
 
@@ -302,12 +312,10 @@ int main(int argc, char **argv)
         gr->SetLineWidth(2.5);
         mg->Add(gr, "L");
     }
-    if (rootfile_creation)
+    if (rootfile)
     {
-        std::string rootfile_path = argv[2];
-        TFile *f = new TFile(rootfile_path.c_str(), "RECREATE");
         mg->Write();
-        f->Close();
+        rootfile->Close();
     }
     mg->Draw("A");
     // title offset

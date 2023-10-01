@@ -1,0 +1,124 @@
+{
+    "EoSSetup" : 
+    {
+        "Datafile" :
+        {
+            "Path" : "presupplied/EoS/APR_EOS_Acc_Fe_RHMstandard.dat",
+            "Rows" : [7, 237],
+            "Interpolation" : "Linear"
+        },
+        "Particles" : ["Electron", "Muon", "Neutron", "Proton"],
+        "Quantities" :
+        {
+            "EnergyDensity" : 
+            {
+                "Units" : "GOverCm3",
+                "Column" : 0
+            },
+            "Pressure" : 
+            {
+                "Units" : "DyneOverCm2",
+                "Column" : 1
+            },
+            "BarionicDensity" : 
+            {
+                "Units" : "Fm-3",
+                "Column" : 2,
+                "Low" : 6.023E-13,
+                "Upp" : 1.89,
+                "CoreLimit" : 9E-02,
+                "CrustLimit" : 2.096E-02
+            },
+            "BarionicDensities" :
+            {
+                "Units" : 1.0,
+                "Electron" :
+                {
+                    "Column" : 3,
+                    "ProvidedAs" : "DensityFraction" 
+                },
+                "Muon" :
+                {
+                    "Column" : 4,
+                    "ProvidedAs" : "DensityFraction" 
+                },
+                "Neutron" :
+                {
+                    "Column" : 5,
+                    "ProvidedAs" : "DensityFraction" 
+                },
+                "Proton" :
+                {
+                    "Column" : 6,
+                    "ProvidedAs" : "DensityFraction" 
+                }
+            },
+            "EffectiveMasses" :
+            {
+                "Units" : "NucleonMass",
+                "Electron" :
+                {
+                    "ProvidedAs" : "FermiEnergy" 
+                },
+                "Muon" :
+                {
+                    "ProvidedAs" : "FermiEnergy" 
+                },
+                "Neutron" :
+                {
+                    "Column" : 12,
+                    "ProvidedAs" : "EffectiveMass" 
+                },
+                "Proton" :
+                {
+                    "Column" : 11,
+                    "ProvidedAs" : "EffectiveMass" 
+                }
+            },
+            "IonVolumeFraction" :
+            {
+                "ProvidedAs" : "ExcludedVolume"
+            },
+            "#QuarkSuperconductingGap" :  
+            {
+                "Units" : "MeV",
+                "Column" : 13
+            }
+        },
+        "Misc" :
+        {
+            "#ProtonSuperfluidity1S0" : "AO",
+            "#NeutronSuperfluidity1S0" : "CCDK",
+            "#NeutronSuperfluidity3P2" : "C",
+            "CrustalEta" : 2.26E-18
+        }
+    },
+    "TOVSolver" :
+    {
+        "EoSInterpolation" : "Linear",
+        "EoSDiscretization" : 1000,
+        "RadiusStep" : 0.01,
+        "DensityStep" : 1E-8,
+        "CenterDensity" : 0.2166
+    },
+    "CoolingSolver" :
+    {
+        "NewtonTolerance" : 1E-5,
+        "NewtonMaxIter" : 50,
+        "RadiusStep" : 0.1,
+        "TimeInit" : 0.0,
+        "TimeEnd" : 6.1E+6,
+        "TimeBaseStep" : 1.0E-12,
+        "NumberPointsEstimate" : 1000,
+        "TemperatureProfile" : ["InfiniteFlatSurfaceRedshifted", 5E9],
+        "EnableEquilibrium" : 
+        {
+            "Mode" : "Conditional",
+            "Conditions" : 
+            {
+                "UponReachingTime" : 10,
+                "UponProfileFlattening" : 0.01
+            }
+        }
+    }
+}

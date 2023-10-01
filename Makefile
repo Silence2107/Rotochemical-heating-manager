@@ -1,9 +1,11 @@
 CXX:=g++
 
-CXX_FLAGS_RELEASE:=-O3 
+CXX_FLAGS_RELEASE:=-O3
 CXX_FLAGS_DEBUG:=-Wall -Wextra -g
-ifneq (, $(shell which root-config))
+RHM_HAS_ROOT:=0
+ifneq (, $(shell echo ${ROOTSYS}))
 	CXX_FLAGS_EXTRALIBS:=`root-config --cflags --glibs`
+	RHM_HAS_ROOT:=1
 endif
 
 HEADERS:=$(wildcard include/*.h)
@@ -18,11 +20,11 @@ all : release
 
 release : $(OBJECTS)
 	@mkdir -p $(dir bin/$(APP_NAME))
-	$(CXX) $(APP_NAME).cxx $^ -o bin/$(APP_NAME).out $(CXX_FLAGS_RELEASE) $(CXX_FLAGS_EXTRALIBS)
+	$(CXX) $(APP_NAME).cxx $^ -o bin/$(APP_NAME).out $(CXX_FLAGS_RELEASE) $(CXX_FLAGS_EXTRALIBS) -DRHM_HAS_ROOT=$(RHM_HAS_ROOT)
 
 debug : $(OBJECTS)
 	@mkdir -p $(dir bin/$(APP_NAME))
-	$(CXX) $(APP_NAME).cxx $^ -o bin/$(APP_NAME).out $(CXX_FLAGS_DEBUG) $(CXX_FLAGS_EXTRALIBS)
+	$(CXX) $(APP_NAME).cxx $^ -o bin/$(APP_NAME).out $(CXX_FLAGS_DEBUG) $(CXX_FLAGS_EXTRALIBS) -DRHM_HAS_ROOT=$(RHM_HAS_ROOT)
 
 %.o : %.cxx 
 	$(CXX) -MMD -c $< -o $@

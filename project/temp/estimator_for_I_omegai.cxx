@@ -11,7 +11,7 @@
 #include "../../include/tov_solver.h"  // contains TOV solver
 #include "../../include/constants.h"   // contains constants
 #include "../../include/auxiliaries.h" // contains auxiliary functionality
-#include "../../include/inputfile.hpp" // inputfile
+#include "../../include/instantiator.hpp" // instantiator
 
 int main(int argc, char **argv)
 {
@@ -24,7 +24,7 @@ int main(int argc, char **argv)
     // I_{\omega i} = \int_{core} dY_i/dP * dP/d\omega^2 * n * dV, with estimation dP/d\omega^2 \approx -P/\omega_K^2
     // where \omega_K is the Keplerian frequency and i being particle species
 
-    using namespace inputfile;
+    using namespace instantiator;
 
     // INPUT:
     // central density
@@ -130,14 +130,14 @@ int main(int argc, char **argv)
     {
         return pow(1 - 2 * constants::scientific::G * tov(r)[0] / r, -0.5);
     };
-    for (auto species = Y_i_functions_of_nbar.begin(); species != Y_i_functions_of_nbar.end(); ++species)
+    for (auto species = bar_densities_of_nbar.begin(); species != bar_densities_of_nbar.end(); ++species)
     {
         double I_i = 0.0;
-        auto Y_i = species->second;
+        auto n_i = species->second;
         double omega_k_sqr = pow(2.0 / 3, 3.0) * constants::scientific::G * m_ns / (r_ns * r_ns * r_ns);
         auto integrand = [&](double r)
         {
-            return -nbar(r) * 1.0 / omega_k_sqr * (Y_i(nbar(r + radius_step)) - Y_i(nbar(r))) / (tov(r + radius_step)[3] / tov(r)[3] - 1);
+            return -nbar(r) * 1.0 / omega_k_sqr * (n_i(nbar(r + radius_step)) / nbar(r + radius_step) - n_i(nbar(r)) / nbar(r)) / (tov(r + radius_step)[3] / tov(r)[3] - 1);
         };
         I_i = auxiliaries::math::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_crust, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)();
         std::cout << I_i / (constants::conversion::gev_s * constants::conversion::gev_s) << " ";
