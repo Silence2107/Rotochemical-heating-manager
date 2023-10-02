@@ -12,6 +12,8 @@ In order to install RHM onto your machine, following requirements suffice
 
 Select an appropriate directory and run:
 
-`git clone https://github.com/Silence2107/Rotochemical-heating-manager.git`
+```bash
+git clone https://github.com/Silence2107/Rotochemical-heating-manager.git
+```
 
-Now enter a newly created <code><i>Rotochemical-heating-manager</i></code> directory. In what follows all the commands are presented as if run from this directory.
+Now enter a newly created <span style="color:blue">_Rotochemical-heating-manager/_</span> directory. In what follows all the commands are presented as if run from this directory.
