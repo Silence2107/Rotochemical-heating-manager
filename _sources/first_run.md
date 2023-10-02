@@ -78,9 +78,9 @@ To finally see whether physics is in order on your machine, this binary (at leas
     - inputfile is not supplied
 - "(..) Cannot open file (..)"
     - inputfile path is supplied, but is not recognized as valid
-    - Check path's spelling against _saved/essentials/RHMconfig.json_
+    - Check path's spelling against _presupplied/Inputfile/RHMconfig.json_
     - If correct, make sure there exists a valid file under _saved/EoS\_bank/APR\_EOS\_Acc\_Fe\_RHMstandard.dat_
-    - If exists, make sure there's an entry in _saved/essentials/RHMconfig.json_ ["EoSSetup"]["Datafile"]["Path"] that leads to the file above. Specify absolute path if in doubts.
+    - If exists, make sure there's an entry in _presupplied/Inputfile/RHMconfig.json_ `[\"EoSSetup\"][\"Datafile\"][\"Path\"]` that leads to the file above. Specify absolute path if in doubts.
 - "keyword argument (..) must have value."
     - program's key is supplied, but actual value to it is not
 - Whatever else happened
@@ -88,5 +88,5 @@ To finally see whether physics is in order on your machine, this binary (at leas
 
 **A:**
 ```bash
-    bin/project/M-R_diagram/m_r_diagram.out --inputfile saved/essentials/RHMconfig.json
+bin/project/M-R_diagram/m_r_diagram.out --inputfile presupplied/Inputfile/RHMconfig.json
 ```

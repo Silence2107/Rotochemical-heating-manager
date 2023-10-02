@@ -440,9 +440,9 @@ To finally see whether physics is in order on your machine, this binary (at leas
 <li><p>“(..) Cannot open file (..)”</p>
 <ul>
 <li><p>inputfile path is supplied, but is not recognized as valid</p></li>
-<li><p>Check path’s spelling against <em>saved/essentials/RHMconfig.json</em></p></li>
+<li><p>Check path’s spelling against <em>presupplied/Inputfile/RHMconfig.json</em></p></li>
 <li><p>If correct, make sure there exists a valid file under <em>saved/EoS_bank/APR_EOS_Acc_Fe_RHMstandard.dat</em></p></li>
-<li><p>If exists, make sure there’s an entry in <em>saved/essentials/RHMconfig.json</em> [“EoSSetup”][“Datafile”][“Path”] that leads to the file above. Specify absolute path if in doubts.</p></li>
+<li><p>If exists, make sure there’s an entry in <em>presupplied/Inputfile/RHMconfig.json</em> <code class="docutils literal notranslate"><span class="pre">[\&quot;EoSSetup\&quot;][\&quot;Datafile\&quot;][\&quot;Path\&quot;]</span></code> that leads to the file above. Specify absolute path if in doubts.</p></li>
 </ul>
 </li>
 <li><p>“keyword argument (..) must have value.”</p>
@@ -457,7 +457,7 @@ To finally see whether physics is in order on your machine, this binary (at leas
 </li>
 </ul>
 <p><strong>A:</strong></p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="w">    </span>bin/project/M-R_diagram/m_r_diagram.out<span class="w"> </span>--inputfile<span class="w"> </span>saved/essentials/RHMconfig.json
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bin/project/M-R_diagram/m_r_diagram.out<span class="w"> </span>--inputfile<span class="w"> </span>presupplied/Inputfile/RHMconfig.json
 </pre></div>
 </div>
 </section>
