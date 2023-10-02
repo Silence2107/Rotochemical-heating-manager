@@ -363,59 +363,65 @@ document.write(`
                   
   <section class="tex2jax_ignore mathjax_ignore" id="first-run">
 <h1>First run<a class="headerlink" href="#first-run" title="Permalink to this heading">#</a></h1>
-<p>RHM follows standard <strong>bin/include/src</strong> structure, with program’s logic assembled under <strong>project/</strong> folder. <strong>3rd-party/</strong> folder contains several IO libraries (ready-to-use), and <strong>presupplied/</strong> contains presupplied data. <strong>Makefile</strong> is also supplied for compilation.</p>
-<p>Since there are many different main programs under <strong>project/</strong>, some of which may run with settings provided by the user and some may not, making executables is yet user’s responsibility.</p>
+<p>RHM follows standard <em>bin/include/src</em> structure, with program’s logic assembled under <em>project/</em> folder. <em>3rd-party/</em> folder contains several IO libraries (ready-to-use), and <em>presupplied/</em> contains presupplied data. <em>Makefile</em> is also supplied for compilation.</p>
+<p>Since there are many different main programs under <em>project/</em>, some of which may run with settings provided by the user and some may not, making executables is yet user’s responsibility.</p>
 <p>To perform a test run with presupplied data, run make on some typical script, e.g.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="w">    </span>make<span class="w"> </span>release<span class="w"> </span><span class="nv">app</span><span class="o">=</span>project/M-R_diagram/m_r_diagram
 </pre></div>
 </div>
-<!--> If successful, the corresponding binary will be put under \textit{bin/}, following same path as it took to the app. In this case, executing binary would work like follows
-<p>\begin{lstlisting}
-bin/project/M-R_diagram/m_r_diagram.out –help
-\end{lstlisting}</p>
-<p>\textit{<span class="math notranslate nohighlight">\(--\)</span>help} invokes manual message for all standardized RHM programs.</p>
-<p>To finally see whether physics is in order on your machine, this binary (at least the way it is provided) must be supplied with inputfile.</p>
-<p>\textbf{Q: }Given your knowledge from binary’s manual, supply it with inputfile, which lies under \textit{saved/essentials/RHMconfig.json}.</p>
-<p>\textbf{Expected output :}
+<!-- If successful, the corresponding binary will be put under \textit{bin/}, following same path as it took to the app. In this case, executing binary would work like follows
+
+\begin{lstlisting}
+    bin/project/M-R_diagram/m_r_diagram.out --help
+\end{lstlisting}
+
+\textit{$--$help} invokes manual message for all standardized RHM programs.
+
+To finally see whether physics is in order on your machine, this binary (at least the way it is provided) must be supplied with inputfile. 
+
+\textbf{Q: }Given your knowledge from binary's manual, supply it with inputfile, which lies under \textit{saved/essentials/RHMconfig.json}.
+
+\textbf{Expected output :} 
 \begin{itemize}
-\item <span class="math notranslate nohighlight">\((M, R)\)</span> pairs of order <span class="math notranslate nohighlight">\((2 \text{M}_\odot, 10 \text{km})\)</span> based on various center density fractions.
-\begin{itemize}
-\item phenomenal work
+    \item $(M, R)$ pairs of order $(2 \text{M}_\odot, 10 \text{km})$ based on various center density fractions.
+    \begin{itemize}
+        \item phenomenal work
+    \end{itemize}
 \end{itemize}
-\end{itemize}</p>
-<p>\textbf{Unexpected output : }
+
+\textbf{Unexpected output : }
 \begin{itemize}
-\item <span class="math notranslate nohighlight">\((M, R)\)</span> pairs of <span class="math notranslate nohighlight">\((0 \text{M}_\odot, 0 \text{km})\)</span> \begin{itemize}
-\item inputfile is not supplied
-\end{itemize}
-\item “(..) Cannot open file (..)”
-\begin{itemize}
-\item inputfile path is supplied, but is not recognized as valid
-\item Check path’s spelling against \textit{saved/essentials/RHMconfig.json}
-\item If correct, make sure there exists a valid file under \ \textit{saved/EoS_bank/APR_EOS_Acc_Fe_RHMstandard.dat}
-\item If exists, make sure there’s an entry in \
-\textit{saved/essentials/RHMconfig.json} [“EoSSetup”][“Datafile”][“Path”] that leads to the file above. Specify absolute path if in doubts.
-\end{itemize}
-\item “keyword argument (..) must have value.”
-\begin{itemize}
-\item program’s key is supplied, but actual value to it is not
-\end{itemize}
-\item Whatever else happened
-\begin{itemize}
-\item Tell me I messed
-\end{itemize}
+    \item $(M, R)$ pairs of $(0 \text{M}_\odot, 0 \text{km})$ \begin{itemize}
+        \item inputfile is not supplied
+    \end{itemize}
+    \item "(..) Cannot open file (..)" 
+    \begin{itemize}
+        \item inputfile path is supplied, but is not recognized as valid
+        \item Check path's spelling against \textit{saved/essentials/RHMconfig.json}
+        \item If correct, make sure there exists a valid file under \\ \textit{saved/EoS\_bank/APR\_EOS\_Acc\_Fe\_RHMstandard.dat}
+        \item If exists, make sure there's an entry in \\
+        \textit{saved/essentials/RHMconfig.json} ["EoSSetup"]["Datafile"]["Path"] that leads to the file above. Specify absolute path if in doubts.
+    \end{itemize}
+    \item "keyword argument (..) must have value."
+    \begin{itemize}
+        \item program's key is supplied, but actual value to it is not
+    \end{itemize}
+    \item Whatever else happened
+    \begin{itemize}
+        \item Tell me I messed
+    \end{itemize}
 \end{itemize}
 \textbf{A: }
 \begin{lstlisting}
-bin/project/M-R_diagram/m_r_diagram.out –inputfile saved/essentials/RHMconfig.json
-\end{lstlisting} &lt;–&gt;</p>
-<p>If successful, the corresponding binary will be put under <strong>bin/</strong>, following same path as it took to the app. In this case, executing binary would work like follows</p>
+    bin/project/M-R_diagram/m_r_diagram.out --inputfile saved/essentials/RHMconfig.json
+\end{lstlisting} -->
+<p>If successful, the corresponding binary will be put under <em>bin/</em>, following same path as it took to the app. In this case, executing binary would work like follows</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="w">    </span>bin/project/M-R_diagram/m_r_diagram.out<span class="w"> </span>--help
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">--help</span></code> invokes manual message for all standardized RHM programs.</p>
 <p>To finally see whether physics is in order on your machine, this binary (at least the way it is provided) must be supplied with inputfile.</p>
-<p>**Q: **Given your knowledge from binary’s manual, supply it with inputfile, which lies under <strong>presupplied/Inputfile/RHMconfig.json</strong>.</p>
+<p>**Q: **Given your knowledge from binary’s manual, supply it with inputfile, which lies under <em>presupplied/Inputfile/RHMconfig.json</em>.</p>
 <p><strong>Expected output :</strong></p>
 <ul class="simple">
 <li><p><span class="math notranslate nohighlight">\((M, R)\)</span> pairs of order <span class="math notranslate nohighlight">\((2 \text{M}_\odot, 10 \text{km})\)</span> based on various center density fractions.</p>
@@ -434,9 +440,9 @@ bin/project/M-R_diagram/m_r_diagram.out –inputfile saved/essentials/RHMconfig.
 <li><p>“(..) Cannot open file (..)”</p>
 <ul>
 <li><p>inputfile path is supplied, but is not recognized as valid</p></li>
-<li><p>Check path’s spelling against <strong>saved/essentials/RHMconfig.json</strong></p></li>
-<li><p>If correct, make sure there exists a valid file under <strong>saved/EoS_bank/APR_EOS_Acc_Fe_RHMstandard.dat</strong></p></li>
-<li><p>If exists, make sure there’s an entry in <strong>saved/essentials/RHMconfig.json</strong> [“EoSSetup”][“Datafile”][“Path”] that leads to the file above. Specify absolute path if in doubts.</p></li>
+<li><p>Check path’s spelling against <em>saved/essentials/RHMconfig.json</em></p></li>
+<li><p>If correct, make sure there exists a valid file under <em>saved/EoS_bank/APR_EOS_Acc_Fe_RHMstandard.dat</em></p></li>
+<li><p>If exists, make sure there’s an entry in <em>saved/essentials/RHMconfig.json</em> [“EoSSetup”][“Datafile”][“Path”] that leads to the file above. Specify absolute path if in doubts.</p></li>
 </ul>
 </li>
 <li><p>“keyword argument (..) must have value.”</p>

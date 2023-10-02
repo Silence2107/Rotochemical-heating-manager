@@ -1,8 +1,8 @@
 # First run
 
-RHM follows standard __bin/include/src__ structure, with program's logic assembled under __project/__ folder. __3rd-party/__ folder contains several IO libraries (ready-to-use), and __presupplied/__ contains presupplied data. __Makefile__ is also supplied for compilation.
+RHM follows standard _bin/include/src_ structure, with program's logic assembled under _project/_ folder. _3rd-party/_ folder contains several IO libraries (ready-to-use), and _presupplied/_ contains presupplied data. _Makefile_ is also supplied for compilation.
 
-Since there are many different main programs under __project/__, some of which may run with settings provided by the user and some may not, making executables is yet user's responsibility.
+Since there are many different main programs under _project/_, some of which may run with settings provided by the user and some may not, making executables is yet user's responsibility.
 
 To perform a test run with presupplied data, run make on some typical script, e.g.
 
@@ -10,7 +10,7 @@ To perform a test run with presupplied data, run make on some typical script, e.
     make release app=project/M-R_diagram/m_r_diagram
 ```
 
-<!--> If successful, the corresponding binary will be put under \textit{bin/}, following same path as it took to the app. In this case, executing binary would work like follows
+<!-- If successful, the corresponding binary will be put under \textit{bin/}, following same path as it took to the app. In this case, executing binary would work like follows
 
 \begin{lstlisting}
     bin/project/M-R_diagram/m_r_diagram.out --help
@@ -55,9 +55,9 @@ To finally see whether physics is in order on your machine, this binary (at leas
 \textbf{A: }
 \begin{lstlisting}
     bin/project/M-R_diagram/m_r_diagram.out --inputfile saved/essentials/RHMconfig.json
-\end{lstlisting} <\-->
+\end{lstlisting} -->
 
-If successful, the corresponding binary will be put under __bin/__, following same path as it took to the app. In this case, executing binary would work like follows
+If successful, the corresponding binary will be put under _bin/_, following same path as it took to the app. In this case, executing binary would work like follows
 
 ```bash
     bin/project/M-R_diagram/m_r_diagram.out --help
@@ -67,7 +67,7 @@ If successful, the corresponding binary will be put under __bin/__, following sa
 
 To finally see whether physics is in order on your machine, this binary (at least the way it is provided) must be supplied with inputfile.
 
-**Q: **Given your knowledge from binary's manual, supply it with inputfile, which lies under __presupplied/Inputfile/RHMconfig.json__.
+**Q: **Given your knowledge from binary's manual, supply it with inputfile, which lies under _presupplied/Inputfile/RHMconfig.json_.
 
 **Expected output :**
 - $(M, R)$ pairs of order $(2 \text{M}_\odot, 10 \text{km})$ based on various center density fractions.
@@ -78,9 +78,9 @@ To finally see whether physics is in order on your machine, this binary (at leas
     - inputfile is not supplied
 - "(..) Cannot open file (..)"
     - inputfile path is supplied, but is not recognized as valid
-    - Check path's spelling against __saved/essentials/RHMconfig.json__
-    - If correct, make sure there exists a valid file under __saved/EoS\_bank/APR\_EOS\_Acc\_Fe\_RHMstandard.dat__
-    - If exists, make sure there's an entry in __saved/essentials/RHMconfig.json__ ["EoSSetup"]["Datafile"]["Path"] that leads to the file above. Specify absolute path if in doubts.
+    - Check path's spelling against _saved/essentials/RHMconfig.json_
+    - If correct, make sure there exists a valid file under _saved/EoS\_bank/APR\_EOS\_Acc\_Fe\_RHMstandard.dat_
+    - If exists, make sure there's an entry in _saved/essentials/RHMconfig.json_ ["EoSSetup"]["Datafile"]["Path"] that leads to the file above. Specify absolute path if in doubts.
 - "keyword argument (..) must have value."
     - program's key is supplied, but actual value to it is not
 - Whatever else happened
