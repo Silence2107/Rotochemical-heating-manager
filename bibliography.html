@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>What data does program need? &#8212; Rotochemical Heating Manager</title>
+    <title>Bibliography &#8212; Rotochemical Heating Manager</title>
   
   
   
@@ -63,13 +63,10 @@ const thebe_selector_input = "pre"
 const thebe_selector_output = ".output, .cell_output"
 </script>
     <script async="async" src="_static/sphinx-thebe.js"></script>
-    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'what_data_program_need';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'bibliography';</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Instantiate via inputfile" href="instantiate_via_inputfile.html" />
-    <link rel="prev" title="ROOT support" href="root_support.html" />
+    <link rel="prev" title="Instantiate manually (advanced)" href="instantiate_manually.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -174,14 +171,14 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l1"><a class="reference internal" href="root_support.html">ROOT support</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Data input</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">What data does program need?</a></li>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="what_data_program_need.html">What data does program need?</a></li>
 <li class="toctree-l1"><a class="reference internal" href="instantiate_via_inputfile.html">Instantiate via inputfile</a></li>
 <li class="toctree-l1"><a class="reference internal" href="instantiate_manually.html">Instantiate manually (advanced)</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Appendix</span></p>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="bibliography.html">Bibliography</a></li>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Bibliography</a></li>
 </ul>
 
     </div>
@@ -253,7 +250,7 @@ const thebe_selector_output = ".output, .cell_output"
       
       
       
-      <li><a href="https://github.com/Silence2107/Rotochemical-heating-manager/issues/new?title=Issue%20on%20page%20%2Fwhat_data_program_need.html&body=Your%20issue%20content%20here." target="_blank"
+      <li><a href="https://github.com/Silence2107/Rotochemical-heating-manager/issues/new?title=Issue%20on%20page%20%2Fbibliography.html&body=Your%20issue%20content%20here." target="_blank"
    class="btn btn-sm btn-source-issues-button dropdown-item"
    title="Open an issue"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -283,7 +280,7 @@ const thebe_selector_output = ".output, .cell_output"
       
       
       
-      <li><a href="_sources/what_data_program_need.md" target="_blank"
+      <li><a href="_sources/bibliography.md" target="_blank"
    class="btn btn-sm btn-download-source-button dropdown-item"
    title="Download source file"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -363,7 +360,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>What data does program need?</h1>
+    <h1>Bibliography</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -377,17 +374,15 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section class="tex2jax_ignore mathjax_ignore" id="what-data-does-program-need">
-<h1>What data does program need?<a class="headerlink" href="#what-data-does-program-need" title="Permalink to this heading">#</a></h1>
-<p>RHM may be a powerful tool, but in a nutshell it cannot resolve the physics without an user telling the properties of the matter. These properties are usually summarized in a so-called equation of state (EoS), and are supplied to RHM as global data. Most EoS are complicated enough to not have analytic formulas, but rather to be presented as a tabulation <span class="math notranslate nohighlight">\(P(n_b), \rho_E(n_b), ...\)</span>. An example of such tabulation (APR4, <span id="id1">[<a class="reference internal" href="bibliography.html#id2" title="A. Akmal, V. R. Pandharipande, and D. G. Ravenhall. Equation of state of nucleon matter and neutron star structure. Physical Review C, 58(3):1804–1828, sep 1998. URL: https://doi.org/10.1103%2Fphysrevc.58.1804, doi:10.1103/physrevc.58.1804.">APR98</a>]</span>) is to be found under <span style="color:blue">presupplied/EoS/APR_EOS_Acc_Fe_RHMstandard.dat_</span>.</p>
-<p>While all the libraries in RHM do not explicitly depend on global data, supplied to RHM, they are transferred there via RHM main programs. High-level global settings (datafile interpolators, variable with solver settings etc – whatever the main programs use) are initialized in <span style="color:blue">include/instantiator.hpp</span>. Structure is sketched on <a class="reference internal" href="#rhm-structure"><span class="std std-numref">Fig. 3</span></a>.</p>
-<figure class="align-default" id="rhm-structure">
-<a class="reference internal image-reference" href="_images/RHM_structure.png"><img alt="_images/RHM_structure.png" src="_images/RHM_structure.png" style="width: 342.9px; height: 179.1px;" /></a>
-<figcaption>
-<p><span class="caption-number">Fig. 3 </span><span class="caption-text">RHM dependency structure.</span><a class="headerlink" href="#rhm-structure" title="Permalink to this image">#</a></p>
-</figcaption>
-</figure>
-<p>In what follows all possible ways to instantiate RHM are discussed and covered.</p>
+  <section class="tex2jax_ignore mathjax_ignore" id="bibliography">
+<h1>Bibliography<a class="headerlink" href="#bibliography" title="Permalink to this heading">#</a></h1>
+<div class="docutils container" id="id1">
+<div class="citation" id="id2" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>APR98<span class="fn-bracket">]</span></span>
+<p>A. Akmal, V. R. Pandharipande, and D. G. Ravenhall. Equation of state of nucleon matter and neutron star structure. <em>Physical Review C</em>, 58(3):1804–1828, sep 1998. URL: <a class="reference external" href="https://doi.org/10.1103%2Fphysrevc.58.1804">https://doi.org/10.1103%2Fphysrevc.58.1804</a>, <a class="reference external" href="https://doi.org/10.1103/physrevc.58.1804">doi:10.1103/physrevc.58.1804</a>.</p>
+</div>
+</div>
+</div>
 </section>
 
     <script type="text/x-thebe-config">
@@ -421,22 +416,13 @@ document.write(`
                   <!-- Previous / next buttons -->
 <div class="prev-next-area">
     <a class="left-prev"
-       href="root_support.html"
+       href="instantiate_manually.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">ROOT support</p>
+        <p class="prev-next-title">Instantiate manually (advanced)</p>
       </div>
-    </a>
-    <a class="right-next"
-       href="instantiate_via_inputfile.html"
-       title="next page">
-      <div class="prev-next-info">
-        <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Instantiate via inputfile</p>
-      </div>
-      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
                 </footer>
