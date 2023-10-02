@@ -377,8 +377,8 @@ document.write(`
 <h1>First run<a class="headerlink" href="#first-run" title="Permalink to this heading">#</a></h1>
 <section id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading">#</a></h2>
-<p>RHM follows standard <span style="color:blue"><em>bin/include/src</em></span> structure, with program’s logic assembled under <em>project/</em> folder. <em>3rd-party/</em> folder contains several IO libraries (ready-to-use), and <em>presupplied/</em> contains presupplied data. <em>Makefile</em> is also supplied for compilation.</p>
-<p>Since there are many different main programs under <em>project/</em>, some of which may run with settings provided by the user and some may not, making executables is yet user’s responsibility.</p>
+<p>RHM follows standard <span style="color:blue"><em>bin/include/src</em></span> structure, with program’s logic assembled under <span style="color:blue"><em>project/</em></span> folder. <span style="color:blue"><em>3rd-party/</em></span> folder contains several IO libraries (ready-to-use), and <span style="color:blue"><em>presupplied/</em></span> contains presupplied data. <span style="color:blue"><em>Makefile</em></span> is also supplied for compilation.</p>
+<p>Since there are many different main programs under <span style="color:blue"><em>project/</em></span>, some of which may run with settings provided by the user and some may not, making executables is yet user’s responsibility.</p>
 </section>
 <section id="test-run">
 <h2>Test run<a class="headerlink" href="#test-run" title="Permalink to this heading">#</a></h2>
@@ -386,12 +386,12 @@ document.write(`
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>release<span class="w"> </span><span class="nv">app</span><span class="o">=</span>project/M-R_diagram/m_r_diagram
 </pre></div>
 </div>
-<p>If successful, the corresponding binary will be put under <em>bin/</em>, following same path as it took to the app. In this case, executing binary would work like follows</p>
+<p>If successful, the corresponding binary will be put under <span style="color:blue"><em>bin/</em></span>, following same path as it took to the app. In this case, executing binary would work like follows</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bin/project/M-R_diagram/m_r_diagram.out<span class="w"> </span>--help
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">--help</span></code> invokes manual message for all standardized RHM programs.</p>
-<p>To finally see whether physics is in order on your machine, this binary (at least the way it is provided) must be supplied with inputfile. Let’s run it by providing the one under <em>presupplied/Inputfile/RHMconfig.json</em>:</p>
+<p>To finally see whether physics is in order on your machine, this binary (at least the way it is provided) must be supplied with inputfile. Let’s run it by providing the one under <span style="color:blue"><em>presupplied/Inputfile/RHMconfig.json</em></span>:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bin/project/M-R_diagram/m_r_diagram.out<span class="w"> </span>--inputfile<span class="w"> </span>presupplied/Inputfile/RHMconfig.json
 </pre></div>
 </div>
@@ -413,9 +413,9 @@ document.write(`
 <li><p>“(..) Cannot open file (..)”</p>
 <ul>
 <li><p>inputfile path is supplied, but is not recognized as valid</p></li>
-<li><p>Check path’s spelling against <em>presupplied/Inputfile/RHMconfig.json</em></p></li>
-<li><p>If correct, make sure there exists a valid file under <em>saved/EoS_bank/APR_EOS_Acc_Fe_RHMstandard.dat</em></p></li>
-<li><p>If exists, make sure there’s an entry in <em>presupplied/Inputfile/RHMconfig.json</em> <code class="docutils literal notranslate"><span class="pre">[&quot;EoSSetup&quot;][&quot;Datafile&quot;][&quot;Path&quot;]</span></code> that leads to the file above. Specify absolute path if in doubts.</p></li>
+<li><p>Check path’s spelling against <span style="color:blue"><em>presupplied/Inputfile/RHMconfig.json</em></span></p></li>
+<li><p>If correct, make sure there exists a valid file under <span style="color:blue"><em>presupplied/EoS/APR_EOS_Acc_Fe_RHMstandard.dat</em></span></p></li>
+<li><p>If exists, make sure there’s an entry in <span style="color:blue"><em>presupplied/Inputfile/RHMconfig.json</em></span> <code class="docutils literal notranslate"><span class="pre">[&quot;EoSSetup&quot;][&quot;Datafile&quot;][&quot;Path&quot;]</span></code> that leads to the file above. Specify absolute path if in doubts.</p></li>
 </ul>
 </li>
 <li><p>“keyword argument (..) must have value.”</p>

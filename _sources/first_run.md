@@ -2,9 +2,9 @@
 
 ## Overview
 
-RHM follows standard <span style="color:blue">_bin/include/src_</span> structure, with program's logic assembled under _project/_ folder. _3rd-party/_ folder contains several IO libraries (ready-to-use), and _presupplied/_ contains presupplied data. _Makefile_ is also supplied for compilation.
+RHM follows standard <span style="color:blue">_bin/include/src_</span> structure, with program's logic assembled under <span style="color:blue">_project/_</span> folder. <span style="color:blue">_3rd-party/_</span> folder contains several IO libraries (ready-to-use), and <span style="color:blue">_presupplied/_</span> contains presupplied data. <span style="color:blue">_Makefile_</span> is also supplied for compilation.
 
-Since there are many different main programs under _project/_, some of which may run with settings provided by the user and some may not, making executables is yet user's responsibility.
+Since there are many different main programs under <span style="color:blue">_project/_</span>, some of which may run with settings provided by the user and some may not, making executables is yet user's responsibility.
 
 ## Test run
 
@@ -14,7 +14,7 @@ To perform a test run with presupplied data, run make on some typical script, e.
 make release app=project/M-R_diagram/m_r_diagram
 ```
 
-If successful, the corresponding binary will be put under _bin/_, following same path as it took to the app. In this case, executing binary would work like follows
+If successful, the corresponding binary will be put under <span style="color:blue">_bin/_</span>, following same path as it took to the app. In this case, executing binary would work like follows
 
 ```bash
 bin/project/M-R_diagram/m_r_diagram.out --help
@@ -22,7 +22,7 @@ bin/project/M-R_diagram/m_r_diagram.out --help
 
 `--help` invokes manual message for all standardized RHM programs.
 
-To finally see whether physics is in order on your machine, this binary (at least the way it is provided) must be supplied with inputfile. Let's run it by providing the one under _presupplied/Inputfile/RHMconfig.json_:
+To finally see whether physics is in order on your machine, this binary (at least the way it is provided) must be supplied with inputfile. Let's run it by providing the one under <span style="color:blue">_presupplied/Inputfile/RHMconfig.json_</span>:
 
 ```bash
 bin/project/M-R_diagram/m_r_diagram.out --inputfile presupplied/Inputfile/RHMconfig.json
@@ -37,9 +37,9 @@ bin/project/M-R_diagram/m_r_diagram.out --inputfile presupplied/Inputfile/RHMcon
     - inputfile is not supplied
 - "(..) Cannot open file (..)"
     - inputfile path is supplied, but is not recognized as valid
-    - Check path's spelling against _presupplied/Inputfile/RHMconfig.json_
-    - If correct, make sure there exists a valid file under _saved/EoS\_bank/APR\_EOS\_Acc\_Fe\_RHMstandard.dat_
-    - If exists, make sure there's an entry in _presupplied/Inputfile/RHMconfig.json_ `["EoSSetup"]["Datafile"]["Path"]` that leads to the file above. Specify absolute path if in doubts.
+    - Check path's spelling against <span style="color:blue">_presupplied/Inputfile/RHMconfig.json_</span>
+    - If correct, make sure there exists a valid file under <span style="color:blue">_presupplied/EoS/APR\_EOS\_Acc\_Fe\_RHMstandard.dat_</span>
+    - If exists, make sure there's an entry in <span style="color:blue">_presupplied/Inputfile/RHMconfig.json_</span> `["EoSSetup"]["Datafile"]["Path"]` that leads to the file above. Specify absolute path if in doubts.
 - "keyword argument (..) must have value."
     - program's key is supplied, but actual value to it is not
 - Whatever else happened
