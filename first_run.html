@@ -336,7 +336,9 @@ document.write(`
   </button>
 `);
 </script>
-
+<label class="sidebar-toggle secondary-toggle btn btn-sm" for="__secondary"title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</label>
 </div></div>
       
     </div>
@@ -352,6 +354,16 @@ document.write(`
     <div id="print-main-content">
         <div id="jb-print-toc">
             
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#test-run">Test run</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-s-next">What’s next?</a></li>
+</ul>
+            </nav>
         </div>
     </div>
 </div>
@@ -363,65 +375,26 @@ document.write(`
                   
   <section class="tex2jax_ignore mathjax_ignore" id="first-run">
 <h1>First run<a class="headerlink" href="#first-run" title="Permalink to this heading">#</a></h1>
-<p>RHM follows standard <em>bin/include/src</em> structure, with program’s logic assembled under <em>project/</em> folder. <em>3rd-party/</em> folder contains several IO libraries (ready-to-use), and <em>presupplied/</em> contains presupplied data. <em>Makefile</em> is also supplied for compilation.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading">#</a></h2>
+<p>RHM follows standard <span style="color:blue"><em>bin/include/src</em></span> structure, with program’s logic assembled under <em>project/</em> folder. <em>3rd-party/</em> folder contains several IO libraries (ready-to-use), and <em>presupplied/</em> contains presupplied data. <em>Makefile</em> is also supplied for compilation.</p>
 <p>Since there are many different main programs under <em>project/</em>, some of which may run with settings provided by the user and some may not, making executables is yet user’s responsibility.</p>
+</section>
+<section id="test-run">
+<h2>Test run<a class="headerlink" href="#test-run" title="Permalink to this heading">#</a></h2>
 <p>To perform a test run with presupplied data, run make on some typical script, e.g.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>release<span class="w"> </span><span class="nv">app</span><span class="o">=</span>project/M-R_diagram/m_r_diagram
 </pre></div>
 </div>
-<!-- If successful, the corresponding binary will be put under \textit{bin/}, following same path as it took to the app. In this case, executing binary would work like follows
-
-\begin{lstlisting}
-    bin/project/M-R_diagram/m_r_diagram.out --help
-\end{lstlisting}
-
-\textit{$--$help} invokes manual message for all standardized RHM programs.
-
-To finally see whether physics is in order on your machine, this binary (at least the way it is provided) must be supplied with inputfile. 
-
-\textbf{Q: }Given your knowledge from binary's manual, supply it with inputfile, which lies under \textit{saved/essentials/RHMconfig.json}.
-
-\textbf{Expected output :} 
-\begin{itemize}
-    \item $(M, R)$ pairs of order $(2 \text{M}_\odot, 10 \text{km})$ based on various center density fractions.
-    \begin{itemize}
-        \item phenomenal work
-    \end{itemize}
-\end{itemize}
-
-\textbf{Unexpected output : }
-\begin{itemize}
-    \item $(M, R)$ pairs of $(0 \text{M}_\odot, 0 \text{km})$ \begin{itemize}
-        \item inputfile is not supplied
-    \end{itemize}
-    \item "(..) Cannot open file (..)" 
-    \begin{itemize}
-        \item inputfile path is supplied, but is not recognized as valid
-        \item Check path's spelling against \textit{saved/essentials/RHMconfig.json}
-        \item If correct, make sure there exists a valid file under \\ \textit{saved/EoS\_bank/APR\_EOS\_Acc\_Fe\_RHMstandard.dat}
-        \item If exists, make sure there's an entry in \\
-        \textit{saved/essentials/RHMconfig.json} ["EoSSetup"]["Datafile"]["Path"] that leads to the file above. Specify absolute path if in doubts.
-    \end{itemize}
-    \item "keyword argument (..) must have value."
-    \begin{itemize}
-        \item program's key is supplied, but actual value to it is not
-    \end{itemize}
-    \item Whatever else happened
-    \begin{itemize}
-        \item Tell me I messed
-    \end{itemize}
-\end{itemize}
-\textbf{A: }
-\begin{lstlisting}
-    bin/project/M-R_diagram/m_r_diagram.out --inputfile saved/essentials/RHMconfig.json
-\end{lstlisting} -->
 <p>If successful, the corresponding binary will be put under <em>bin/</em>, following same path as it took to the app. In this case, executing binary would work like follows</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bin/project/M-R_diagram/m_r_diagram.out<span class="w"> </span>--help
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">--help</span></code> invokes manual message for all standardized RHM programs.</p>
-<p>To finally see whether physics is in order on your machine, this binary (at least the way it is provided) must be supplied with inputfile.</p>
-<p><strong>Q:</strong> Given your knowledge from binary’s manual, supply it with inputfile, which lies under <em>presupplied/Inputfile/RHMconfig.json</em>.</p>
+<p>To finally see whether physics is in order on your machine, this binary (at least the way it is provided) must be supplied with inputfile. Let’s run it by providing the one under <em>presupplied/Inputfile/RHMconfig.json</em>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bin/project/M-R_diagram/m_r_diagram.out<span class="w"> </span>--inputfile<span class="w"> </span>presupplied/Inputfile/RHMconfig.json
+</pre></div>
+</div>
 <p><strong>Expected output :</strong></p>
 <ul class="simple">
 <li><p><span class="math notranslate nohighlight">\((M, R)\)</span> pairs of order <span class="math notranslate nohighlight">\((2 \text{M}_\odot, 10 \text{km})\)</span> based on various center density fractions.</p>
@@ -442,7 +415,7 @@ To finally see whether physics is in order on your machine, this binary (at leas
 <li><p>inputfile path is supplied, but is not recognized as valid</p></li>
 <li><p>Check path’s spelling against <em>presupplied/Inputfile/RHMconfig.json</em></p></li>
 <li><p>If correct, make sure there exists a valid file under <em>saved/EoS_bank/APR_EOS_Acc_Fe_RHMstandard.dat</em></p></li>
-<li><p>If exists, make sure there’s an entry in <em>presupplied/Inputfile/RHMconfig.json</em> <code class="docutils literal notranslate"><span class="pre">[\&quot;EoSSetup\&quot;][\&quot;Datafile\&quot;][\&quot;Path\&quot;]</span></code> that leads to the file above. Specify absolute path if in doubts.</p></li>
+<li><p>If exists, make sure there’s an entry in <em>presupplied/Inputfile/RHMconfig.json</em> <code class="docutils literal notranslate"><span class="pre">[&quot;EoSSetup&quot;][&quot;Datafile&quot;][&quot;Path&quot;]</span></code> that leads to the file above. Specify absolute path if in doubts.</p></li>
 </ul>
 </li>
 <li><p>“keyword argument (..) must have value.”</p>
@@ -456,10 +429,10 @@ To finally see whether physics is in order on your machine, this binary (at leas
 </ul>
 </li>
 </ul>
-<p><strong>A:</strong></p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bin/project/M-R_diagram/m_r_diagram.out<span class="w"> </span>--inputfile<span class="w"> </span>presupplied/Inputfile/RHMconfig.json
-</pre></div>
-</div>
+</section>
+<section id="what-s-next">
+<h2>What’s next?<a class="headerlink" href="#what-s-next" title="Permalink to this heading">#</a></h2>
+</section>
 </section>
 
     <script type="text/x-thebe-config">
@@ -507,6 +480,22 @@ To finally see whether physics is in order on your machine, this binary (at leas
             </div>
             
             
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#test-run">Test run</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-s-next">What’s next?</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
               
             
           </div>
