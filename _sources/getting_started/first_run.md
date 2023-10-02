@@ -47,7 +47,7 @@ bin/project/M-R_diagram/m_r_diagram.out --inputfile presupplied/Inputfile/RHMcon
 
 ## What's next?
 
-- Investigate the <span style="color:blue">project/</span> folder for more programs, to see which you may find useful. Stable ones are inspectable via `--help` flag.
+- Investigate the <span style="color:blue">_project/_</span> folder for more programs, to see which you may find useful. Stable ones are inspectable via `--help` flag.
 - Further learn about RHM main programs running settings
 - Learn about how RHM processes input data
 - Supply it with your own EoS!

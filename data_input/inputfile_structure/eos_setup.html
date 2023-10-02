@@ -63,6 +63,8 @@ const thebe_selector_input = "pre"
 const thebe_selector_output = ".output, .cell_output"
 </script>
     <script async="async" src="../../_static/sphinx-thebe.js"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'data_input/inputfile_structure/eos_setup';</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -395,9 +397,135 @@ document.write(`
 <h1>EoSSetup<a class="headerlink" href="#eossetup" title="Permalink to this heading">#</a></h1>
 <section id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading">#</a></h2>
+<p>This entry contains all relevant information regarding how program is supposed to interpret the supplied EoS. In particular, one specifies here EoS datafile format, interpolation kind, column to quantity mapping, units, particle species etc. In what follows we discuss all the possible settings under this entry.</p>
+<p>In order to refer to an example, see <span style="color:blue"><em>presupplied/Inputfile/RHMconfig.json</em></span> and <span style="color:blue"><em>presupplied/EoS/APR_EOS_Acc_Fe_RHMstandard.dat</em></span>.</p>
 </section>
 <section id="description">
 <h2>Description<a class="headerlink" href="#description" title="Permalink to this heading">#</a></h2>
+<!-- \begin{itemize}
+        \item "Datafile" : Contains all relevant knowledge regarding EoS datafile structure.
+        \begin{itemize}
+            \item "Path" (string, required) : valid path to the EoS datafile.
+            \item "Rows" (uint pair) : [first, last) row in the inputfile to consider (counting from 0th). Assumes whole file, if not specified.
+            \item "Columns" (uint pair) : [first, last) row in the inputfile to consider (counting from 0th). Deduces from the first row, if not specified.
+            \item "Interpolation" (string) : Interpolation kind to be used across all columns. Choose from ["Linear", "Cubic"], with "Linear" being default. Using "Cubic" mode may lead to issues with positivity of some functions, so it is at the moment advised to instead populate the datafile with more points, yet to use "Linear" mode.
+        \end{itemize}
+        \item "Particles" (string array, required*) : Names for the particles, available in the EoS. Must strictly match with predefined list ["Neutron", "Proton", "Electron", "Muon", "Tau", "Uquark", "Dquark", "Squark"]. If provided, the instantiator assumes user would like to invoke cooling functionality, hence it requires more provided variables to run.
+        \item "Quantities" : A linker between EoS columns and the way the supply data to RHM.
+        \begin{itemize}
+            \item "BaryonicDensity" : total baryonic density at the point.
+            \begin{itemize}
+                \item "Units" (string/double, required) : Conversion factor to natural units (GeV powers). It must either be supplied as a choice from ["Gev3", "Fm-3"], or as an actual multiplier.
+                Example : if your units are $m^{-3}$, the factor must be set to $\frac{1}{\text{m}^3\cdot \text{GeV}^3} \approx 7.72\text{E-}48$, since $n_b[\text{GeV}^3] = \dfrac{n_b[\text{m}^{-3}] \cdot \text{m}^{-3}}{\text{GeV}^3} = n_b[\text{m}^{-3}] \cdot \frac{1}{\text{m}^3\cdot \text{GeV}^3}$
+                \item "Column" (uint, required) : Column number with baryonic density, counting from 0th.
+                \item "Low" (double, required) : Smallest accessible $n_b$ within the datafile.
+                \item "Upp" (double, required) : Biggest accessible $n_b$ within the datafile.
+                \item "CoreLimit" (double, required) : First $n_b$ upon entering core.
+                \item "CrustLimit" (double) : Last $n_b$ upon leaving crust. If not supplied, "CoreLimit" value is substituted.
+            \end{itemize}
+            \item "EnergyDensity" : Total energy density at the point.
+            \begin{itemize}
+                \item "Units" (string/double, required) : Conversion factor to natural units (GeV powers). Choose from ["Gev4", "MevOverFm3", "GOverCm3"], or specify an actual multiplier.
+                \item "Column" (uint, required) : Column number with energy density, counting from 0th.
+                \item "Low" (double/string) : Smallest accessible $\rho_E$ within the datafile. Deduced automatically if specified as "Deduce" or if left blank.
+                \item "Upp" (double/string) : Biggest accessible $\rho_E$ within the datafile. Deduced automatically if specified as "Deduce" or if left blank.
+                \item "CoreLimit" (double/string) : First $\rho_E$ upon entering core. Deduced automatically if specified as "Deduce" or if left blank.
+            \end{itemize}
+            \item "Pressure" : Total pressure at the point.
+            \begin{itemize}
+                \item "Units" (string/double, required) : Conversion factor to natural units (GeV powers). Choose from ["Gev4", "MevOverFm3", "DyneOverCm2"], or specify an actual multiplier.
+                \item "Column" (uint, required) : Column number with pressure, counting from 0th.
+                \item "Low" (double/string) : Smallest accessible $P$ within the datafile. Deduced automatically if specified as "Deduce" or if left blank.
+                \item "Upp" (double/string) : Biggest accessible $P$ within the datafile. Deduced automatically if specified as "Deduce" or if left blank.
+            \end{itemize}
+            \item "BarionicDensities" : Number densities per each particle at the point.
+            \begin{itemize}
+                \item "PARTICLE\_NAME" : Properties, related to a specific particle. Substitute the entry name with actual (fermionic only) species among provided in "Particles" array one by one.
+                \item "Units" (string/double) : Conversion factor to natural units (GeV powers). Choose from ["Gev3", "Fm-3", "DimLess", "Gev", "Fm-1"], or specify an actual multiplier.
+            \end{itemize}
+        \end{itemize}
+    \end{itemize} -->
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Datafile&quot;</span></code> <strong>:</strong> Contains all relevant knowledge regarding EoS datafile structure.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Path&quot;</span></code> (string, required) <strong>:</strong> valid path to the EoS datafile.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Rows&quot;</span></code> (uint pair) <strong>:</strong> [first, last) row in the inputfile to consider (counting from 0th). Assumes whole file, if not specified.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Columns&quot;</span></code> (uint pair) <strong>:</strong> [first, last) row in the inputfile to consider (counting from 0th). Deduces from the first row, if not specified.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Interpolation&quot;</span></code> (string) <strong>:</strong> Interpolation kind to be used across all columns. Choose from [“Linear”, “Cubic”], with “Linear” being default. Using “Cubic” mode may lead to issues with positivity of some functions, so it is at the moment advised to instead populate the datafile with more points, yet to use “Linear” mode.</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Particles&quot;</span></code> (string array, required*) <strong>:</strong> Names for the particles, available in the EoS. Must strictly match with predefined list [“Neutron”, “Proton”, “Electron”, “Muon”, “Tau”, “Uquark”, “Dquark”, “Squark”]. If provided, the instantiator assumes user would like to invoke cooling functionality, hence it requires more provided variables to run.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Quantities&quot;</span></code> <strong>:</strong> A linker between EoS columns and the way the supply data to RHM.</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;BaryonicDensity&quot;</span></code> <strong>:</strong> total baryonic density at the point.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Units&quot;</span></code> (string/double, required) <strong>:</strong> Conversion factor to natural units (GeV powers). It must either be supplied as a choice from [“Gev3”, “Fm-3”], or as an actual multiplier.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Example : if your units are <span class="math notranslate nohighlight">\(m^{-3}\)</span>, the factor must be set to <span class="math notranslate nohighlight">\(\frac{1}{\text{m}^3\cdot \text{GeV}^3} \approx 7.72\text{E-}48\)</span>, since <span class="math notranslate nohighlight">\(n_b[\text{GeV}^3] = \dfrac{n_b[\text{m}^{-3}] \cdot \text{m}^{-3}}{\text{GeV}^3} = n_b[\text{m}^{-3}] \cdot \frac{1}{\text{m}^3\cdot \text{GeV}^3}\)</span></p>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint, required) <strong>:</strong> Column number with baryonic density, counting from 0th.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Low&quot;</span></code> (double, required) <strong>:</strong> Smallest accessible <span class="math notranslate nohighlight">\(n_b\)</span> within the datafile.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Upp&quot;</span></code> (double, required) <strong>:</strong> Biggest accessible <span class="math notranslate nohighlight">\(n_b\)</span> within the datafile.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;CoreLimit&quot;</span></code> (double, required) <strong>:</strong> First <span class="math notranslate nohighlight">\(n_b\)</span> upon entering core.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;CrustLimit&quot;</span></code> (double) <strong>:</strong> Last <span class="math notranslate nohighlight">\(n_b\)</span> upon leaving crust. If not supplied, “CoreLimit” value is substituted.</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;EnergyDensity&quot;</span></code> <strong>:</strong> Total energy density at the point.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Units&quot;</span></code> (string/double, required) <strong>:</strong> Conversion factor to natural units (GeV powers). Choose from [“Gev4”, “MevOverFm3”, “GOverCm3”], or specify an actual multiplier.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint, required) <strong>:</strong> Column number with energy density, counting from 0th.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Low&quot;</span></code> (double/string) <strong>:</strong> Smallest accessible <span class="math notranslate nohighlight">\(\rho_E\)</span> within the datafile. Deduced automatically if specified as “Deduce” or if left blank.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Upp&quot;</span></code> (double/string) <strong>:</strong> Biggest accessible <span class="math notranslate nohighlight">\(\rho_E\)</span> within the datafile. Deduced automatically if specified as “Deduce” or if left blank.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;CoreLimit&quot;</span></code> (double/string) <strong>:</strong> First <span class="math notranslate nohighlight">\(\rho_E\)</span> upon entering core. Deduced automatically if specified as “Deduce” or if left blank.</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Pressure&quot;</span></code> <strong>:</strong> Total pressure at the point.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Units&quot;</span></code> (string/double, required) <strong>:</strong> Conversion factor to natural units (GeV powers). Choose from [“Gev4”, “MevOverFm3”, “DyneOverCm2”], or specify an actual multiplier.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint, required) <strong>:</strong> Column number with pressure, counting from 0th.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Low&quot;</span></code> (double/string) <strong>:</strong> Smallest accessible <span class="math notranslate nohighlight">\(P\)</span> within the datafile. Deduced automatically if specified as “Deduce” or if left blank.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Upp&quot;</span></code> (double/string) <strong>:</strong> Biggest accessible <span class="math notranslate nohighlight">\(P\)</span> within the datafile. Deduced automatically if specified as “Deduce” or if left blank.</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;BarionicDensities&quot;</span></code> <strong>:</strong> Number densities per each particle at the point.</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;$PARTICLE_NAME&quot;</span></code> <strong>:</strong> Properties, related to a specific particle. <strong>Substitute</strong> the entry name with actual (fermionic only) species among provided in “Particles” array one by one.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint, required*) <strong>:</strong> Column number with number density for given particle, counting from 0th.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;ProvidedAs</span></code> (string) <strong>:</strong> The way the number density is provided. Choose from [“Density”, “DensityFraction”, “KFermi”]. “Density” mode expects actual number density, “DensityFraction” mode expects ratio of the number density to the total baryonic density, “KFermi” mode expects Fermi momentum of the particle. Defaults to “Density”.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>As meaningless as it is, in its current state “Units” are shared between particle entries and cannot be overriden. This leads to limiting all particles to the same units. Something to work on as soon.</p>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Units&quot;</span></code> (string/double) <strong>:</strong> Conversion factor to natural units (GeV powers). Choose from [“Gev3”, “Fm-3”, “DimLess”, “Gev”, “Fm-1”], or specify an actual multiplier. Defaults to the “Units” entry of “BaryonicDensity”.</p></li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The dimensionality are different for different provision modes; it is user’s responsibility to provide correct units.</p>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;EffectiveMasses&quot;</span></code> <strong>:</strong> <a class="reference external" href="https://en.wikipedia.org/wiki/Effective_mass_(solid-state_physics)">Effective masses</a> per each particle at the point.</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;$PARTICLE_NAME&quot;</span></code> <strong>:</strong> Properties, related to a specific particle. <strong>Substitute</strong> the entry name with actual (fermionic only) species among provided in “Particles” array one by one.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint) <strong>:</strong> Column number with effective mass for given particle, counting from 0th.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;ProvidedAs&quot;</span></code> (string, required*) <strong>:</strong> The way the effective mass is provided. Choose from [“FermiEnergy”, “EffectiveMass”]. “FermiEnergy” mode incurs the effective mass via relativistic formula with Fermi momentum (occasionally applicable for light particles) and “EffectiveMass” mode expects actual effective mass. If “FermiEnergy” mode is chosen, the “Column” entry is ignored.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>As meaningless as it is, in its current state “Units” are shared between particle entries and cannot be overriden. This leads to limiting all particles to the same units. Something to work on as soon.</p>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
 </section>
 </section>
 
