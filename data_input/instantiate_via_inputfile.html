@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Instantiate manually (advanced) &#8212; Rotochemical Heating Manager</title>
+    <title>Instantiate via inputfile &#8212; Rotochemical Heating Manager</title>
   
   
   
@@ -19,57 +19,57 @@
   </script>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="_static/styles/theme.css?digest=ac02cc09edc035673794" rel="stylesheet" />
-<link href="_static/styles/bootstrap.css?digest=ac02cc09edc035673794" rel="stylesheet" />
-<link href="_static/styles/pydata-sphinx-theme.css?digest=ac02cc09edc035673794" rel="stylesheet" />
+  <link href="../_static/styles/theme.css?digest=ac02cc09edc035673794" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=ac02cc09edc035673794" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=ac02cc09edc035673794" rel="stylesheet" />
 
   
-  <link href="_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=ac02cc09edc035673794" rel="stylesheet" />
-  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
-<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
-<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
+  <link href="../_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=ac02cc09edc035673794" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
 
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" href="_static/styles/sphinx-book-theme.css?digest=14f4ca6b54d191a8c7657f6c759bf11a5fb86285" type="text/css" />
-    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css" />
-    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
-    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
-    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css" />
-    <link rel="stylesheet" type="text/css" href="_static/design-style.4045f2051d55cab465a707391d5b2007.min.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" href="../_static/styles/sphinx-book-theme.css?digest=14f4ca6b54d191a8c7657f6c759bf11a5fb86285" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/design-style.4045f2051d55cab465a707391d5b2007.min.css" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=ac02cc09edc035673794" />
-<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=ac02cc09edc035673794" />
-  <script src="_static/vendor/fontawesome/6.1.2/js/all.min.js?digest=ac02cc09edc035673794"></script>
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=ac02cc09edc035673794" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=ac02cc09edc035673794" />
+  <script src="../_static/vendor/fontawesome/6.1.2/js/all.min.js?digest=ac02cc09edc035673794"></script>
 
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/sphinx_highlight.js"></script>
-    <script src="_static/clipboard.min.js"></script>
-    <script src="_static/copybutton.js"></script>
-    <script src="_static/scripts/sphinx-book-theme.js?digest=5a5c038af52cf7bc1a1ec88eea08e6366ee68824"></script>
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/clipboard.min.js"></script>
+    <script src="../_static/copybutton.js"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?digest=5a5c038af52cf7bc1a1ec88eea08e6366ee68824"></script>
     <script>let toggleHintShow = 'Click to show';</script>
     <script>let toggleHintHide = 'Click to hide';</script>
     <script>let toggleOpenOnPrint = 'true';</script>
-    <script src="_static/togglebutton.js"></script>
+    <script src="../_static/togglebutton.js"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
-    <script src="_static/design-tabs.js"></script>
+    <script src="../_static/design-tabs.js"></script>
     <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"
 const thebe_selector = ".thebe,.cell"
 const thebe_selector_input = "pre"
 const thebe_selector_output = ".output, .cell_output"
 </script>
-    <script async="async" src="_static/sphinx-thebe.js"></script>
+    <script async="async" src="../_static/sphinx-thebe.js"></script>
     <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'instantiate_manually';</script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Bibliography" href="bibliography.html" />
-    <link rel="prev" title="Instantiate via inputfile" href="instantiate_via_inputfile.html" />
+    <script>DOCUMENTATION_OPTIONS.pagename = 'data_input/instantiate_via_inputfile';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Instantiate manually (advanced)" href="instantiate_manually.html" />
+    <link rel="prev" title="What data does program need?" href="what_data_program_need.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -106,7 +106,7 @@ const thebe_selector_output = ".output, .cell_output"
     <div class="search-button__overlay"></div>
     <div class="search-button__search-container">
 <form class="bd-search d-flex align-items-center"
-      action="search.html"
+      action="../search.html"
       method="get">
   <i class="fa-solid fa-magnifying-glass"></i>
   <input type="search"
@@ -144,7 +144,7 @@ const thebe_selector_output = ".output, .cell_output"
         <div class="sidebar-primary-item">
   
 
-<a class="navbar-brand logo" href="intro.html">
+<a class="navbar-brand logo" href="../intro.html">
   
   
   
@@ -158,30 +158,30 @@ const thebe_selector_output = ".output, .cell_output"
         
         <ul class="nav bd-sidenav bd-sidenav__home-link">
             <li class="toctree-l1">
-                <a class="reference internal" href="intro.html">
+                <a class="reference internal" href="../intro.html">
                     Welcome to RHM webpage!
                 </a>
             </li>
         </ul>
         <p aria-level="2" class="caption" role="heading"><span class="caption-text">Getting started</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installing RHM</a></li>
-<li class="toctree-l1"><a class="reference internal" href="first_run.html">First run</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installing RHM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/first_run.html">First run</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">On compilation</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="compilation_usage.html">Usage</a></li>
-<li class="toctree-l1"><a class="reference internal" href="root_support.html">ROOT support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../on_compilation/compilation_usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../on_compilation/root_support.html">ROOT support</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Data input</span></p>
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="what_data_program_need.html">What data does program need?</a></li>
-<li class="toctree-l1"><a class="reference internal" href="instantiate_via_inputfile.html">Instantiate via inputfile</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Instantiate manually (advanced)</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Instantiate via inputfile</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instantiate_manually.html">Instantiate manually (advanced)</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Appendix</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="bibliography.html">Bibliography</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../appendix/bibliography.html">Bibliography</a></li>
 </ul>
 
     </div>
@@ -253,7 +253,7 @@ const thebe_selector_output = ".output, .cell_output"
       
       
       
-      <li><a href="https://github.com/Silence2107/Rotochemical-heating-manager/issues/new?title=Issue%20on%20page%20%2Finstantiate_manually.html&body=Your%20issue%20content%20here." target="_blank"
+      <li><a href="https://github.com/Silence2107/Rotochemical-heating-manager/issues/new?title=Issue%20on%20page%20%2Fdata_input/instantiate_via_inputfile.html&body=Your%20issue%20content%20here." target="_blank"
    class="btn btn-sm btn-source-issues-button dropdown-item"
    title="Open an issue"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -283,7 +283,7 @@ const thebe_selector_output = ".output, .cell_output"
       
       
       
-      <li><a href="_sources/instantiate_manually.md" target="_blank"
+      <li><a href="../_sources/data_input/instantiate_via_inputfile.md" target="_blank"
    class="btn btn-sm btn-download-source-button dropdown-item"
    title="Download source file"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -363,7 +363,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Instantiate manually (advanced)</h1>
+    <h1>Instantiate via inputfile</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -377,21 +377,31 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section class="tex2jax_ignore mathjax_ignore" id="instantiate-manually-advanced">
-<h1>Instantiate manually (advanced)<a class="headerlink" href="#instantiate-manually-advanced" title="Permalink to this heading">#</a></h1>
-<p>Manual instantiating implies directly putting global data into an instantiator, without relying on the external inputfile. An example is given under <span style="color:blue"><em>presupplied/EoS/instantiator_apr4.hpp</em></span>.</p>
+  <section class="tex2jax_ignore mathjax_ignore" id="instantiate-via-inputfile">
+<h1>Instantiate via inputfile<a class="headerlink" href="#instantiate-via-inputfile" title="Permalink to this heading">#</a></h1>
+<p>This approach, which must be prevailed unless you feel experienced and in need, relies on the predefined instantiator with all settings incurred from inputfile in a predefined fashion.</p>
 <p><strong>Pros:</strong></p>
 <ul class="simple">
-<li><p>Most comfortable when adding new features</p></li>
-<li><p>Grants higher flexibility over the program (this may include putting whatever logic into callables, supplementing EoS datafile-free, enabling EoS dependence on variables beyond <span class="math notranslate nohighlight">\(n_b\)</span> etc)</p></li>
-<li><p>Without limitations may also seek supply from inputfile</p></li>
+<li><p>Most verbose approach</p></li>
+<li><p>Does not require much knowledge about the program’s structure</p></li>
+<li><p>Does not require recompilation between any changes in the supplied data</p></li>
 </ul>
 <p><strong>Cons:</strong></p>
 <ul class="simple">
-<li><p>Requires recompilation each time changes are made to the supplied data</p></li>
-<li><p>Requires knowledge regarding what variables are essential and how they must be supplied</p></li>
-<li><p>Requires language skills</p></li>
+<li><p>Least flexible (only a fixed set of choices)</p></li>
+<li><p>May not instantiate in the most efficient manner</p></li>
 </ul>
+<p>An example of such predefined instantiator is provided under <span style="color:blue"><em>inputfile/instantiator.hpp</em></span>, and an example of inputfile lies under <span style="color:blue"><em>presupplied/Inputfile/RHMconfig.json</em></span>.</p>
+<p>The inputfile is formed in json format, namely it has nested dictionary structure. An entry in this dictionary is considered commented if there is a hash key in front of its name. Names follow camel-case convention, except for “EoS” abbreviation.</p>
+<p>Using this method imposes several restrictions on your modelling. Some of the restrictions might be advisory, but it is advisable to not probe your luck:</p>
+<ul class="simple">
+<li><p>EoS is to be formed in columnar tabulated fashion, with all quantities having their separate column. Quantities, irrelevant in the context (e.g. s-quark density in crust) must be appropriately filled (often zero-padded). The rows must be sorted along <span class="math notranslate nohighlight">\(n_b\)</span> column.</p></li>
+<li><p>EoS datafile must have barionic density <span class="math notranslate nohighlight">\(n_b\)</span> as its only parameter characterising all other quantities.</p></li>
+<li><p>Interpolation kind is shared among all columns.</p></li>
+<li><p>Quantities, such as pressure, energy density, barionic density, per-particle density and few others may only be supplied as columns, if the program requires them for calculation.</p></li>
+<li><p>All callables’ logic is limited. For example, equilibration condition is limited to “how much time has passed” and “how different crust temperature is from core temperature”.</p></li>
+</ul>
+<p>In what follows we discuss all the possible settings available in the predefined instantiator.</p>
 </section>
 
     <script type="text/x-thebe-config">
@@ -407,7 +417,7 @@ document.write(`
         },
         kernelOptions: {
             name: "python3",
-            path: "./."
+            path: "./data_input"
         },
         predefinedOutput: true
     }
@@ -425,20 +435,20 @@ document.write(`
                   <!-- Previous / next buttons -->
 <div class="prev-next-area">
     <a class="left-prev"
-       href="instantiate_via_inputfile.html"
+       href="what_data_program_need.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Instantiate via inputfile</p>
+        <p class="prev-next-title">What data does program need?</p>
       </div>
     </a>
     <a class="right-next"
-       href="bibliography.html"
+       href="instantiate_manually.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Bibliography</p>
+        <p class="prev-next-title">Instantiate manually (advanced)</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -491,8 +501,8 @@ By RHM team
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script src="_static/scripts/bootstrap.js?digest=ac02cc09edc035673794"></script>
-<script src="_static/scripts/pydata-sphinx-theme.js?digest=ac02cc09edc035673794"></script>
+  <script src="../_static/scripts/bootstrap.js?digest=ac02cc09edc035673794"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=ac02cc09edc035673794"></script>
 
   <footer class="bd-footer">
   </footer>

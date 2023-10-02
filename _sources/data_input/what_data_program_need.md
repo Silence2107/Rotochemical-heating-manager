@@ -4,7 +4,7 @@ RHM may be a powerful tool, but in a nutshell it cannot resolve the physics with
 
 While all the libraries in RHM do not explicitly depend on global data, supplied to RHM, they are transferred there via RHM main programs. High-level global settings (datafile interpolators, variable with solver settings etc -- whatever the main programs use) are initialized in <span style="color:blue">include/instantiator.hpp</span>. Structure is sketched on {numref}`rhm-structure`.
 
-```{figure} plots/RHM_structure.png
+```{figure} ../plots/RHM_structure.png
 ---
 name: rhm-structure
 scale: 30%
