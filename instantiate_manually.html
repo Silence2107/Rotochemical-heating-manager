@@ -63,6 +63,8 @@ const thebe_selector_input = "pre"
 const thebe_selector_output = ".output, .cell_output"
 </script>
     <script async="async" src="_static/sphinx-thebe.js"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'instantiate_manually';</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -372,7 +374,19 @@ document.write(`
                   
   <section class="tex2jax_ignore mathjax_ignore" id="instantiate-manually-advanced">
 <h1>Instantiate manually (advanced)<a class="headerlink" href="#instantiate-manually-advanced" title="Permalink to this heading">#</a></h1>
-<p>Text</p>
+<p>Manual instantiating implies directly putting global data into an instantiator, without relying on the external inputfile. An example is given under <span style="color:blue"><em>presupplied/EoS/instantiator_apr4.hpp</em></span>.</p>
+<p><strong>Pros:</strong></p>
+<ul class="simple">
+<li><p>Most comfortable when adding new features</p></li>
+<li><p>Grants higher flexibility over the program (this may include putting whatever logic into callables, supplementing EoS datafile-free, enabling EoS dependence on variables beyond <span class="math notranslate nohighlight">\(n_b\)</span> etc)</p></li>
+<li><p>Without limitations may also seek supply from inputfile</p></li>
+</ul>
+<p><strong>Cons:</strong></p>
+<ul class="simple">
+<li><p>Requires recompilation each time changes are made to the supplied data</p></li>
+<li><p>Requires knowledge regarding what variables are essential and how they must be supplied</p></li>
+<li><p>Requires language skills</p></li>
+</ul>
 </section>
 
     <script type="text/x-thebe-config">
