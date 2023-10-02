@@ -1,6 +1,6 @@
 # Usage
 
-Make is used to compile any program that uses RHM library. Example in [Getting Started](installation.md) is rather generic and, in general, executes as follows
+Make is used to compile any program that uses RHM library. Example in [Getting Started](../getting_started/first_run.md) is rather generic and, in general, executes as follows
 ```bash
 make release/debug/clean app=path_to_cxx_no_extension
 ```

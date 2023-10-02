@@ -6,16 +6,19 @@ root: intro
 parts:
   - caption: Getting started
     chapters:
-      - file: installation
-      - file: first_run
+      - file: getting_started/installation
+      - file: getting_started/first_run
 
   - caption: On compilation
     chapters:
-      - file: compilation_usage
-      - file: root_support
+      - file: on_compilation/compilation_usage
+      - file: on_compilation/root_support
       
   - caption: Data input
     chapters:
-      - file: what_data_program_need
-      - file: instantiate_via_inputfile
-      - file: instantiate_manually
+      - file: data_input/what_data_program_need
+      - file: data_input/instantiate_via_inputfile
+      - file: data_input/instantiate_manually
+  - caption: Appendix
+    chapters:
+      - file: appendix/bibliography
