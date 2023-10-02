@@ -26,7 +26,7 @@ will not only produce the console tabulation, but also a pdf preview {numref}`ap
 ```{figure} plots/apr_example_cooling.png
 ---
 name: apr-example-cooling
-scale: 50%
+scale: 30%
 ---
 Cooling curve from RHM with presupplied settings. $2M_{\odot}$, APR4 EoS
 ```
@@ -35,7 +35,7 @@ Some programs may not have ROOT-free executable available. For example, for the 
 ```{figure} plots/apr_example_profiles.png
 ---
 name: apr-example-profile
-scale: 50%
+scale: 30%
 ---
 Cooling profile evolving with time from RHM with presupplied settings. $2M_{\odot}$, APR4 EoS
 ```
