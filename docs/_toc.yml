@@ -8,3 +8,14 @@ parts:
     chapters:
       - file: installation
       - file: first_run
+
+  - caption: On compilation
+    chapters:
+      - file: compilation_usage
+      - file: root_support
+      
+  - caption: Data input
+    chapters:
+      - file: what_data_program_need
+      - file: instantiate_via_inputfile
+      - file: instantiate_manually
