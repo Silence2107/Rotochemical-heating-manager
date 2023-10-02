@@ -14,4 +14,4 @@ Select an appropriate directory and run:
 
 `git clone https://github.com/Silence2107/Rotochemical-heating-manager.git`
 
-Now enter a newly created <code><i>Rotochemical-heating-manager</i></code> directory. In what follows all the commands are presented as if run from this directory.
+Now enter a newly created __Rotochemical-heating-manager__ directory. In what follows all the commands are presented as if run from this directory.
