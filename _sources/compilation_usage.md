@@ -27,4 +27,4 @@ bin/project/Cooling/cooling_curve.out --inputfile=whatever/input/file/path.json
 
 ## Console options
 
-[Argparse](https://github.com/SiLeader/argparse) is responsible for parsing console options passed to the main programs. Related functionality is revealed, as would be anticipated, by running the program `--help` option.
+[Argparse](https://github.com/SiLeader/argparse) is responsible for parsing console options passed to the main programs. Related functionality is revealed, as would be anticipated, by running the program's `--help` option.

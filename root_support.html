@@ -63,6 +63,8 @@ const thebe_selector_input = "pre"
 const thebe_selector_output = ".output, .cell_output"
 </script>
     <script async="async" src="_static/sphinx-thebe.js"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'root_support';</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -367,44 +369,40 @@ document.write(`
                   
   <section class="tex2jax_ignore mathjax_ignore" id="root-support">
 <h1>ROOT support<a class="headerlink" href="#root-support" title="Permalink to this heading">#</a></h1>
-<!-- There is a seamless integration of ROOT libraries, used for graphics purposes only. Make automatically deduces, whether your system carries ROOT, and thereafter makes sure most programs will run regardless, though with different functionality.
-
-For example, on a system with ROOT installed, cooling curve executable gives more extensive choice of console options:
-\begin{lstlisting}
-    > bin/project/Cooling/cooling_curve.out --help
-    usage: cooling_curve [OPTIONS]...
-
-    Evaluates temperature-time dependency based on EoS
-    
-    keyword arguments:
-      --help, -h            : show this help
-      --inputfile VALUE     : json input file path (optional)
-      --pdf_path VALUE      : pdf output file path (optional, default: Cooling.pdf)
-      --rootfile_path VALUE : root output file path (optional, default: None)
-    
-    Argparse powered by SiLeader
-\end{lstlisting}
-
-Therefore, even running the executable as is
-\begin{lstlisting}
-    bin/project/Cooling/cooling_curve.out --inputfile saved/essentials/RHMconfig.json
-\end{lstlisting}
-will not only produce the console tabulation, but also a pdf preview Fig.~\ref{fig:apr-example-cooling}.
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=0.7\linewidth]{pictures/apr_example_cooling.pdf}
-    \caption{Cooling curve from RHM with presupplied settings. $2M_\odot$, APR4 EoS.}
-    \label{fig:apr-example-cooling}
-\end{figure}
-
-Some programs may not have ROOT-free executable available. For example, for the time being, project/Cooling/plot\_nonequilibrium\_time\_profiles.cxx only runs with ROOT, as its only purpose yet is to produce a meaningful profiles preview Fig.~\ref{fig:apr-example-profile}.
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=0.7\linewidth]{pictures/apr_example_profiles.pdf}
-    \caption{Cooling profile evolving with time from RHM with presupplied settings. $2M_\odot$, APR4 EoS.}
-    \label{fig:apr-example-profile}
-\end{figure} -->
 <p>There is a seamless integration of CERN ROOT libraries, used for graphics purposes only. Make automatically deduces, whether your system carries ROOT, and thereafter makes sure most programs will run regardless, though with different functionality.</p>
+<p>For example, on a system with ROOT installed, cooling curve executable gives more extensive choice of console options:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="nb">bin</span><span class="o">/</span><span class="n">project</span><span class="o">/</span><span class="n">Cooling</span><span class="o">/</span><span class="n">cooling_curve</span><span class="o">.</span><span class="n">out</span> <span class="o">--</span><span class="n">help</span>
+<span class="n">usage</span><span class="p">:</span> <span class="n">cooling_curve</span> <span class="p">[</span><span class="n">OPTIONS</span><span class="p">]</span><span class="o">...</span>
+
+<span class="n">Evaluates</span> <span class="n">temperature</span><span class="o">-</span><span class="n">time</span> <span class="n">dependency</span> <span class="n">based</span> <span class="n">on</span> <span class="n">EoS</span>
+
+<span class="n">keyword</span> <span class="n">arguments</span><span class="p">:</span>
+  <span class="o">--</span><span class="n">help</span><span class="p">,</span> <span class="o">-</span><span class="n">h</span>            <span class="p">:</span> <span class="n">show</span> <span class="n">this</span> <span class="n">help</span>
+  <span class="o">--</span><span class="n">inputfile</span> <span class="n">VALUE</span>     <span class="p">:</span> <span class="n">json</span> <span class="nb">input</span> <span class="n">file</span> <span class="n">path</span> <span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+  <span class="o">--</span><span class="n">pdf_path</span> <span class="n">VALUE</span>      <span class="p">:</span> <span class="n">pdf</span> <span class="n">output</span> <span class="n">file</span> <span class="n">path</span> <span class="p">(</span><span class="n">optional</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="n">Cooling</span><span class="o">.</span><span class="n">pdf</span><span class="p">)</span>
+  <span class="o">--</span><span class="n">rootfile_path</span> <span class="n">VALUE</span> <span class="p">:</span> <span class="n">root</span> <span class="n">output</span> <span class="n">file</span> <span class="n">path</span> <span class="p">(</span><span class="n">optional</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
+  
+<span class="n">Argparse</span> <span class="n">powered</span> <span class="n">by</span> <span class="n">SiLeader</span>
+</pre></div>
+</div>
+<p>Therefore, even running the executable as is</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bin/project/Cooling/cooling_curve.out<span class="w"> </span>--inputfile<span class="w"> </span>presupplied/Inputfile/RHMconfig.json
+</pre></div>
+</div>
+<p>will not only produce the console tabulation, but also a pdf preview <a class="reference internal" href="#apr-example-cooling"><span class="std std-numref">Fig. 1</span></a>.</p>
+<figure class="align-default" id="apr-example-cooling">
+<a class="reference internal image-reference" href="_images/apr_example_cooling.png"><img alt="_images/apr_example_cooling.png" src="_images/apr_example_cooling.png" style="width: 787.5px; height: 533.5px;" /></a>
+<figcaption>
+<p><span class="caption-number">Fig. 1 </span><span class="caption-text">Cooling curve from RHM with presupplied settings. <span class="math notranslate nohighlight">\(2M_{\odot}\)</span>, APR4 EoS</span><a class="headerlink" href="#apr-example-cooling" title="Permalink to this image">#</a></p>
+</figcaption>
+</figure>
+<p>Some programs may not have ROOT-free executable available. For example, for the time being, <span style="color:blue"><em>project/Cooling/plot_nonequilibrium_time_profiles.cxx</em></span> only runs with ROOT, as its only purpose yet is to produce a meaningful profiles preview <a class="reference internal" href="#apr-example-profile"><span class="std std-numref">Fig. 2</span></a>.</p>
+<figure class="align-default" id="apr-example-profile">
+<a class="reference internal image-reference" href="_images/apr_example_profiles.png"><img alt="_images/apr_example_profiles.png" src="_images/apr_example_profiles.png" style="width: 787.5px; height: 533.5px;" /></a>
+<figcaption>
+<p><span class="caption-number">Fig. 2 </span><span class="caption-text">Cooling profile evolving with time from RHM with presupplied settings. <span class="math notranslate nohighlight">\(2M_{\odot}\)</span>, APR4 EoS</span><a class="headerlink" href="#apr-example-profile" title="Permalink to this image">#</a></p>
+</figcaption>
+</figure>
 </section>
 
     <script type="text/x-thebe-config">
