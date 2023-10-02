@@ -7,8 +7,9 @@
 
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Index &#8212; Rotochemical Heating Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>ROOT support &#8212; Rotochemical Heating Manager</title>
   
   
   
@@ -62,9 +63,11 @@ const thebe_selector_input = "pre"
 const thebe_selector_output = ".output, .cell_output"
 </script>
     <script async="async" src="_static/sphinx-thebe.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'genindex';</script>
-    <link rel="index" title="Index" href="#" />
+    <script>DOCUMENTATION_OPTIONS.pagename = 'root_support';</script>
+    <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="&lt;no title&gt;" href="what_data_program_need.html" />
+    <link rel="prev" title="Usage" href="compilation_usage.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -164,9 +167,9 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l1"><a class="reference internal" href="first_run.html">First run</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">On compilation</span></p>
-<ul class="nav bd-sidenav">
+<ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="compilation_usage.html">Usage</a></li>
-<li class="toctree-l1"><a class="reference internal" href="root_support.html">ROOT support</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">ROOT support</a></li>
 </ul>
 
     </div>
@@ -238,7 +241,7 @@ const thebe_selector_output = ".output, .cell_output"
       
       
       
-      <li><a href="https://github.com/Silence2107/Rotochemical-heating-manager/issues/new?title=Issue%20on%20page%20%2Fgenindex.html&body=Your%20issue%20content%20here." target="_blank"
+      <li><a href="https://github.com/Silence2107/Rotochemical-heating-manager/issues/new?title=Issue%20on%20page%20%2Froot_support.html&body=Your%20issue%20content%20here." target="_blank"
    class="btn btn-sm btn-source-issues-button dropdown-item"
    title="Open an issue"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -250,6 +253,54 @@ const thebe_selector_output = ".output, .cell_output"
   </span>
 <span class="btn__text-container">Open issue</span>
 </a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="_sources/root_support.md" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.md</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
 </li>
       
   </ul>
@@ -300,7 +351,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1></h1>
+    <h1>ROOT support</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -314,13 +365,67 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
+  <section class="tex2jax_ignore mathjax_ignore" id="root-support">
+<h1>ROOT support<a class="headerlink" href="#root-support" title="Permalink to this heading">#</a></h1>
+<!-- There is a seamless integration of ROOT libraries, used for graphics purposes only. Make automatically deduces, whether your system carries ROOT, and thereafter makes sure most programs will run regardless, though with different functionality.
 
-<h1 id="index">Index</h1>
+For example, on a system with ROOT installed, cooling curve executable gives more extensive choice of console options:
+\begin{lstlisting}
+    > bin/project/Cooling/cooling_curve.out --help
+    usage: cooling_curve [OPTIONS]...
 
-<div class="genindex-jumpbox">
- 
-</div>
+    Evaluates temperature-time dependency based on EoS
+    
+    keyword arguments:
+      --help, -h            : show this help
+      --inputfile VALUE     : json input file path (optional)
+      --pdf_path VALUE      : pdf output file path (optional, default: Cooling.pdf)
+      --rootfile_path VALUE : root output file path (optional, default: None)
+    
+    Argparse powered by SiLeader
+\end{lstlisting}
 
+Therefore, even running the executable as is
+\begin{lstlisting}
+    bin/project/Cooling/cooling_curve.out --inputfile saved/essentials/RHMconfig.json
+\end{lstlisting}
+will not only produce the console tabulation, but also a pdf preview Fig.~\ref{fig:apr-example-cooling}.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.7\linewidth]{pictures/apr_example_cooling.pdf}
+    \caption{Cooling curve from RHM with presupplied settings. $2M_\odot$, APR4 EoS.}
+    \label{fig:apr-example-cooling}
+\end{figure}
+
+Some programs may not have ROOT-free executable available. For example, for the time being, project/Cooling/plot\_nonequilibrium\_time\_profiles.cxx only runs with ROOT, as its only purpose yet is to produce a meaningful profiles preview Fig.~\ref{fig:apr-example-profile}.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.7\linewidth]{pictures/apr_example_profiles.pdf}
+    \caption{Cooling profile evolving with time from RHM with presupplied settings. $2M_\odot$, APR4 EoS.}
+    \label{fig:apr-example-profile}
+\end{figure} -->
+<p>There is a seamless integration of CERN ROOT libraries, used for graphics purposes only. Make automatically deduces, whether your system carries ROOT, and thereafter makes sure most programs will run regardless, though with different functionality.</p>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
 
                 </article>
               
@@ -332,6 +437,24 @@ document.write(`
                 <footer class="prev-next-footer">
                   <!-- Previous / next buttons -->
 <div class="prev-next-area">
+    <a class="left-prev"
+       href="compilation_usage.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Usage</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="what_data_program_need.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">&lt;no title&gt;</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
 </div>
                 </footer>
               
