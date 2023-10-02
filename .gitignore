@@ -3,6 +3,7 @@ bin/
 bckp/
 .vscode/
 pictures/
+_build/
 *.d
 *.o
 *.pdf
