@@ -366,7 +366,7 @@ document.write(`
 <p>RHM follows standard <em>bin/include/src</em> structure, with program’s logic assembled under <em>project/</em> folder. <em>3rd-party/</em> folder contains several IO libraries (ready-to-use), and <em>presupplied/</em> contains presupplied data. <em>Makefile</em> is also supplied for compilation.</p>
 <p>Since there are many different main programs under <em>project/</em>, some of which may run with settings provided by the user and some may not, making executables is yet user’s responsibility.</p>
 <p>To perform a test run with presupplied data, run make on some typical script, e.g.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="w">    </span>make<span class="w"> </span>release<span class="w"> </span><span class="nv">app</span><span class="o">=</span>project/M-R_diagram/m_r_diagram
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>release<span class="w"> </span><span class="nv">app</span><span class="o">=</span>project/M-R_diagram/m_r_diagram
 </pre></div>
 </div>
 <!-- If successful, the corresponding binary will be put under \textit{bin/}, following same path as it took to the app. In this case, executing binary would work like follows
@@ -416,12 +416,12 @@ To finally see whether physics is in order on your machine, this binary (at leas
     bin/project/M-R_diagram/m_r_diagram.out --inputfile saved/essentials/RHMconfig.json
 \end{lstlisting} -->
 <p>If successful, the corresponding binary will be put under <em>bin/</em>, following same path as it took to the app. In this case, executing binary would work like follows</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="w">    </span>bin/project/M-R_diagram/m_r_diagram.out<span class="w"> </span>--help
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bin/project/M-R_diagram/m_r_diagram.out<span class="w"> </span>--help
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">--help</span></code> invokes manual message for all standardized RHM programs.</p>
 <p>To finally see whether physics is in order on your machine, this binary (at least the way it is provided) must be supplied with inputfile.</p>
-<p>**Q: **Given your knowledge from binary’s manual, supply it with inputfile, which lies under <em>presupplied/Inputfile/RHMconfig.json</em>.</p>
+<p><strong>Q:</strong> Given your knowledge from binary’s manual, supply it with inputfile, which lies under <em>presupplied/Inputfile/RHMconfig.json</em>.</p>
 <p><strong>Expected output :</strong></p>
 <ul class="simple">
 <li><p><span class="math notranslate nohighlight">\((M, R)\)</span> pairs of order <span class="math notranslate nohighlight">\((2 \text{M}_\odot, 10 \text{km})\)</span> based on various center density fractions.</p>
@@ -430,7 +430,7 @@ To finally see whether physics is in order on your machine, this binary (at leas
 </ul>
 </li>
 </ul>
-<p>**Unexpected output : **</p>
+<p><strong>Unexpected output :</strong></p>
 <ul class="simple">
 <li><p><span class="math notranslate nohighlight">\((M, R)\)</span> pairs of <span class="math notranslate nohighlight">\((0 \text{M}_\odot, 0 \text{km})\)</span></p>
 <ul>
@@ -456,7 +456,7 @@ To finally see whether physics is in order on your machine, this binary (at leas
 </ul>
 </li>
 </ul>
-<p>**A: **</p>
+<p><strong>A:</strong></p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="w">    </span>bin/project/M-R_diagram/m_r_diagram.out<span class="w"> </span>--inputfile<span class="w"> </span>saved/essentials/RHMconfig.json
 </pre></div>
 </div>

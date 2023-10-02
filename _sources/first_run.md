@@ -7,7 +7,7 @@ Since there are many different main programs under _project/_, some of which may
 To perform a test run with presupplied data, run make on some typical script, e.g.
 
 ```bash
-    make release app=project/M-R_diagram/m_r_diagram
+make release app=project/M-R_diagram/m_r_diagram
 ```
 
 <!-- If successful, the corresponding binary will be put under \textit{bin/}, following same path as it took to the app. In this case, executing binary would work like follows
@@ -60,20 +60,20 @@ To finally see whether physics is in order on your machine, this binary (at leas
 If successful, the corresponding binary will be put under _bin/_, following same path as it took to the app. In this case, executing binary would work like follows
 
 ```bash
-    bin/project/M-R_diagram/m_r_diagram.out --help
+bin/project/M-R_diagram/m_r_diagram.out --help
 ```
 
 `--help` invokes manual message for all standardized RHM programs.
 
 To finally see whether physics is in order on your machine, this binary (at least the way it is provided) must be supplied with inputfile.
 
-**Q: **Given your knowledge from binary's manual, supply it with inputfile, which lies under _presupplied/Inputfile/RHMconfig.json_.
+**Q:** Given your knowledge from binary's manual, supply it with inputfile, which lies under _presupplied/Inputfile/RHMconfig.json_.
 
 **Expected output :**
 - $(M, R)$ pairs of order $(2 \text{M}_\odot, 10 \text{km})$ based on various center density fractions.
     - phenomenal work
 
-**Unexpected output : **
+**Unexpected output :**
 - $(M, R)$ pairs of $(0 \text{M}_\odot, 0 \text{km})$ 
     - inputfile is not supplied
 - "(..) Cannot open file (..)"
@@ -86,7 +86,7 @@ To finally see whether physics is in order on your machine, this binary (at leas
 - Whatever else happened
     - Tell me I messed
 
-**A: **
+**A:**
 ```bash
     bin/project/M-R_diagram/m_r_diagram.out --inputfile saved/essentials/RHMconfig.json
 ```
