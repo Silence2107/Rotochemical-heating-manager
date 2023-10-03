@@ -18,6 +18,10 @@ parts:
     chapters:
       - file: data_input/what_data_program_need
       - file: data_input/instantiate_via_inputfile
+        sections:
+          - file: data_input/inputfile_structure/eos_setup
+          - file: data_input/inputfile_structure/tov_solver
+          - file: data_input/inputfile_structure/cooling_solver
       - file: data_input/instantiate_manually
   - caption: Appendix
     chapters:

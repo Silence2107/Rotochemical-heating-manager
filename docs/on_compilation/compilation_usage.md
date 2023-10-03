@@ -23,7 +23,7 @@ bin/project/Cooling/cooling_curve.out --inputfile=whatever/input/file/path.json
 
 <span style="color:blue">_Makefile_</span> may be further customized by setting enviromental variables. Among currently supported ones are
     
-- **RHM_HAS_ROOT** - if overriden to 1/0, the stable main programs will/will not execute parts of the code that require CERN ROOT library. Default is resolved automatically. Overriding this flag <code><it> will not affect actual compilation process </it></code>, but will only affect the execution of the program.
+- **RHM_HAS_ROOT** - if overriden to 1/0, the stable main programs will/will not execute parts of the code that require CERN ROOT library. Default is resolved automatically. Overriding this flag <code><it> will only affect what parts of the codes are compiled and run </it></code>, the ROOT libraries inclusion is still up to make to decide.
 
 ## Console options
 
