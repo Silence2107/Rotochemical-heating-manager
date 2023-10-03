@@ -406,25 +406,79 @@ namespace instantiator
             discr_size_EoS = discr_size_EoS_read.get<size_t>();
 
         // TOV solver radius step size in GeV
-        auto radius_step_read = j["TOVSolver"]["RadiusStep"]; // reads in km
+        auto radius_step_read = j["TOVSolver"]["RadiusStep"];
+        auto tov_length_conversion_read = j["TOVSolver"]["LengthUnits"];
+        double tov_length_conversion;
+        if (tov_length_conversion_read.is_number())
+            tov_length_conversion = tov_length_conversion_read.get<double>();
+        else if (tov_length_conversion_read.is_string())
+        {
+            if (tov_length_conversion_read == "Gev-1")
+            {
+                tov_length_conversion = 1.0;
+            }
+            else if (tov_length_conversion_read == "Km")
+            {
+                tov_length_conversion = constants::conversion::km_gev;
+            }
+            else if (tov_length_conversion_read == "M")
+            {
+                tov_length_conversion = 1E-3 * constants::conversion::km_gev;
+            }
+            else if (tov_length_conversion_read == "Cm")
+            {
+                tov_length_conversion = 1E-5 * constants::conversion::km_gev;
+            }
+            else
+            {
+                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for TOV length.");
+            }
+        }
+        else
+            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for TOV length.");
         if (!(radius_step_read.is_number()))
             THROW(std::runtime_error, "UI error: TOV solver radius step must be provided as a number.");
         else
-            radius_step = radius_step_read.get<double>() * constants::conversion::km_gev;
+            radius_step = radius_step_read.get<double>() * tov_length_conversion;
 
         // TOV solver density step size in GeV^4
-        auto density_step_read = j["TOVSolver"]["DensityStep"]; // reads in fraction of maxima
+        auto tov_density_conversion_read = j["TOVSolver"]["DensityUnits"];
+        double tov_density_conversion;
+        if (tov_density_conversion_read.is_number())
+            tov_density_conversion = tov_density_conversion_read.get<double>();
+        else if (tov_density_conversion_read.is_string())
+        {
+            if (tov_density_conversion_read == "Gev4")
+            {
+                tov_density_conversion = 1.0;
+            }
+            else if (tov_density_conversion_read == "RelativeToMax")
+            {
+                tov_density_conversion = edensity_upp;
+            }
+            else if (tov_density_conversion_read == "Same")
+            {
+                tov_density_conversion = energy_density_conversion;
+            }
+            else
+            {
+                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for TOV density.");
+            }
+        }
+        else
+            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for TOV density.");
+        auto density_step_read = j["TOVSolver"]["DensityStep"];
         if (!(density_step_read.is_number()))
             THROW(std::runtime_error, "UI error: TOV solver density step must be provided as a number.");
         else
-            density_step = density_step_read.get<double>() * edensity_upp;
+            density_step = density_step_read.get<double>() * tov_density_conversion;
 
         // TOV solver center density in GeV^4
-        auto center_density_read = j["TOVSolver"]["CenterDensity"]; // reads in fraction of maxima
+        auto center_density_read = j["TOVSolver"]["CenterDensity"];
         if (!(center_density_read.is_number()))
             THROW(std::runtime_error, "UI error: TOV solver center density must be provided as a number.");
         else
-            center_density = center_density_read.get<double>() * edensity_upp;
+            center_density = center_density_read.get<double>() * tov_density_conversion;
 
         // (->1) EoS Setup
         // provided particles
@@ -458,46 +512,7 @@ namespace instantiator
 
         // baryonic density functions of baryonic density (natural units) &&
         // fermi momentum functions of baryonic density (natural units)
-        auto particle_density_conversion_read = j["EoSSetup"]["Quantities"]["BarionicDensities"]["Units"];
-        double particle_density_conversion;
-        if (particle_density_conversion_read.is_null())
-            particle_density_conversion = nbar_conversion;
-        else if (particle_density_conversion_read.is_number())
-        {
-            particle_density_conversion = particle_density_conversion_read.get<double>();
-        }
-        else if (particle_density_conversion_read.is_string())
-        {
-            // for "Density"
-            if (particle_density_conversion_read == "Gev3")
-            {
-                particle_density_conversion = 1.0;
-            }
-            else if (particle_density_conversion_read == "Fm-3")
-            {
-                particle_density_conversion = 1.0 / constants::conversion::fm3_gev3;
-            }
-            // for "DensityFraction"
-            else if (particle_density_conversion_read == "DimLess")
-            {
-                particle_density_conversion = 1.0;
-            }
-            // for "KFermi"
-            else if (particle_density_conversion_read == "Gev")
-            {
-                particle_density_conversion = 1.0;
-            }
-            else if (particle_density_conversion_read == "Fm-1")
-            {
-                particle_density_conversion = pow(1.0 / constants::conversion::fm3_gev3, 1.0 / 3.0);
-            }
-            else
-            {
-                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for particle density.");
-            }
-        }
-        else
-            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for particle density.");
+        
         for (const auto &particle : particles)
         {
             auto particle_name = particle.name();
@@ -509,7 +524,48 @@ namespace instantiator
 
             auto particle_density_column_read = particle_density_read["Column"];
             if (!(particle_density_column_read.is_number_integer()))
-                THROW(std::runtime_error, "UI error: Particle density column number must be provided as an integer.");
+                THROW(std::runtime_error, "UI error: " + particle.name() + " density column number must be provided as an integer.");
+
+            auto particle_density_conversion_read = particle_density_read["Units"];
+            double particle_density_conversion;
+            if (particle_density_conversion_read.is_null())
+                particle_density_conversion = nbar_conversion;
+            else if (particle_density_conversion_read.is_number())
+            {
+                particle_density_conversion = particle_density_conversion_read.get<double>();
+            }
+            else if (particle_density_conversion_read.is_string())
+            {
+                // for "Density"
+                if (particle_density_conversion_read == "Gev3")
+                {
+                    particle_density_conversion = 1.0;
+                }
+                else if (particle_density_conversion_read == "Fm-3")
+                {
+                    particle_density_conversion = 1.0 / constants::conversion::fm3_gev3;
+                }
+                // for "DensityFraction"
+                else if (particle_density_conversion_read == "DimLess")
+                {
+                    particle_density_conversion = 1.0;
+                }
+                // for "KFermi"
+                else if (particle_density_conversion_read == "Gev")
+                {
+                    particle_density_conversion = 1.0;
+                }
+                else if (particle_density_conversion_read == "Fm-1")
+                {
+                    particle_density_conversion = pow(1.0 / constants::conversion::fm3_gev3, 1.0 / 3.0);
+                }
+                else
+                {
+                    THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for " + particle_name + " density.");
+                }
+            }
+            else
+                THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for " + particle_name + " density.");
 
             auto particle_density_provided_as_read = particle_density_read["ProvidedAs"];
             if (particle_density_provided_as_read.is_null())
@@ -551,35 +607,7 @@ namespace instantiator
         }
 
         // effective mass functions of baryonic density (natural units)
-        auto particle_mst_conversion_read = j["EoSSetup"]["Quantities"]["EffectiveMasses"]["Units"];
-        double particle_mst_conversion;
-        if (particle_mst_conversion_read.is_null())
-            THROW(std::runtime_error, "UI error: Effective mass units must be provided.");
-        else if (particle_mst_conversion_read.is_number())
-        {
-            particle_mst_conversion = particle_mst_conversion_read.get<double>();
-        }
-        else if (particle_mst_conversion_read.is_string())
-        {
-            if (particle_mst_conversion_read == "Gev")
-            {
-                particle_mst_conversion = 1.0;
-            }
-            else if (particle_mst_conversion_read == "Mev")
-            {
-                particle_mst_conversion = 1.0 / constants::conversion::gev_over_mev;
-            }
-            else if (particle_mst_conversion_read == "NucleonMass")
-            {
-                particle_mst_conversion = constants::species::neutron.mass();
-            }
-            else
-            {
-                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for particle effective mass.");
-            }
-        }
-        else
-            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for particle effective mass.");
+        
         for (const auto &particle : particles)
         {
             auto particle_name = particle.name();
@@ -590,7 +618,40 @@ namespace instantiator
             auto particle_mst_column_read = particle_mst_read["Column"];
             auto particle_mst_provided_as_read = particle_mst_read["ProvidedAs"];
             if (!(particle_mst_column_read.is_number_integer()) && particle_mst_provided_as_read != "FermiEnergy")
-                THROW(std::runtime_error, "UI error: Particle effective mass column number must be provided as an integer.");
+                THROW(std::runtime_error, "UI error: " + particle.name() + " effective mass column number must be provided as an integer.");
+
+            auto particle_mst_conversion_read = particle_mst_read["Units"];
+            double particle_mst_conversion;
+            if (particle_mst_conversion_read.is_null())
+            {
+                if (particle_mst_provided_as_read != "FermiEnergy")
+                    THROW(std::runtime_error, "UI error: Effective mass units must be provided for " + particle.name() + ".");
+            }
+            else if (particle_mst_conversion_read.is_number())
+            {
+                particle_mst_conversion = particle_mst_conversion_read.get<double>();
+            }
+            else if (particle_mst_conversion_read.is_string())
+            {
+                if (particle_mst_conversion_read == "Gev")
+                {
+                    particle_mst_conversion = 1.0;
+                }
+                else if (particle_mst_conversion_read == "Mev")
+                {
+                    particle_mst_conversion = 1.0 / constants::conversion::gev_over_mev;
+                }
+                else if (particle_mst_conversion_read == "NucleonMass")
+                {
+                    particle_mst_conversion = constants::species::neutron.mass();
+                }
+                else
+                {
+                    THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for " + particle.name() + " effective mass.");
+                }
+            }
+            else
+                THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for " + particle.name() + " effective mass.");
             if (particle_mst_provided_as_read == "FermiEnergy")
             {
                 m_stars_of_nbar.insert(
@@ -666,6 +727,31 @@ namespace instantiator
 
         // initial temperature profile
         auto initial_t_profile_read = j["CoolingSolver"]["TemperatureProfile"];
+        auto cooling_temp_conversion_read = j["CoolingSolver"]["TemperatureUnits"];
+        double cooling_temp_conversion;
+        if (cooling_temp_conversion_read.is_number())
+            cooling_temp_conversion = cooling_temp_conversion_read.get<double>();
+        else if (cooling_temp_conversion_read.is_string())
+        {
+            if (cooling_temp_conversion_read == "Gev")
+            {
+                cooling_temp_conversion = 1.0;
+            }
+            else if (cooling_temp_conversion_read == "Mev")
+            {
+                cooling_temp_conversion = 1.0 / constants::conversion::gev_over_mev;
+            }
+            else if (cooling_temp_conversion_read == "K")
+            {
+                cooling_temp_conversion = 1.0 / constants::conversion::gev_over_k;
+            }
+            else
+            {
+                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for temperature.");
+            }
+        }
+        else
+            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for temperature.");
         if (!initial_t_profile_read.is_array())
             THROW(std::runtime_error, "UI error: Initial temperature profile settings must be provided as an array.");
         else
@@ -678,7 +764,7 @@ namespace instantiator
                     THROW(std::runtime_error, "UI error: Initial temperature profile temperature must be provided as a number.");
                 else
                 {
-                    double temp = initial_t_profile_T_read.get<double>() / constants::conversion::gev_over_k;
+                    double temp = initial_t_profile_T_read.get<double>() * cooling_temp_conversion;
                     initial_t_profile_inf = [temp](double r, double exp_phi_at_R)
                     {
                         return temp;
@@ -692,7 +778,7 @@ namespace instantiator
                     THROW(std::runtime_error, "UI error: Initial temperature profile temperature must be provided as a number.");
                 else
                 {
-                    double temp = initial_t_profile_T_read.get<double>() / constants::conversion::gev_over_k;
+                    double temp = initial_t_profile_T_read.get<double>() * cooling_temp_conversion;
                     initial_t_profile_inf = [temp](double r, double exp_phi_at_R)
                     {
                         return temp * exp_phi_at_R;
@@ -704,25 +790,54 @@ namespace instantiator
         }
 
         // Evolution settings
+        auto time_conversion_read = j["CoolingSolver"]["TimeUnits"];
+        double time_conversion;
+        if (time_conversion_read.is_number())
+            time_conversion = time_conversion_read.get<double>();
+        else if (time_conversion_read.is_string())
+        {
+            if (time_conversion_read == "Gev-1")
+            {
+                time_conversion = 1.0;
+            }
+            else if (time_conversion_read == "Yr")
+            {
+                time_conversion = 1E-6 * constants::conversion::myr_over_s * constants::conversion::gev_s;
+            }
+            else if (time_conversion_read == "Myr")
+            {
+                time_conversion = constants::conversion::myr_over_s * constants::conversion::gev_s;
+            }
+            else if (time_conversion_read == "S")
+            {
+                time_conversion = constants::conversion::gev_s;
+            }
+            else
+            {
+                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for time.");
+            }
+        }
+        else
+            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for time.");
         auto time_init_read = j["CoolingSolver"]["TimeInit"];
         if (time_init_read.is_null())
-            t_init = 0.0 * 1E-6 * constants::conversion::myr_over_s * constants::conversion::gev_s;
+            t_init = 0.0 * time_conversion;
         else if (!(time_init_read.is_number()))
             THROW(std::runtime_error, "UI error: Initial time may only be provided as a number.");
         else
-            t_init = time_init_read.get<double>() * 1E-6 * constants::conversion::myr_over_s * constants::conversion::gev_s;
+            t_init = time_init_read.get<double>() * time_conversion;
 
         auto time_end_read = j["CoolingSolver"]["TimeEnd"];
         if (!(time_end_read.is_number()))
             THROW(std::runtime_error, "UI error: Final time must be provided as a number.");
         else
-            t_end = time_end_read.get<double>() * 1E-6 * constants::conversion::myr_over_s * constants::conversion::gev_s;
+            t_end = time_end_read.get<double>() * time_conversion;
 
         auto base_time_step_read = j["CoolingSolver"]["TimeBaseStep"];
         if (!(base_time_step_read.is_number()))
             THROW(std::runtime_error, "UI error: Base time step must be provided as a number.");
         else
-            base_t_step = base_time_step_read.get<double>() * 1E-6 * constants::conversion::myr_over_s * constants::conversion::gev_s;
+            base_t_step = base_time_step_read.get<double>() * time_conversion;
 
         // estimate for the number of time points (is also used for time step expansion, if enabled)
         auto n_points_estimate_read = j["CoolingSolver"]["NumberPointsEstimate"];
@@ -742,11 +857,40 @@ namespace instantiator
             exp_rate_estim = time_step_expansion_factor_read.get<double>();
 
         // cooling grid setup
-        auto cooling_radius_step_read = j["CoolingSolver"]["RadiusStep"]; // reads in km
+        auto cooling_radius_step_read = j["CoolingSolver"]["RadiusStep"];
+        auto cooling_length_conversion_read = j["CoolingSolver"]["LengthUnits"];
+        double cooling_length_conversion;
+        if (cooling_length_conversion_read.is_number())
+            cooling_length_conversion = cooling_length_conversion_read.get<double>();
+        else if (cooling_length_conversion_read.is_string())
+        {
+            if (cooling_length_conversion_read == "Gev-1")
+            {
+                cooling_length_conversion = 1.0;
+            }
+            else if (cooling_length_conversion_read == "Km")
+            {
+                cooling_length_conversion = constants::conversion::km_gev;
+            }
+            else if (cooling_length_conversion_read == "M")
+            {
+                cooling_length_conversion = 1E-3 * constants::conversion::km_gev;
+            }
+            else if (cooling_length_conversion_read == "Cm")
+            {
+                cooling_length_conversion = 1E-5 * constants::conversion::km_gev;
+            }
+            else
+            {
+                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for cooling length.");
+            }
+        }
+        else
+            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for cooling length.");
         if (!(cooling_radius_step_read.is_number()))
             THROW(std::runtime_error, "UI error: Cooling solver radius step must be provided as a number.");
         else
-            cooling_radius_step = cooling_radius_step_read.get<double>() * constants::conversion::km_gev;
+            cooling_radius_step = cooling_radius_step_read.get<double>() * cooling_length_conversion;
 
         // condition on which to switch to equilibrium cooling
         auto cooling_enable_equilibrium_mode_read = j["CoolingSolver"]["EnableEquilibrium"]["Mode"];
@@ -768,14 +912,14 @@ namespace instantiator
 
                 // let's make it less efficient but more readable
                 switch_to_equilibrium = [cooling_enable_equilibrium_condition1_read,
-                                         cooling_enable_equilibrium_condition2_read](double t_curr, const std::vector<double> &t_profile)
+                                         cooling_enable_equilibrium_condition2_read,
+                                         time_conversion](double t_curr, const std::vector<double> &t_profile)
                 {
-                    using namespace constants::conversion;
                     if (!cooling_enable_equilibrium_condition1_read.is_null())
                     {
                         if (!(cooling_enable_equilibrium_condition1_read.is_number()))
                             THROW(std::runtime_error, "UI error: Time for switching to equilibrium may only be provided as a number.");
-                        else if (t_curr < cooling_enable_equilibrium_condition1_read.get<double>() * 1E-6 * myr_over_s * gev_s)
+                        else if (t_curr < cooling_enable_equilibrium_condition1_read.get<double>() * time_conversion)
                             return false;
                     }
                     if (!cooling_enable_equilibrium_condition2_read.is_null())
@@ -786,8 +930,6 @@ namespace instantiator
                             return false;
                     }
                     return true;
-                    /* return 1E-5 * constants::conversion::myr_over_s * constants::conversion::gev_s < t_curr &&
-                           std::abs(t_profile.end()[-2] - t_profile.front()) / t_profile.end()[-2] < 0.01;*/
                 };
             }
             else
