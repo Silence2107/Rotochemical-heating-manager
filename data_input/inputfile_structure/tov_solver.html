@@ -421,6 +421,12 @@ In what follows we discuss all the possible settings under this entry.</p>
 </div>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;CenterDensity&quot;</span></code> (double, required) <strong>:</strong> Defines central energy density for initial value problem. Must be provided as a share of <span class="math notranslate nohighlight">\(\rho_E^{\text{max}}\)</span>.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Though this setting is a key value for TOV solver, it is not used for producing M-R curves, since M-R curves are parametrized by central density. It, of course, does not undermine its importance during any simulation on a given central density.</p>
+</div>
+<ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;DensityStep&quot;</span></code> (double, required) <strong>:</strong> Defines energy density at which star’s radius is calculated. This same quantity is used for <span class="math notranslate nohighlight">\(P(\rho)\)</span> differentiation, as well as it enforces TOV recaching if center density is changed by that much during one program’s execution. Must be provided as a share of <span class="math notranslate nohighlight">\(\rho_E^{\text{max}}\)</span>.</p></li>
 </ul>
 <div class="admonition note">
