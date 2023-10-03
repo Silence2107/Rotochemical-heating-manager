@@ -31,47 +31,51 @@
             },
             "BarionicDensities" :
             {
-                "Units" : 1.0,
                 "Electron" :
                 {
                     "Column" : 3,
-                    "ProvidedAs" : "DensityFraction" 
+                    "ProvidedAs" : "DensityFraction",
+                    "Units" : "DimLess"
                 },
                 "Muon" :
                 {
                     "Column" : 4,
-                    "ProvidedAs" : "DensityFraction" 
+                    "ProvidedAs" : "DensityFraction",
+                    "Units" : "DimLess"
                 },
                 "Neutron" :
                 {
                     "Column" : 5,
-                    "ProvidedAs" : "DensityFraction" 
+                    "ProvidedAs" : "DensityFraction",
+                    "Units" : "DimLess"
                 },
                 "Proton" :
                 {
                     "Column" : 6,
-                    "ProvidedAs" : "DensityFraction" 
+                    "ProvidedAs" : "DensityFraction",
+                    "Units" : "DimLess"
                 }
             },
             "EffectiveMasses" :
             {
-                "Units" : "NucleonMass",
                 "Electron" :
                 {
                     "ProvidedAs" : "FermiEnergy" 
                 },
                 "Muon" :
                 {
-                    "ProvidedAs" : "FermiEnergy" 
+                    "ProvidedAs" : "FermiEnergy"
                 },
                 "Neutron" :
                 {
                     "Column" : 12,
+                    "Units" : "NucleonMass",
                     "ProvidedAs" : "EffectiveMass" 
                 },
                 "Proton" :
                 {
                     "Column" : 11,
+                    "Units" : "NucleonMass",
                     "ProvidedAs" : "EffectiveMass" 
                 }
             },
@@ -95,6 +99,8 @@
     },
     "TOVSolver" :
     {
+        "LengthUnits" : "Km",
+        "DensityUnits" : "RelativeToMax",
         "EoSInterpolation" : "Linear",
         "EoSDiscretization" : 1000,
         "RadiusStep" : 0.01,
@@ -103,6 +109,9 @@
     },
     "CoolingSolver" :
     {
+        "LengthUnits" : "Km",
+        "TimeUnits" : "Yr",
+        "TemperatureUnits" : "K",
         "NewtonTolerance" : 1E-5,
         "NewtonMaxIter" : 50,
         "RadiusStep" : 0.1,
