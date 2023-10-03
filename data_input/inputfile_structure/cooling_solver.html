@@ -437,6 +437,51 @@ a = a_0 \cdot (a_0-1)^{1/N}.
 \end{split}\]</div>
 <p>Actual precision of this estimate is unpredictable (given that our PDE solvers are time-adaptive, which is not taken into account), but it is expected to suffice in most applications.</p>
 </div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;TemperatureProfile&quot;</span></code> (array[string, args..], required*) <strong>:</strong> Initial temperature profile (radial dependence) settings.</p></li>
+</ul>
+<p>If array[0] is supplied as “InfiniteFlat”, then the initial temperature profile <span class="math notranslate nohighlight">\(T^{\infty}\)</span> is set to be constant and equal to the value supplied in array[1] (in K), i.e.</p>
+<div class="math notranslate nohighlight">
+\[
+T^{\infty}(r, t=0) = \text{array[1]}.
+\]</div>
+<p>If array[0] is supplied as “InfiniteFlatSurfaceRedshifted”, then the profile is set via <span class="math notranslate nohighlight">\(\Phi\)</span> metric function on the surface and constant value supplied in array[1] (in K), i.e.:</p>
+<div class="math notranslate nohighlight">
+\[
+T^{\infty}(r, t=0) = \text{array[1]} \cdot \exp\left(\Phi(R)\right).
+\]</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It should be made possible to define “LocalFlat” profile.</p>
+</div>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;RadiusStep&quot;</span></code> (double, required*) <strong>:</strong> Defines radius step for cooling PDE. Provide in km.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;EnableEquilibrium&quot;</span></code> <strong>:</strong> Settings reflecting code’s ability to switch to equilibrium solver.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>One may want to switch for few reasons:</p>
+<ul class="simple">
+<li><p>To substantially speed up the simulation, as equilibrium solver is much faster than generic nonequilibrium one.</p></li>
+<li><p>At late times (usually <span class="math notranslate nohighlight">\(t \ge 10^{3-4}\)</span> yrs) the star is expected to be in equilibrium, so it is reasonable.</p></li>
+<li><p>To avoid numerical instabilities in nonequilibrium solver, which may occur (technically, at any time).</p></li>
+<li><p>To enable rotochemical heating simulation, which is only (as of now!) formulated in terms of equilibrium solver quantities.</p></li>
+</ul>
+</div>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Mode&quot;</span></code> (string) <strong>:</strong> Choose the way you’d like equilibrium solver to be enabled. Choose from [“Immediately”, “Never”, “Conditional”], with “Never” being a default. As the names suggest, “Never” mode never enables equilibrium solver, “Immediately” mode enables it immediately after the start of the simulation, and “Conditional” mode relies on external conditions (see below).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Conditions&quot;</span></code> <strong>:</strong> Choice of conditions upon which cooling mode will get switched.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;UponReachingTime&quot;</span></code> (double) <strong>:</strong> Provide time in years, upon reaching which the equilibrium solver will be enabled. Disabled by default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;UponProfileFlattening&quot;</span></code> (double) <strong>:</strong> Provide desired flattening ration <span class="math notranslate nohighlight">\(\left|\frac{T^{\infty}(R) - T^{\infty}(0)}{T^{\infty}(R)}\right|\)</span> (dimensionless), upon reaching which the equilibrium solver will be enabled. Disabled by default.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If none conditions are supplemented, then the equilibrium solver will get invoked immediately.</p>
+</div>
+</li>
+</ul>
+</li>
+</ul>
 </section>
 </section>
 

@@ -41,3 +41,38 @@ $$
 
 Actual precision of this estimate is unpredictable (given that our PDE solvers are time-adaptive, which is not taken into account), but it is expected to suffice in most applications.
 ```
+- `"TemperatureProfile"` (array[string, args..], required*) **:** Initial temperature profile (radial dependence) settings.
+
+If array[0] is supplied as "InfiniteFlat", then the initial temperature profile $T^{\infty}$ is set to be constant and equal to the value supplied in array[1] (in K), i.e.
+
+$$
+T^{\infty}(r, t=0) = \text{array[1]}.
+$$
+
+If array[0] is supplied as "InfiniteFlatSurfaceRedshifted", then the profile is set via $\Phi$ metric function on the surface and constant value supplied in array[1] (in K), i.e.:
+
+$$
+T^{\infty}(r, t=0) = \text{array[1]} \cdot \exp\left(\Phi(R)\right).
+$$
+
+```{note}
+It should be made possible to define "LocalFlat" profile.
+```
+
+- `"RadiusStep"` (double, required*) **:** Defines radius step for cooling PDE. Provide in km.
+- `"EnableEquilibrium"` **:** Settings reflecting code's ability to switch to equilibrium solver. 
+    ```{note}
+    One may want to switch for few reasons:
+    - To substantially speed up the simulation, as equilibrium solver is much faster than generic nonequilibrium one.
+    - At late times (usually $t \ge 10^{3-4}$ yrs) the star is expected to be in equilibrium, so it is reasonable.
+    - To avoid numerical instabilities in nonequilibrium solver, which may occur (technically, at any time).
+    - To enable rotochemical heating simulation, which is only (as of now!) formulated in terms of equilibrium solver quantities.
+    ```
+    - `"Mode"` (string) **:** Choose the way you'd like equilibrium solver to be enabled. Choose from ["Immediately", "Never", "Conditional"], with "Never" being a default. As the names suggest, "Never" mode never enables equilibrium solver, "Immediately" mode enables it immediately after the start of the simulation, and "Conditional" mode relies on external conditions (see below).
+    - `"Conditions"` **:** Choice of conditions upon which cooling mode will get switched.
+        - `"UponReachingTime"` (double) **:** Provide time in years, upon reaching which the equilibrium solver will be enabled. Disabled by default.
+        - `"UponProfileFlattening"` (double) **:** Provide desired flattening ration $\left|\frac{T^{\infty}(R) - T^{\infty}(0)}{T^{\infty}(R)}\right|$ (dimensionless), upon reaching which the equilibrium solver will be enabled. Disabled by default.
+        ```{note}
+        If none conditions are supplemented, then the equilibrium solver will get invoked immediately.
+        ```
+
