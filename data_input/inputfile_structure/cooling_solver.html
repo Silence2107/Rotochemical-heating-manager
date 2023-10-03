@@ -405,7 +405,7 @@ document.write(`
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;NewtonTolerance&quot;</span></code> (double) <strong>:</strong> Defines Newton step tolerance (desired relative difference between subsequent iterations) for cooling PDE. Defaults to <span class="math notranslate nohighlight">\(10^{-5}\)</span></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;NewtonMaxIter&quot;</span></code> (uint) <strong>:</strong> Defines maximum number of Newton iterations for cooling PDE. Defaults to 50</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;TimeUnits&quot;</span></code> (string/double, required) <strong>:</strong> Conversion factor from time to natural units (GeV powers). It must either be supplied as a choice from [“Gev-1”, “S”, “Yr”, “Myr”], or as an actual multiplier. Used for “TimeBaseStep”, “TimeInit”, “TimeEnd” and “UponReachingTime”.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;TimeUnits&quot;</span></code> (string/double, required*) <strong>:</strong> Conversion factor from time to natural units (GeV powers). It must either be supplied as a choice from [“Gev-1”, “S”, “Yr”, “Myr”], or as an actual multiplier. Used for “TimeBaseStep”, “TimeInit”, “TimeEnd” and “UponReachingTime”.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;TimeInit&quot;</span></code> (double) <strong>:</strong> Defines initial time for cooling PDE in years. Defaults to 0 years.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;TimeEnd&quot;</span></code> (double, required*) <strong>:</strong> Defines final time for cooling PDE in years.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;TimeBaseStep&quot;</span></code> (double, required*) <strong>:</strong> Defines base time step for cooling PDE in years.</p></li>
@@ -457,7 +457,7 @@ T^{\infty}(r, t=0) = \text{array[1]} \cdot \exp\left(\Phi(R)\right) \cdot \text{
 <p>It should be made possible to define “LocalFlat” profile.</p>
 </div>
 <ul>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;LengthUnits&quot;</span></code> (string/double, required) <strong>:</strong> Conversion factor from length to natural units (GeV powers). It must either be supplied as a choice from [“Gev”, “Km”, “M”, “Cm”], or as an actual multiplier. Used for “RadiusStep”</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;LengthUnits&quot;</span></code> (string/double, required) <strong>:</strong> Conversion factor from length to natural units (GeV powers). It must either be supplied as a choice from [“Gev-1”, “Km”, “M”, “Cm”], or as an actual multiplier. Used for “RadiusStep”</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;RadiusStep&quot;</span></code> (double, required*) <strong>:</strong> Defines radius step for cooling PDE. Units are defined by “LengthUnits” entry.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;EnableEquilibrium&quot;</span></code> <strong>:</strong> Settings reflecting code’s ability to switch to equilibrium solver.</p>
 <div class="admonition note">

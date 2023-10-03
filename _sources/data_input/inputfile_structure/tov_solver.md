@@ -15,7 +15,7 @@ In order to refer to an example, see <span style="color:blue">_presupplied/Input
 ```{note}
 This setting is not used by TOV solver itself (rather for cooling functionality), but since it originates from TOV solver, it is placed here. Something to consider moving.
 ```
-- `"LengthUnits"` (string/double, required) **:** Conversion factor from length to natural units (GeV powers). It must either be supplied as a choice from ["Gev", "Km", "M", "Cm"], or as an actual multiplier. Used for "RadiusStep"
+- `"LengthUnits"` (string/double, required) **:** Conversion factor from length to natural units (GeV powers). It must either be supplied as a choice from ["Gev-1", "Km", "M", "Cm"], or as an actual multiplier. Used for "RadiusStep"
 
 - `"RadiusStep"` (double, required) **:** Defines radius discretization step. Units are defined by "LengthUnits" entry.
 

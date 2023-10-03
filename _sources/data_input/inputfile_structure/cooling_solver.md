@@ -10,7 +10,7 @@ In order to refer to an example, see <span style="color:blue">_presupplied/Input
 
 - `"NewtonTolerance"` (double) **:** Defines Newton step tolerance (desired relative difference between subsequent iterations) for cooling PDE. Defaults to $10^{-5}$
 - `"NewtonMaxIter"` (uint) **:** Defines maximum number of Newton iterations for cooling PDE. Defaults to 50 
-- `"TimeUnits"` (string/double, required) **:** Conversion factor from time to natural units (GeV powers). It must either be supplied as a choice from ["Gev-1", "S", "Yr", "Myr"], or as an actual multiplier. Used for "TimeBaseStep", "TimeInit", "TimeEnd" and "UponReachingTime".
+- `"TimeUnits"` (string/double, required*) **:** Conversion factor from time to natural units (GeV powers). It must either be supplied as a choice from ["Gev-1", "S", "Yr", "Myr"], or as an actual multiplier. Used for "TimeBaseStep", "TimeInit", "TimeEnd" and "UponReachingTime".
 - `"TimeInit"` (double) **:** Defines initial time for cooling PDE in years. Defaults to 0 years.
 - `"TimeEnd"` (double, required*) **:** Defines final time for cooling PDE in years.
 - `"TimeBaseStep"` (double, required*) **:** Defines base time step for cooling PDE in years.
@@ -61,7 +61,7 @@ $$
 It should be made possible to define "LocalFlat" profile.
 ```
 
-- `"LengthUnits"` (string/double, required) **:** Conversion factor from length to natural units (GeV powers). It must either be supplied as a choice from ["Gev", "Km", "M", "Cm"], or as an actual multiplier. Used for "RadiusStep"
+- `"LengthUnits"` (string/double, required) **:** Conversion factor from length to natural units (GeV powers). It must either be supplied as a choice from ["Gev-1", "Km", "M", "Cm"], or as an actual multiplier. Used for "RadiusStep"
 - `"RadiusStep"` (double, required*) **:** Defines radius step for cooling PDE. Units are defined by "LengthUnits" entry.
 - `"EnableEquilibrium"` **:** Settings reflecting code's ability to switch to equilibrium solver. 
     ```{note}
