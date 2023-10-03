@@ -10,6 +10,7 @@ In order to refer to an example, see <span style="color:blue">_presupplied/Input
 
 - `"NewtonTolerance"` (double) **:** Defines Newton step tolerance (desired relative difference between subsequent iterations) for cooling PDE. Defaults to $10^{-5}$
 - `"NewtonMaxIter"` (uint) **:** Defines maximum number of Newton iterations for cooling PDE. Defaults to 50 
+- `"TimeUnits"` (string/double, required*) **:** Conversion factor from time to natural units (GeV powers). It must either be supplied as a choice from ["Gev-1", "S", "Yr", "Myr"], or as an actual multiplier. Used for "TimeBaseStep", "TimeInit", "TimeEnd" and "UponReachingTime".
 - `"TimeInit"` (double) **:** Defines initial time for cooling PDE in years. Defaults to 0 years.
 - `"TimeEnd"` (double, required*) **:** Defines final time for cooling PDE in years.
 - `"TimeBaseStep"` (double, required*) **:** Defines base time step for cooling PDE in years.
@@ -41,25 +42,27 @@ $$
 
 Actual precision of this estimate is unpredictable (given that our PDE solvers are time-adaptive, which is not taken into account), but it is expected to suffice in most applications.
 ```
+- `"TemperatureUnits"` (string/double, required) **:** Conversion factor from temperature to natural units (GeV powers). It must either be supplied as a choice from ["Gev", "MeV", "K"], or as an actual multiplier. Used for "TemperatureProfile" arguments. 
 - `"TemperatureProfile"` (array[string, args..], required*) **:** Initial temperature profile (radial dependence) settings.
 
-If array[0] is supplied as "InfiniteFlat", then the initial temperature profile $T^{\infty}$ is set to be constant and equal to the value supplied in array[1] (in K), i.e.
+If array[0] is supplied as "InfiniteFlat", then the initial temperature profile $T^{\infty}$ is set to be constant and equal to the value supplied in array[1], i.e.
 
 $$
-T^{\infty}(r, t=0) = \text{array[1]}.
+T^{\infty}(r, t=0) = \text{array[1]} \cdot \text{conversion}.
 $$
 
-If array[0] is supplied as "InfiniteFlatSurfaceRedshifted", then the profile is set via $\Phi$ metric function on the surface and constant value supplied in array[1] (in K), i.e.:
+If array[0] is supplied as "InfiniteFlatSurfaceRedshifted", then the profile is set via $\Phi$ metric function on the surface and constant value supplied in array[1], i.e.:
 
 $$
-T^{\infty}(r, t=0) = \text{array[1]} \cdot \exp\left(\Phi(R)\right).
+T^{\infty}(r, t=0) = \text{array[1]} \cdot \exp\left(\Phi(R)\right) \cdot \text{conversion}.
 $$
 
 ```{note}
 It should be made possible to define "LocalFlat" profile.
 ```
 
-- `"RadiusStep"` (double, required*) **:** Defines radius step for cooling PDE. Provide in km.
+- `"LengthUnits"` (string/double, required) **:** Conversion factor from length to natural units (GeV powers). It must either be supplied as a choice from ["Gev-1", "Km", "M", "Cm"], or as an actual multiplier. Used for "RadiusStep"
+- `"RadiusStep"` (double, required*) **:** Defines radius step for cooling PDE. Units are defined by "LengthUnits" entry.
 - `"EnableEquilibrium"` **:** Settings reflecting code's ability to switch to equilibrium solver. 
     ```{note}
     One may want to switch for few reasons:
@@ -71,7 +74,7 @@ It should be made possible to define "LocalFlat" profile.
     - `"Mode"` (string) **:** Choose the way you'd like equilibrium solver to be enabled. Choose from ["Immediately", "Never", "Conditional"], with "Never" being a default. As the names suggest, "Never" mode never enables equilibrium solver, "Immediately" mode enables it immediately after the start of the simulation, and "Conditional" mode relies on external conditions (see below).
     - `"Conditions"` **:** Choice of conditions upon which cooling mode will get switched.
         - `"UponReachingTime"` (double) **:** Provide time in years, upon reaching which the equilibrium solver will be enabled. Disabled by default.
-        - `"UponProfileFlattening"` (double) **:** Provide desired flattening ration $\left|\frac{T^{\infty}(R) - T^{\infty}(0)}{T^{\infty}(R)}\right|$ (dimensionless), upon reaching which the equilibrium solver will be enabled. Disabled by default.
+        - `"UponProfileFlattening"` (double) **:** Provide desired flattening ratio $\left|\frac{T^{\infty}(R) - T^{\infty}(0)}{T^{\infty}(R)}\right|$ (dimensionless), upon reaching which the equilibrium solver will be enabled. Disabled by default.
         ```{note}
         If none conditions are supplemented, then the equilibrium solver will get invoked immediately.
         ```

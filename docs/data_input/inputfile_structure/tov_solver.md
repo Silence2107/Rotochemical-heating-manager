@@ -15,15 +15,17 @@ In order to refer to an example, see <span style="color:blue">_presupplied/Input
 ```{note}
 This setting is not used by TOV solver itself (rather for cooling functionality), but since it originates from TOV solver, it is placed here. Something to consider moving.
 ```
-- `"RadiusStep"` (double, required) **:** Defines radius discretization step. Must be provided in kilometers.
-```{note}
-Maybe I should allow for other units
-```
-- `"CenterDensity"` (double, required) **:** Defines central energy density for initial value problem. Must be provided as a share of $\rho_E^{\text{max}}$.
+- `"LengthUnits"` (string/double, required) **:** Conversion factor from length to natural units (GeV powers). It must either be supplied as a choice from ["Gev-1", "Km", "M", "Cm"], or as an actual multiplier. Used for "RadiusStep"
+
+- `"RadiusStep"` (double, required) **:** Defines radius discretization step. Units are defined by "LengthUnits" entry.
+
+- `"DensityUnits"` (double, required) **:** Conversion factor from energy density to natural units (GeV powers). It must either be supplied as a choice from ["Gev4", "Same", "RelativeToMax"], or as an actual multiplier. Used for "CenterDensity" and "DensityStep". "RelativeToMax" scales against `["EnergyDensity"]["Upp"]` entry, while "Same" assumes same units as for "EnergyDensity".
+
+- `"CenterDensity"` (double, required) **:** Defines central energy density for initial value problem. Units are defined by "DensityUnits" entry.
 ```{note}
 Though this setting is a key value for TOV solver, it is not used for producing M-R curves, since M-R curves are parametrized by central density. It, of course, does not undermine its importance during any simulation on a given central density.
 ```
-- `"DensityStep"` (double, required) **:** Defines energy density at which star's radius is calculated. This same quantity is used for $P(\rho)$ differentiation, as well as it enforces TOV recaching if center density is changed by that much during one program's execution. Must be provided as a share of $\rho_E^{\text{max}}$.
+- `"DensityStep"` (double, required) **:** Defines energy density at which star's radius is calculated. This same quantity is used for $P(\rho)$ differentiation, as well as it enforces TOV recaching if center density is changed by that much during one program's execution. Units are defined by "DensityUnits" entry.
 ```{note}
 Appears to be very cumbersome variable. I should consider relaxing its responsibility.
 ```

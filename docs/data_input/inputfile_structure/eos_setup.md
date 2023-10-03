@@ -43,10 +43,7 @@ In order to refer to an example, see <span style="color:blue">_presupplied/Input
         - `"$PARTICLE_NAME"` **:** Properties, related to a specific particle. **Substitute** the entry name with actual (fermionic only) species among provided in "Particles" array one by one.
             - `"Column"` (uint, required*) **:** Column number with number density for given particle, counting from 0th.
             - `"ProvidedAs` (string) **:** The way the number density is provided. Choose from ["Density", "DensityFraction", "KFermi"]. "Density" mode expects actual number density, "DensityFraction" mode expects ratio of the number density to the total baryonic density, "KFermi" mode expects Fermi momentum of the particle. Defaults to "Density".
-            ```{note}
-            As meaningless as it is, in its current state "Units" are shared between particle entries and cannot be overriden. This leads to limiting all particles to the same units. Something to work on as soon.
-            ```
-        - `"Units"` (string/double) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev3", "Fm-3", "DimLess", "Gev", "Fm-1"], or specify an actual multiplier. Defaults to the "Units" entry of "BaryonicDensity".
+            - `"Units"` (string/double) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev3", "Fm-3", "DimLess", "Gev", "Fm-1"], or specify an actual multiplier. Defaults to the "Units" entry of "BaryonicDensity".
         
         ```{warning}
         The dimensionality are different for different provision modes; it is user's responsibility to provide correct units.
@@ -54,16 +51,9 @@ In order to refer to an example, see <span style="color:blue">_presupplied/Input
     - `"EffectiveMasses"` **:** [Effective masses](https://en.wikipedia.org/wiki/Effective_mass_(solid-state_physics)) per each particle at the point.
         - `"$PARTICLE_NAME"` **:** Properties, related to a specific particle. **Substitute** the entry name with actual (fermionic only) species among provided in "Particles" array one by one.
             - `"Column"` (uint) **:** Column number with effective mass for given particle, counting from 0th.
-            - `"ProvidedAs"` (string, required*) **:** The way the effective mass is provided. Choose from ["FermiEnergy", "EffectiveMass"]. "FermiEnergy" mode incurs the effective mass via relativistic formula with Fermi momentum (occasionally applicable for light particles) and "EffectiveMass" mode expects actual effective mass. If "FermiEnergy" mode is chosen, the "Column" entry is ignored.
+            - `"ProvidedAs"` (string, required*) **:** The way the effective mass is provided. Choose from ["FermiEnergy", "EffectiveMass"]. "FermiEnergy" mode incurs the effective mass via relativistic formula with Fermi momentum (occasionally applicable for light particles) and "EffectiveMass" mode expects actual effective mass. If "FermiEnergy" mode is chosen, the "Column" and "Units" entries is ignored.
+            - `"Units"` (string/double, required*) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev", "MeV", "NucleonMass"], or specify an actual multiplier. If "FermiEnergy" mode is chosen, "Units" are disregarded.
             
-            ```{note}
-            As already mentioned, in its current state "Units" are shared between particle entries and cannot be overriden.
-            ```
-        - `"Units"` (string/double, required*) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev", "MeV", "NucleonMass"], or specify an actual multiplier.
-
-        ```{note}
-        Units entry is ignored if the provision mode is "FermiEnergy" (per applicable column). Yet another reason to work on this.
-        ```
     - `"IonVolumeFraction"` : Ion volume fraction in the crust at the point. Affects neutrino bremhstrahlung in the crust.
         - `"Column"` (uint) **:** Column number with ion volume fraction, counting from 0th.
         - `"ProvidedAs"` (string, required*) **:** The way the ion volume fraction is provided. Choose from ["IonVolumeFraction", "Absent", "ExcludedVolume"]. "IonVolumeFraction" mode expects actual ion volume fraction, "Absent" mode renders the ratio zero and "ExcludedVolume" mode performs calculation in the crust
