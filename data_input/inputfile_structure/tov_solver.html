@@ -63,6 +63,8 @@ const thebe_selector_input = "pre"
 const thebe_selector_output = ".output, .cell_output"
 </script>
     <script async="async" src="../../_static/sphinx-thebe.js"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'data_input/inputfile_structure/tov_solver';</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -395,9 +397,36 @@ document.write(`
 <h1>TOVSolver<a class="headerlink" href="#tovsolver" title="Permalink to this heading">#</a></h1>
 <section id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading">#</a></h2>
+<p>This entry contains all relevant information regarding Tolman-Oppenheimer-Volkov (TOV, <span id="id1">[<a class="reference internal" href="../../appendix/bibliography.html#id4" title="Richard C. Tolman. Static solutions of einstein's field equations for spheres of fluid. Phys. Rev., 55:364–373, Feb 1939. URL: https://link.aps.org/doi/10.1103/PhysRev.55.364, doi:10.1103/PhysRev.55.364.">Tol39</a>]</span>) system of PDEs. In particular, one specifies here radius discretization, central energy density for IVP, <span class="math notranslate nohighlight">\(P(\rho)\)</span> EoS function discretization etc.
+In what follows we discuss all the possible settings under this entry.</p>
+<p>In order to refer to an example, see <span style="color:blue"><em>presupplied/Inputfile/RHMconfig.json</em></span> and <span style="color:blue"><em>presupplied/EoS/APR_EOS_Acc_Fe_RHMstandard.dat</em></span>.</p>
 </section>
 <section id="description">
 <h2>Description<a class="headerlink" href="#description" title="Permalink to this heading">#</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;EoSDiscretization&quot;</span></code> (uint) <strong>:</strong> Defines discretization step for <span class="math notranslate nohighlight">\(P(\rho)\)</span> dependence. Defaults to 1000.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;EoSInterpolation</span></code> (string) <strong>:</strong> Interpolation kind to be used for discretized <span class="math notranslate nohighlight">\(P(\rho)\)</span> dependence. Choose from [“Linear”, “Cubic”], with “Linear” being default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;BarionicDensityInterpolation&quot;</span></code> (string) <strong>:</strong> Interpolation kind to be used for discretized <span class="math notranslate nohighlight">\(n_b(r)\)</span> dependence. Choose from [“Linear”, “Cubic”], with “Linear” being default.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This setting is not used by TOV solver itself (rather for cooling functionality), but since it originates from TOV solver, it is placed here. Something to consider moving.</p>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;RadiusStep&quot;</span></code> (double, required) <strong>:</strong> Defines radius discretization step. Must be provided in kilometers.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Maybe I should allow for other units</p>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;CenterDensity&quot;</span></code> (double, required) <strong>:</strong> Defines central energy density for initial value problem. Must be provided as a share of <span class="math notranslate nohighlight">\(\rho_E^{\text{max}}\)</span>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;DensityStep&quot;</span></code> (double, required) <strong>:</strong> Defines energy density at which star’s radius is calculated. This same quantity is used for <span class="math notranslate nohighlight">\(P(\rho)\)</span> differentiation, as well as it enforces TOV recaching if center density is changed by that much during one program’s execution. Must be provided as a share of <span class="math notranslate nohighlight">\(\rho_E^{\text{max}}\)</span>.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Appears to be very cumbersome variable. I should consider relaxing its responsibility.</p>
+</div>
 </section>
 </section>
 
