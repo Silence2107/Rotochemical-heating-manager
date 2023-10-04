@@ -29,7 +29,7 @@
                 "CoreLimit" : 9E-02,
                 "CrustLimit" : 2.096E-02
             },
-            "BarionicDensities" :
+            "NumberDensities" :
             {
                 "Electron" :
                 {

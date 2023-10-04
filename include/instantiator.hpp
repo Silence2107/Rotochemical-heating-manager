@@ -510,29 +510,32 @@ namespace instantiator
             if (particle_name.is_string())
             {
                 // identify particle with the list of known ones
+                bool identified = false;
                 for (const auto &known_particle : known_particles)
                 {
                     if (particle_name == known_particle.name())
                     {
                         particles.push_back(known_particle);
+                        identified = true;
                         break;
                     }
                 }
+                if (!identified)
+                    THROW(std::runtime_error, "UI error: " + particle_name.get<std::string>().c_str() + " is not a recognized particle.");
             }
             else
                 THROW(std::runtime_error, "UI error: Particle type must be provided as a string.");
         }
 
-        // baryonic density functions of baryonic density (natural units) &&
+        // number density functions of baryonic density (natural units) &&
         // fermi momentum functions of baryonic density (natural units)
 
         for (const auto &particle : particles)
         {
             auto particle_name = particle.name();
-            auto particle_density_read = j["EoSSetup"]["Quantities"]["BarionicDensities"][particle_name];
+            auto particle_density_read = j["EoSSetup"]["Quantities"]["NumberDensities"][particle_name];
 
-            // I for now assume that only mesons are not fermions, which is of course very brave. Consider TODO
-            if (particle_density_read.is_null() && !(particle.classify() == auxiliaries::phys::Species::ParticleClassification::kMeson))
+            if (particle_density_read.is_null())
                 THROW(std::runtime_error, "UI error: Particle density info is not provided for " + particle.name() + ".");
 
             auto particle_density_column_read = particle_density_read["Column"];
@@ -611,12 +614,14 @@ namespace instantiator
             }
             else
                 THROW(std::runtime_error, "UI error: Particle density may only be provided in \"Density\", \"DensityFraction\" or \"KFermi\" modes.");
-            k_fermi_of_nbar.insert(
-                {particle, [particle](double nbar)
-                 {
-                     using constants::scientific::Pi;
-                     return pow(3.0 * Pi * Pi * bar_densities_of_nbar[particle](nbar), 1.0 / 3.0);
-                 }});
+            // assemble fermi momentum functions for fermions
+            if (particle.classify() != auxiliaries::phys::Species::ParticleClassification::kMeson)
+                k_fermi_of_nbar.insert(
+                    {particle, [particle](double nbar)
+                    {
+                        using constants::scientific::Pi;
+                        return pow(3.0 * Pi * Pi * bar_densities_of_nbar[particle](nbar), 1.0 / 3.0);
+                    }});
         }
 
         // effective mass functions of baryonic density (natural units)
@@ -625,9 +630,16 @@ namespace instantiator
         {
             auto particle_name = particle.name();
             auto particle_mst_read = j["EoSSetup"]["Quantities"]["EffectiveMasses"][particle_name];
-            // I for now assume that only mesons are not fermions, which is of course very brave. Consider TODO
-            if (particle_mst_read.is_null() && !(particle.classify() == auxiliaries::phys::Species::ParticleClassification::kMeson))
-                THROW(std::runtime_error, "UI error: Particle effective mass info is not provided for " + particle.name() + ".");
+
+            if (particle.classify() == auxiliaries::phys::Species::ParticleClassification::kMeson)
+            {   
+                if (!particle_mst_read.is_null())
+                    THROW(std::runtime_error, "UI error: Effective mass is not expected for " + particle.name() + ".");
+                continue; // mesons have no effective mass
+            }
+
+            if (particle_mst_read.is_null())
+                THROW(std::runtime_error, "UI error: Effective mass info is not provided for " + particle.name() + ".");
             auto particle_mst_column_read = particle_mst_read["Column"];
             auto particle_mst_provided_as_read = particle_mst_read["ProvidedAs"];
             if (!(particle_mst_column_read.is_number_integer()) && particle_mst_provided_as_read != "FermiEnergy")
