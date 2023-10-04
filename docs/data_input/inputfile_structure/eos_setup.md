@@ -10,8 +10,8 @@ In order to refer to an example, see <span style="color:blue">_presupplied/Input
 
 - `"Datafile"` **:** Contains all relevant knowledge regarding EoS datafile structure.
     - `"Path"` (string, required) **:** valid path to the EoS datafile.
-    - `"Rows"` (uint pair) **:** [first, last) row in the inputfile to consider (counting from 0th). Assumes whole file, if not specified.
-    - `"Columns"` (uint pair) **:** [first, last) row in the inputfile to consider (counting from 0th). Deduces from the first row, if not specified.
+    - `"Rows"` (uint pair) **:** [first, last) row in the inputfile to consider (counting from 0th). Assumes whole file, if not specified. Last row may be specified as 0 to indicate the last row in the file.
+    - `"Columns"` (uint pair) **:** [first, last) row in the inputfile to consider (counting from 0th). Deduces from the first row, if not specified. Last column may be specified as 0 to indicate the last column in the file.
     - `"Interpolation"` (string) **:** Interpolation kind to be used across all columns. Choose from ["Linear", "Cubic"], with "Linear" being default. 
     ```{warning}
     Using "Cubic" mode may lead to issues with positivity of some functions, so it is at the moment advised to instead populate the datafile with more points, yet to use "Linear" mode.
