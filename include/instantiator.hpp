@@ -157,6 +157,8 @@ namespace instantiator
 
         // filereader
         auto eos_datafile = j["EoSSetup"]["Datafile"]["Path"];
+        if (!(eos_datafile.is_string()))
+            THROW(std::runtime_error, "UI error: Datafile path must be provided as a string.");
         auto eos_datafile_rows = j["EoSSetup"]["Datafile"]["Rows"];
         if (!(eos_datafile_rows.size() == 2))
         {
@@ -165,6 +167,8 @@ namespace instantiator
             else
                 THROW(std::runtime_error, "UI error: Datafile rows must be a pair-array.");
         }
+        else if (!(eos_datafile_rows[0].is_number_integer() && eos_datafile_rows[1].is_number_integer()))
+            THROW(std::runtime_error, "UI error: Datafile rows must be provided as integers.");
 
         auto eos_datafile_cols = j["EoSSetup"]["Datafile"]["Columns"];
         if (!(eos_datafile_cols.size() == 2))
@@ -174,13 +178,15 @@ namespace instantiator
             else
                 THROW(std::runtime_error, "UI error: Datafile cols must be a pair-array.");
         }
+        else if (!(eos_datafile_cols[0].is_number_integer() && eos_datafile_cols[1].is_number_integer()))
+            THROW(std::runtime_error, "UI error: Datafile cols must be provided as integers.");
 
         auxiliaries::math::InterpolationMode eos_datafile_interp_mode;
         auto eos_datafile_interp_read = j["EoSSetup"]["Datafile"]["Interpolation"];
         if (eos_datafile_interp_read.is_null())
             eos_datafile_interp_mode = auxiliaries::math::InterpolationMode::kLinear;
         else if (!(eos_datafile_interp_read.is_string()))
-            THROW(std::runtime_error, "UI error: Datafile interpolation mode must be a string.");
+            THROW(std::runtime_error, "UI error: Datafile interpolation mode may only be a string.");
         else
             eos_datafile_interp_mode = get_interpolation_mode(eos_datafile_interp_read);
 
@@ -235,8 +241,15 @@ namespace instantiator
                 // unpack input and convert to datafile units
                 double nbar = input[0] / nbar_conversion;
                 // return cached interpolation functions, with extrapolation enabled for now
-                return cache[index](table[nbar_index], table[index], eos_datafile_interp_mode, nbar, true, true);
-            });
+                try
+                {
+                    return cache[index](table.at(nbar_index), table.at(index), eos_datafile_interp_mode, nbar, true, true);
+                }
+                catch (std::exception &e)
+                {
+                    THROW(std::runtime_error, "Bad EoS request. " + e.what());
+                }
+                        });
 
         // energy density function of baryonic density (natural units)
         auto energy_density_index = j["EoSSetup"]["Quantities"]["EnergyDensity"]["Column"];
@@ -512,7 +525,7 @@ namespace instantiator
 
         // baryonic density functions of baryonic density (natural units) &&
         // fermi momentum functions of baryonic density (natural units)
-        
+
         for (const auto &particle : particles)
         {
             auto particle_name = particle.name();
@@ -607,7 +620,7 @@ namespace instantiator
         }
 
         // effective mass functions of baryonic density (natural units)
-        
+
         for (const auto &particle : particles)
         {
             auto particle_name = particle.name();
