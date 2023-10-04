@@ -406,8 +406,8 @@ document.write(`
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;Datafile&quot;</span></code> <strong>:</strong> Contains all relevant knowledge regarding EoS datafile structure.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;Path&quot;</span></code> (string, required) <strong>:</strong> valid path to the EoS datafile.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Rows&quot;</span></code> (uint pair) <strong>:</strong> [first, last) row in the inputfile to consider (counting from 0th). Assumes whole file, if not specified.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Columns&quot;</span></code> (uint pair) <strong>:</strong> [first, last) row in the inputfile to consider (counting from 0th). Deduces from the first row, if not specified.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Rows&quot;</span></code> (uint pair) <strong>:</strong> [first, last) row in the inputfile to consider (counting from 0th). Assumes whole file, if not specified. Last row may be specified as 0 to indicate the last row in the file.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Columns&quot;</span></code> (uint pair) <strong>:</strong> [first, last) row in the inputfile to consider (counting from 0th). Deduces from the first row, if not specified. Last column may be specified as 0 to indicate the last column in the file.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;Interpolation&quot;</span></code> (string) <strong>:</strong> Interpolation kind to be used across all columns. Choose from [“Linear”, “Cubic”], with “Linear” being default.</p></li>
 </ul>
 <div class="admonition warning">
@@ -451,9 +451,9 @@ document.write(`
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;Upp&quot;</span></code> (double/string) <strong>:</strong> Biggest accessible <span class="math notranslate nohighlight">\(P\)</span> within the datafile. Deduced automatically if specified as “Deduce” or if left blank.</p></li>
 </ul>
 </li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;BarionicDensities&quot;</span></code> <strong>:</strong> Number densities per each particle at the point.</p>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;NumberDensities&quot;</span></code> <strong>:</strong> Number densities per each particle at the point.</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;$PARTICLE_NAME&quot;</span></code> <strong>:</strong> Properties, related to a specific particle. <strong>Substitute</strong> the entry name with actual (fermionic only) species among provided in “Particles” array one by one.</p>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;$PARTICLE_NAME&quot;</span></code> <strong>:</strong> Properties, related to a specific particle. <strong>Substitute</strong> the entry name with actual species among provided in “Particles” array one by one.</p>
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint, required*) <strong>:</strong> Column number with number density for given particle, counting from 0th.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;ProvidedAs</span></code> (string) <strong>:</strong> The way the number density is provided. Choose from [“Density”, “DensityFraction”, “KFermi”]. “Density” mode expects actual number density, “DensityFraction” mode expects ratio of the number density to the total baryonic density, “KFermi” mode expects Fermi momentum of the particle. Defaults to “Density”.</p></li>
@@ -468,7 +468,7 @@ document.write(`
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;EffectiveMasses&quot;</span></code> <strong>:</strong> <a class="reference external" href="https://en.wikipedia.org/wiki/Effective_mass_(solid-state_physics)">Effective masses</a> per each particle at the point.</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;$PARTICLE_NAME&quot;</span></code> <strong>:</strong> Properties, related to a specific particle. <strong>Substitute</strong> the entry name with actual (fermionic only) species among provided in “Particles” array one by one.</p>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;$PARTICLE_NAME&quot;</span></code> <strong>:</strong> Properties, related to a specific particle. <strong>Substitute</strong> the entry name with actual (fermion) species among provided in “Particles” array one by one.</p>
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint) <strong>:</strong> Column number with effective mass for given particle, counting from 0th.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;ProvidedAs&quot;</span></code> (string, required*) <strong>:</strong> The way the effective mass is provided. Choose from [“FermiEnergy”, “EffectiveMass”]. “FermiEnergy” mode incurs the effective mass via relativistic formula with Fermi momentum (occasionally applicable for light particles) and “EffectiveMass” mode expects actual effective mass. If “FermiEnergy” mode is chosen, the “Column” and “Units” entries is ignored.</p></li>
@@ -481,7 +481,7 @@ document.write(`
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint) <strong>:</strong> Column number with ion volume fraction, counting from 0th.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;ProvidedAs&quot;</span></code> (string, required*) <strong>:</strong> The way the ion volume fraction is provided. Choose from [“IonVolumeFraction”, “Absent”, “ExcludedVolume”]. “IonVolumeFraction” mode expects actual ion volume fraction, “Absent” mode renders the ratio zero and “ExcludedVolume” mode performs calculation in the crust
-<span class="math notranslate nohighlight">\(\eta = \dfrac{4}{3}\pi (1.1 \text{fm})^3 \dfrac{\rho_E}{m_{\text{nucleon}}}\)</span>. Defaults to “Absent”. “Column” entry is only used in “IonVolumeFraction” mode.</p></li>
+<span class="math notranslate nohighlight">\(\eta = \text{min}\left[\dfrac{4}{3}\pi (1.1 \text{fm})^3 \dfrac{\rho_E}{m_{\text{nucleon}}}, 1.0\right]\)</span>. Defaults to “Absent”. “Column” entry is only used in “IonVolumeFraction” mode.</p></li>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
