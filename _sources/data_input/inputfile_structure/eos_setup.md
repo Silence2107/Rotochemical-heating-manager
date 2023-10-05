@@ -16,6 +16,9 @@ In order to refer to an example, see <span style="color:blue">_presupplied/Input
     ```{warning}
     Using "Cubic" mode may lead to issues with positivity of some functions, so it is at the moment advised to instead populate the datafile with more points, yet to use "Linear" mode.
     ```
+    ```{warning}
+    Be advised that any uint entry (a.k.a. `size_t` in C++) will happily consume negative values(causing overflow), if supplied as such. Since it is usually not the intended behavior, though silently allowed, make sure you supply meaningful values. This applies to **all uint entries** in the inputfile, as well as within the instantiator.
+    ```
 - `"Particles"` (string array, required*) **:** Names for the particles, available in the EoS. Must strictly match with predefined list ["Neutron", "Proton", "Electron", "Muon", "Tau", "Uquark", "Dquark", "Squark"]. If provided, the instantiator assumes user would like to invoke cooling functionality, hence it requires more provided variables to run.
 - `"Quantities"` **:** A linker between EoS columns and the way the supply data to RHM.
     - `"BaryonicDensity"` **:** total baryonic density at the point.

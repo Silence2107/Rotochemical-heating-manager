@@ -414,6 +414,10 @@ document.write(`
 <p class="admonition-title">Warning</p>
 <p>Using “Cubic” mode may lead to issues with positivity of some functions, so it is at the moment advised to instead populate the datafile with more points, yet to use “Linear” mode.</p>
 </div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Be advised that any uint entry (a.k.a. <code class="docutils literal notranslate"><span class="pre">size_t</span></code> in C++) will happily consume negative values(causing overflow), if supplied as such. Since it is usually not the intended behavior, though silently allowed, make sure you supply meaningful values. This applies to <strong>all uint entries</strong> in the inputfile, as well as within the instantiator.</p>
+</div>
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;Particles&quot;</span></code> (string array, required*) <strong>:</strong> Names for the particles, available in the EoS. Must strictly match with predefined list [“Neutron”, “Proton”, “Electron”, “Muon”, “Tau”, “Uquark”, “Dquark”, “Squark”]. If provided, the instantiator assumes user would like to invoke cooling functionality, hence it requires more provided variables to run.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;Quantities&quot;</span></code> <strong>:</strong> A linker between EoS columns and the way the supply data to RHM.</p>
