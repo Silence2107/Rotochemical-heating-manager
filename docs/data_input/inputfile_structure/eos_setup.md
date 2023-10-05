@@ -64,13 +64,13 @@ In order to refer to an example, see <span style="color:blue">_presupplied/Input
         ```{note}
         Units are dimensionless for all modes.
         ```
-        ```{note}
+        ```{admonition} devnote
         This quantity could use some citation and explanation. 
         ```
     - `"QuarkSuperconductingGap"` : Superconductive gap for quarks at the point. Noticeably affects all quark cooling channels as $\sim \exp{\left[-\frac{\Delta}{T}\right]}$, with $\Delta$ being the gap and $T$ being local temperature. 
         - `"Column"` (uint) **:** Column number with quark superconducting gap, counting from 0th. If not specified, the gap is assumed to be absent for all quarks.
         - `"Units"` (string/double) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev", "MeV", "Fm-1"], or specify an actual multiplier. 
-        ```{note}
+        ```{admonition} devnote
         This quantity could use some variety in provision modes.
         ```
 - `"Misc"` : Miscellaneous EoS settings, unfit under entries above.
