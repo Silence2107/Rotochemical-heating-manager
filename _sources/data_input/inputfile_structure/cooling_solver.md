@@ -57,7 +57,7 @@ $$
 T^{\infty}(r, t=0) = \text{array[1]} \cdot \exp\left(\Phi(R)\right) \cdot \text{conversion}.
 $$
 
-```{note}
+```{admonition} devnote
 It should be made possible to define "LocalFlat" profile.
 ```
 

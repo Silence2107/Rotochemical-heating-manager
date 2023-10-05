@@ -26,6 +26,6 @@ This setting is not used by TOV solver itself (rather for cooling functionality)
 Though this setting is a key value for TOV solver, it is not used for producing M-R curves, since M-R curves are parametrized by central density. It, of course, does not undermine its importance during any simulation on a given central density.
 ```
 - `"DensityStep"` (double, required) **:** Defines energy density at which star's radius is calculated. This same quantity is used for $P(\rho)$ differentiation, as well as it enforces TOV recaching if center density is changed by that much during one program's execution. Units are defined by "DensityUnits" entry.
-```{note}
+```{admonition} devnote
 Appears to be very cumbersome variable. I should consider relaxing its responsibility.
 ```
