@@ -100,7 +100,7 @@
     "TOVSolver" :
     {
         "LengthUnits" : "Km",
-        "DensityUnits" : "RelativeToMax",
+        "DensityProvidedAs" : "LinspacedMinToMax",
         "EoSInterpolation" : "Linear",
         "EoSDiscretization" : 1000,
         "RadiusStep" : 0.01,

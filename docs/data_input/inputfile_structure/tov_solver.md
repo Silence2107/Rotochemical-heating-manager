@@ -19,7 +19,7 @@ This setting is not used by TOV solver itself (rather for cooling functionality)
 
 - `"RadiusStep"` (double, required) **:** Defines radius discretization step. Units are defined by "LengthUnits" entry.
 
-- `"DensityUnits"` (double, required) **:** Conversion factor from energy density to natural units (GeV powers). It must either be supplied as a choice from ["Gev4", "Same", "RelativeToMax"], or as an actual multiplier. Used for "CenterDensity" and "DensityStep". "RelativeToMax" scales against `["EnergyDensity"]["Upp"]` entry, while "Same" assumes same units as for "EnergyDensity".
+- `"DensityProvidedAs"` (string, required) **:** The way the "CenterDensity" and "DensityStep" are provided. Choose from ["Same", "LinspacedMinToMax"]. "LinspacedMinToMax" linearly maps $[0,1] \rightarrow [\rho_{min}, \rho_{max}]$, while "Same" assumes same units as for "EnergyDensity".
 
 - `"CenterDensity"` (double, required) **:** Defines central energy density for initial value problem. Units are defined by "DensityUnits" entry.
 ```{note}
