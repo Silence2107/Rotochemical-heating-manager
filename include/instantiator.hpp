@@ -454,45 +454,32 @@ namespace instantiator
         else
             radius_step = radius_step_read.get<double>() * tov_length_conversion;
 
-        // TOV solver density step size in GeV^4
-        auto tov_density_conversion_read = j["TOVSolver"]["DensityUnits"];
-        double tov_density_conversion;
-        if (tov_density_conversion_read.is_number())
-            tov_density_conversion = tov_density_conversion_read.get<double>();
-        else if (tov_density_conversion_read.is_string())
-        {
-            if (tov_density_conversion_read == "Gev4")
-            {
-                tov_density_conversion = 1.0;
-            }
-            else if (tov_density_conversion_read == "RelativeToMax")
-            {
-                tov_density_conversion = edensity_upp;
-            }
-            else if (tov_density_conversion_read == "Same")
-            {
-                tov_density_conversion = energy_density_conversion;
-            }
-            else
-            {
-                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for TOV density.");
-            }
-        }
-        else
-            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for TOV density.");
+        // TOV solver density step size & center density
+        auto tov_density_provided_as_read = j["TOVSolver"]["DensityProvidedAs"];
+
         auto density_step_read = j["TOVSolver"]["DensityStep"];
         if (!(density_step_read.is_number()))
             THROW(std::runtime_error, "UI error: TOV solver density step must be provided as a number.");
-        else
-            density_step = density_step_read.get<double>() * tov_density_conversion;
 
-        // TOV solver center density in GeV^4
         auto center_density_read = j["TOVSolver"]["CenterDensity"];
         if (!(center_density_read.is_number()))
             THROW(std::runtime_error, "UI error: TOV solver center density must be provided as a number.");
-        else
-            center_density = center_density_read.get<double>() * tov_density_conversion;
 
+        if (tov_density_provided_as_read == "LinspacedMinToMax")
+        {
+            density_step = density_step_read.get<double>() * (edensity_upp - edensity_low) + edensity_low;
+            center_density = center_density_read.get<double>() * (edensity_upp - edensity_low) + edensity_low;
+        }
+        else if (tov_density_provided_as_read == "Same")
+        {
+            density_step = density_step_read.get<double>() * energy_density_conversion;
+            center_density = center_density_read.get<double>() * energy_density_conversion;
+        }
+        else
+        {
+            THROW(std::runtime_error, "UI error: TOV density quantities may only be provided in \"LinspacedMinToMax\" or \"Same\" modes.");
+        }
+        
         // (->1) EoS Setup
         // provided particles
         auto particles_read = j["EoSSetup"]["Particles"];
