@@ -49,7 +49,7 @@ namespace instantiator
         pressure_upp;
 
     // baryonic density fraction functions of baryonic density (natural units)
-    std::map<auxiliaries::phys::Species, std::function<double(double)>> bar_densities_of_nbar;
+    std::map<auxiliaries::phys::Species, std::function<double(double)>> number_densities_of_nbar;
 
     // fermi momentum functions of baryonic density (natural units)
     std::map<auxiliaries::phys::Species, std::function<double(double)>> k_fermi_of_nbar;
@@ -589,7 +589,7 @@ namespace instantiator
 
             if (particle_density_provided_as_read == "Density")
             {
-                bar_densities_of_nbar.insert(
+                number_densities_of_nbar.insert(
                     {particle, [particle_density_column_read, particle_density_conversion](double nbar)
                      {
                          return data_reader({nbar}, particle_density_column_read) * particle_density_conversion;
@@ -597,7 +597,7 @@ namespace instantiator
             }
             else if (particle_density_provided_as_read == "DensityFraction")
             {
-                bar_densities_of_nbar.insert(
+                number_densities_of_nbar.insert(
                     {particle, [particle_density_column_read, particle_density_conversion](double nbar)
                      {
                          return data_reader({nbar}, particle_density_column_read) * particle_density_conversion * nbar;
@@ -605,7 +605,7 @@ namespace instantiator
             }
             else if (particle_density_provided_as_read == "KFermi")
             {
-                bar_densities_of_nbar.insert(
+                number_densities_of_nbar.insert(
                     {particle, [particle_density_column_read, particle_density_conversion](double nbar)
                      {
                          using constants::scientific::Pi;
@@ -620,7 +620,7 @@ namespace instantiator
                     {particle, [particle](double nbar)
                     {
                         using constants::scientific::Pi;
-                        return pow(3.0 * Pi * Pi * bar_densities_of_nbar[particle](nbar), 1.0 / 3.0);
+                        return pow(3.0 * Pi * Pi * number_densities_of_nbar[particle](nbar), 1.0 / 3.0);
                     }});
         }
 

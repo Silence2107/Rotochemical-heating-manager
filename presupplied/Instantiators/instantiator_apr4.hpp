@@ -78,7 +78,7 @@ namespace instantiator
            pressure_upp = pressure_of_nbar(nbar_upp);
 
     // baryonic density fraction functions of baryonic density (natural units)
-    std::map<auxiliaries::phys::Species, std::function<double(double)>> bar_densities_of_nbar =
+    std::map<auxiliaries::phys::Species, std::function<double(double)>> number_densities_of_nbar =
         {
             {constants::species::electron, [](double nbar)
              { return data_reader({nbar}, 3) * nbar; }},

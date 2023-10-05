@@ -130,7 +130,7 @@ int main(int argc, char **argv)
     {
         return pow(1 - 2 * constants::scientific::G * tov(r)[0] / r, -0.5);
     };
-    for (auto species = bar_densities_of_nbar.begin(); species != bar_densities_of_nbar.end(); ++species)
+    for (auto species = number_densities_of_nbar.begin(); species != number_densities_of_nbar.end(); ++species)
     {
         double I_i = 0.0;
         auto n_i = species->second;
