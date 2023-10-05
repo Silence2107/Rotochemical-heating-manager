@@ -29,13 +29,13 @@ In order to refer to an example, see <span style="color:blue">_presupplied/Input
         - `"CoreLimit"` (double, required) **:** First $n_b$ upon entering core.
         - `"CrustLimit"` (double) **:** Last $n_b$ upon leaving crust. If not supplied, "CoreLimit" value is substituted.
     - `"EnergyDensity"` **:** Total energy density at the point.
-        - `"Units"` (string/double, required) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev4", "MevOverFm3", "GOverCm3"], or specify an actual multiplier.
+        - `"Units"` (string/double, required) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev4", "MevFm-3", "GCm-3"], or specify an actual multiplier.
         - `"Column"` (uint, required) **:** Column number with energy density, counting from 0th.
         - `"Low"` (double/string) **:** Smallest accessible $\rho_E$ within the datafile. Deduced automatically if specified as "Deduce" or if left blank.
         - `"Upp"` (double/string) **:** Biggest accessible $\rho_E$ within the datafile. Deduced automatically if specified as "Deduce" or if left blank.
         - `"CoreLimit"` (double/string) **:** First $\rho_E$ upon entering core. Deduced automatically if specified as "Deduce" or if left blank.
     - `"Pressure"` **:** Total pressure at the point.
-        - `"Units"` (string/double, required) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev4", "MevOverFm3", "DyneOverCm2"], or specify an actual multiplier.
+        - `"Units"` (string/double, required) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev4", "MevFm-3", "DyneCm-2"], or specify an actual multiplier.
         - `"Column"` (uint, required) **:** Column number with pressure, counting from 0th.
         - `"Low"` (double/string) **:** Smallest accessible $P$ within the datafile. Deduced automatically if specified as "Deduce" or if left blank.
         - `"Upp"` (double/string) **:** Biggest accessible $P$ within the datafile. Deduced automatically if specified as "Deduce" or if left blank.
