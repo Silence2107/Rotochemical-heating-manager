@@ -105,11 +105,11 @@ int main(int argc, char** argv)
     for(size_t count = offset; count < n - offset + 1; ++count)
     {
         using namespace constants::conversion;
-        double edensity = (count * edensity_upp) / n;
+        double edensity = count * (edensity_upp - edensity_low) / n + edensity_low;
         auto point = get_m_r_at_density(edensity);
         x.push_back(point[0] / km_gev);
         y.push_back(point[1] * gev_over_msol);
-        std::cout << "At " << count << " out of " << n << " cycles. M = " << y.back() << " Ms, R = " << x.back() << " km\n";
+        std::cout << "At rho_E/rho_E^max = " << static_cast<double>(count) / n << ". M = " << y.back() << " Ms, R = " << x.back() << " km\n";
     }
 
     #if RHM_HAS_ROOT
