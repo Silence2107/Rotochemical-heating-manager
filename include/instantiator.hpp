@@ -264,11 +264,11 @@ namespace instantiator
             {
                 energy_density_conversion = 1.0;
             }
-            else if (energy_density_conversion_read == "MevOverFm3")
+            else if (energy_density_conversion_read == "MevFm-3")
             {
                 energy_density_conversion = constants::conversion::mev_over_fm3_gev4;
             }
-            else if (energy_density_conversion_read == "GOverCm3")
+            else if (energy_density_conversion_read == "GCm-3")
             {
                 energy_density_conversion = constants::conversion::g_over_cm3_gev4;
             }
@@ -295,11 +295,11 @@ namespace instantiator
             {
                 pressure_conversion = 1.0;
             }
-            else if (pressure_conversion_read == "MevOverFm3")
+            else if (pressure_conversion_read == "MevFm-3")
             {
                 pressure_conversion = constants::conversion::mev_over_fm3_gev4;
             }
-            else if (pressure_conversion_read == "DyneOverCm2")
+            else if (pressure_conversion_read == "DyneCm-2")
             {
                 pressure_conversion = constants::conversion::dyne_over_cm2_gev4;
             }
