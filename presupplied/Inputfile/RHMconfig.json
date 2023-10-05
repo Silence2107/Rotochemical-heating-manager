@@ -12,12 +12,12 @@
         {
             "EnergyDensity" : 
             {
-                "Units" : "GOverCm3",
+                "Units" : "GCm-3",
                 "Column" : 0
             },
             "Pressure" : 
             {
-                "Units" : "DyneOverCm2",
+                "Units" : "DyneCm-2",
                 "Column" : 1
             },
             "BarionicDensity" : 
@@ -29,7 +29,7 @@
                 "CoreLimit" : 9E-02,
                 "CrustLimit" : 2.096E-02
             },
-            "BarionicDensities" :
+            "NumberDensities" :
             {
                 "Electron" :
                 {
@@ -85,7 +85,7 @@
             },
             "#QuarkSuperconductingGap" :  
             {
-                "Units" : "MeV",
+                "Units" : "Mev",
                 "Column" : 13
             }
         },

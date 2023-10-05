@@ -38,7 +38,7 @@ std::vector<std::vector<double>> auxiliaries::io::read_tabulated_file(const std:
     {
         std::string cleared_line = auxiliaries::io::retrieve_cleared_line(lines[i]);
         std::stringstream ss(cleared_line);
-        for (size_t j = columns.first; j < columns.second; ++j)
+        for (size_t j = 0; j < columns.second; ++j)
         {
             std::string str;
             if (!(ss >> str))
