@@ -3,7 +3,7 @@
     {
         "Datafile" :
         {
-            "Path" : "../../presupplied/EoS/APR_EOS_Acc_Fe_RHMstandard.dat",
+            "Path" : "presupplied/EoS/APR_EOS_Acc_Fe_RHMstandard.dat",
             "Rows" : [7, 237],
             "Interpolation" : "Linear"
         },
@@ -85,7 +85,7 @@
             },
             "#QuarkSuperconductingGap" :  
             {
-                "Units" : "MeV",
+                "Units" : "Mev",
                 "Column" : 13
             }
         },
