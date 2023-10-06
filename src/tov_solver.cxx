@@ -4,27 +4,25 @@
 #include "../include/auxiliaries.h"
 
 #include <vector>
-// #include <iostream>
+#include <limits>
 #include <cmath>
 
-std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &cache, const std::function<double(double)> &eos, double r, double center_density, double radius_step, double density_step)
+std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &cache, const std::function<double(double)> &eos, double r, double center_density, double radius_step, double surface_pressure, size_t adaption_limit)
 {
-
 	using constants::scientific::G;
 	using constants::scientific::Pi;
 
 	// for P'_rho I will use the following function
-	auto eos_prime = [&eos, density_step](double dens)
+	auto eos_prime = [&eos, center_density](double dens)
 	{
-		try
-		{
-			return (eos(dens + density_step) - eos(dens)) / (density_step);
-		}
-		catch (const std::exception &e)
-		{
-			THROW(std::runtime_error, "Pressure derivative computation failed. Reason : " + std::string(e.what()));
-		}
-		// maybe should implement leap-frog as well/instead
+		double epsilon = std::numeric_limits<double>::epsilon();
+		// hope no one puts negative density in here
+		double dens_step = std::sqrt(epsilon) * (dens + std::sqrt(epsilon));
+		// make sure to not go beyond center density requests, since we may easily get outside of EOS domain
+		if (dens + dens_step > center_density)
+			return (eos(dens) - eos(dens - dens_step)) / dens_step;
+		// otherwise we can safely go forward
+		return (eos(dens + dens_step) - eos(dens)) / dens_step;
 	};
 
 	// Here I apply RK4 to coupled equations {m'=f(rho,r), rho'=g(rho,m,r)}
@@ -32,96 +30,84 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &c
 
 	auto m_prime = [](double rho, double r)
 	{
+		if (rho < 0)
+			THROW(std::runtime_error, "Negative density encountered.");
 		return 4 * Pi * r * r * rho;
 	};
 
-	auto rho_prime = [&eos, eos_prime, radius_step](double rho, double m, double r)
+	auto rho_prime = [&eos, &eos_prime, radius_step](double rho, double m, double r)
 	{
+		if (rho < 0)
+			THROW(std::runtime_error, "Negative density encountered.");
+		// zero radius approx -- explicitly get rid of singularity
 		if (r < radius_step / 2)
-			return 0.0;
+			return -(4 * Pi * G * r) / eos_prime(rho) * (rho + eos(rho)) * (rho / 3 + eos(rho));
+		// otherwise proceed
 		return -G / (r * r * eos_prime(rho)) * (rho + eos(rho)) * (m + 4 * Pi * r * r * r * eos(rho)) / (1 - 2 * G * m / r);
 	};
 
-	// check whether we need to recache
-	bool emptyflag = false;
+	auto phi_integrand = [&eos_prime, &eos](double rho)
+	{
+		return -eos_prime(rho) / (rho + eos(rho));
+	}; // integrand of phi function wrt rho
+
+	double adaptive_radius_step = radius_step; // this one radius step may get smaller if we encounter problems
+	size_t adaption_count = 0; // if the algorithm fails to converge under adaption_limit, we conclude the simulation
+							   // consider moving it to outer scope
 	if (cache.empty())
 	{
-		cache = std::vector<std::vector<double>>(5, std::vector<double>());
-		cache[4].push_back(0); // make sure cache[4][0] exists so that further check does not fail
-		emptyflag = true;
-	}
-	if (emptyflag || fabs(cache[4][0] - center_density) > density_step)
-	{ // recache in case cache is empty or center_density differs from cached
-		cache = std::vector<std::vector<double>>(5, std::vector<double>());
+		cache = std::vector<std::vector<double>>(4, std::vector<double>());
 		double m(0), rho(center_density), r(0), phi(0); // initial values; for phi we know phi(R) = 1/2 ln(1-2GM/R), so we will need to shift total function later
 		cache[0].push_back(r);
 		cache[1].push_back(m);
 		cache[2].push_back(rho);
 		cache[3].push_back(phi);
-		cache[4].push_back(center_density);
 
-		auto phi_integrand = [eos_prime, &eos](double rho)
-		{
-			return -eos_prime(rho) / (rho + eos(rho));
-		}; // integrand to find phi(r)
-
-		while (rho > density_step)
-		{ // while density is not close to zero i.e. were not on surface
+		while (eos(rho) > surface_pressure && adaption_count < adaption_limit)
+		{ // while pressure is above desided minima i.e. were not on surface and we didn't exceed adaption limit
 			// then proceed
 			std::vector<double> m_rk(4), rho_rk(4); // RK4 variables
 
-			// std::cout << r << " : " << m << " " << rho << '\n';
-
 			// RK4 algorithm follows
-			m_rk[0] = m_prime(rho, r);
-			rho_rk[0] = rho_prime(rho, m, r);
+			try
+			{
+				m_rk[0] = m_prime(rho, r);
+				rho_rk[0] = rho_prime(rho, m, r);
 
-			if (rho + radius_step / 2 * rho_rk[0] < 0)
-			{
-				m_rk[1] = 0.0;
-				rho_rk[1] = 0.0;
+				m_rk[1] = m_prime(rho + adaptive_radius_step / 2 * rho_rk[0], r + adaptive_radius_step / 2);
+				rho_rk[1] = rho_prime(rho + adaptive_radius_step / 2 * rho_rk[0], m + adaptive_radius_step / 2 * m_rk[0], r + adaptive_radius_step / 2);
+
+				m_rk[2] = m_prime(rho + adaptive_radius_step / 2 * rho_rk[1], r + adaptive_radius_step / 2);
+				rho_rk[2] = rho_prime(rho + adaptive_radius_step / 2 * rho_rk[1], m + adaptive_radius_step / 2 * m_rk[1], r + adaptive_radius_step / 2);
+
+				m_rk[3] = m_prime(rho + adaptive_radius_step * rho_rk[2], r + adaptive_radius_step);
+				rho_rk[3] = rho_prime(rho + adaptive_radius_step * rho_rk[2], m + adaptive_radius_step * m_rk[2], r + adaptive_radius_step);
 			}
-			else
+			catch (std::runtime_error &e)
 			{
-				m_rk[1] = m_prime(rho + radius_step / 2 * rho_rk[0], r + radius_step / 2);
-				rho_rk[1] = rho_prime(rho + radius_step / 2 * rho_rk[0], m + radius_step / 2 * m_rk[0], r + radius_step / 2);
-			}
-			
-			if (rho + radius_step / 2 * rho_rk[1] < 0)
-			{
-				m_rk[2] = 0.0;
-				rho_rk[2] = 0.0;
-			}
-			else
-			{
-				m_rk[2] = m_prime(rho + radius_step / 2 * rho_rk[1], r + radius_step / 2);
-				rho_rk[2] = rho_prime(rho + radius_step / 2 * rho_rk[1], m + radius_step / 2 * m_rk[1], r + radius_step / 2);
-			}
-			
-			if (rho + radius_step * rho_rk[2] < 0)
-			{
-				m_rk[3] = 0.0;
-				rho_rk[3] = 0.0;
-			}
-			else
-			{
-				m_rk[3] = m_prime(rho + radius_step * rho_rk[2], r + radius_step);
-				rho_rk[3] = rho_prime(rho + radius_step * rho_rk[2], m + radius_step * m_rk[2], r + radius_step);
+				adaptive_radius_step /= 2;
+				++adaption_count;
+				continue;
 			}
 
-			rho += radius_step / 6 * (rho_rk[0] + 2 * rho_rk[1] + 2 * rho_rk[2] + rho_rk[3]);
-			m += radius_step / 6 * (m_rk[0] + 2 * m_rk[1] + 2 * m_rk[2] + m_rk[3]);
-			r += radius_step;
+			rho += adaptive_radius_step / 6 * (rho_rk[0] + 2 * rho_rk[1] + 2 * rho_rk[2] + rho_rk[3]);
 			if (rho < 0.0)
 			{
-				break;
+				rho -= adaptive_radius_step / 6 * (rho_rk[0] + 2 * rho_rk[1] + 2 * rho_rk[2] + rho_rk[3]);
+				adaptive_radius_step /= 2;
+				++adaption_count;
+				continue;
 			}
+			m += adaptive_radius_step / 6 * (m_rk[0] + 2 * m_rk[1] + 2 * m_rk[2] + m_rk[3]);
+			r += adaptive_radius_step;
 			phi += 0.5 * (rho - cache[2].back()) * (phi_integrand(rho) + phi_integrand(cache[2].back())); // trapezoid integral
 			// memorize results
 			cache[0].push_back(r);
 			cache[1].push_back(m);
 			cache[2].push_back(rho);
 			cache[3].push_back(phi);
+			adaptive_radius_step = radius_step; // reset adaptive radius step
+			adaption_count = 0;					// reset adaption count
 		}
 
 		// shift phi function so that to satisfy phi(R) condition
@@ -129,11 +115,6 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &c
 		for (auto &elem : cache[3])
 			elem += phi_shift;
 	}
-
-	/*if (cache[0].back() <= r)
-	{ // output in case provided coordinate is out of range
-		return std::vector<double>({cache[1].back(), cache[2].back(), cache[3].back(), eos(cache[2].back()), cache[0].back()});
-	}*/
 
 	// linear interpolation
 

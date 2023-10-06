@@ -148,11 +148,14 @@ namespace instantiator
     // EoS linspace discretization
     size_t discr_size_EoS = 1000;
 
+    // TOV adaption limit
+    size_t tov_adapt_limit = 20;
+
     // TOV solver radius step size in GeV
     double radius_step = 0.01 * constants::conversion::km_gev;
 
-    // TOV solver density step size in GeV^4
-    double density_step = 1E-8 * edensity_upp;
+    // TOV solver surface pressure in GeV^4
+    double surface_pressure = 1E-8 * pressure_upp;
 
     // TOV solver center density in GeV^4
     double center_density = 0.2166 * edensity_upp;

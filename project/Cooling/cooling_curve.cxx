@@ -81,11 +81,11 @@ int main(int argc, char **argv)
     // TOV solver
 
     auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
-                                                    const std::function<double(double)> &, double, double, double, double>(tov_solver::tov_solution);
+                                                    const std::function<double(double)> &, double, double, double, double, size_t>(tov_solver::tov_solution);
     auto tov = [&tov_cached, &eos_cached](double r)
     {
         // TOV solution cached
-        return tov_cached(eos_cached, r, center_density, radius_step, density_step);
+        return tov_cached(eos_cached, r, center_density, radius_step, surface_pressure, tov_adapt_limit);
     };
 
     auto nbar = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double>(
