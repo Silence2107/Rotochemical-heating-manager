@@ -1,39 +1,52 @@
 
-#include <iostream>
-#include <fstream>
-#include <exception>
-#include <vector>
-#include <string>
-#include <sstream>
-#include <iomanip>
-#include <cmath>
+#include "../../include/auxiliaries.h"
+#include "../../include/cooling.h"
+#include "../../include/constants.h"
+#include "../../include/tov_solver.h"
+#include "../../include/instantiator.hpp"
 
 #include "../../3rd-party/argparse/argparse.hpp"
 
-#include "../../include/tov_solver.h"     // contains TOV solver
-#include "../../include/constants.h"      // contains constants
-#include "../../include/auxiliaries.h"    // contains auxiliary functionality
-#include "../../include/instantiator.hpp" // instantiator
+#include <vector>
+#include <functional>
+#include <cmath>
+#include <stdexcept>
+#include <iostream>
+#include <sstream>
+#include <fstream>
+
+#if RHM_HAS_ROOT
+#include <TCanvas.h>
+#include <TGraph.h>
+#include <TAxis.h>
+#include <TLegend.h>
+#include <TFile.h>
+#include <TStyle.h>
+#endif
 
 int main(int argc, char **argv)
 {
-    // Setup that calculates I_{\omega_i} (based on provided central_density/max_eos_density argv[1]), which is the following quantity:
-    // I_{\omega i} = \int_{core} dY_i/dP * dP/d\omega^2 * dN, with estimation dP/d\omega^2 \approx -P/\omega_K^2
-    // where \omega_K is the Keplerian frequency and i being particle species
-    argparse::ArgumentParser parser("estimator_for_I_omegai", "Estimates I_omega quantities (rotochemical heating related) based on EoS", "Argparse powered by SiLeader");
+    argparse::ArgumentParser parser("plot_radial_dependencies", "Evaluates a function of choice (predefined within the code) radial dependency based on EoS", "Argparse powered by SiLeader");
 
     parser.addArgument({"--inputfile"}, "json input file path (optional)");
-    parser.addArgument({"--center_density"}, "center energy density linspaced fraction (optional, default: read from inputfile)");
-
+    #if RHM_HAS_ROOT
+    parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: Dependency.pdf)");
+    parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
+    #endif
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
     if (args.has("inputfile"))
         instantiator::instantiate_system(args.get<std::string>("inputfile"));
 
-    double center_density = instantiator::center_density;
-    if (args.has("center_density"))
-        center_density = std::stod(args.get<std::string>("center_density")) * (instantiator::edensity_upp - instantiator::edensity_low) + instantiator::edensity_low;
+    #if RHM_HAS_ROOT
+    std::string pdf_path = args.safeGet<std::string>("pdf_path", "Dependency.pdf");
+    TFile *rootfile = nullptr;
+    if (args.has("rootfile_path"))
+        rootfile = new TFile(args.get<std::string>("rootfile_path").c_str(), "RECREATE");
+    #endif
+
+    // RUN --------------------------------------------------------------------------
 
     // EoS definition
 
@@ -67,9 +80,11 @@ int main(int argc, char **argv)
 
     // TOV solver
 
+    // TOV solver
+
     auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
                                                     const std::function<double(double)> &, double, double, double, double, size_t>(tov_solver::tov_solution);
-    auto tov = [&tov_cached, &eos_cached, center_density](double r)
+    auto tov = [&tov_cached, &eos_cached](double r)
     {
         // TOV solution cached
         return tov_cached(eos_cached, r, center_density, radius_step, surface_pressure, tov_adapt_limit);
@@ -94,6 +109,7 @@ int main(int argc, char **argv)
                     // now we somehow have to find corresponding n_B
                     // let's stick to densities
                     double density_at_r = tov(r_current)[1];
+
                     double nbar_left = nbar_low, nbar_right = nbar_upp; // we need these for bisection search;
                     double nbar_mid = (nbar_left + nbar_right) / 2.0;
                     while (fabs(nbar_right - nbar_left) > nbar_low)
@@ -114,26 +130,79 @@ int main(int argc, char **argv)
             return nbar_interpolator(cache[0], cache[1], r);
         });
 
-    // run
-
     double r_ns = tov(0.0)[4];
     double m_ns = tov(r_ns)[0];
 
-    std::cout << "M / M_sol " << m_ns * constants::conversion::gev_over_msol << "\n";
+    auto exp_phi = [&tov](double r)
+    {
+        return std::exp(tov(r)[2]);
+    };
 
     auto exp_lambda = [&tov](double r)
     {
         return pow(1 - 2 * constants::scientific::G * tov(r)[0] / r, -0.5);
     };
-    for (auto species = number_densities_of_nbar.begin(); species != number_densities_of_nbar.end(); ++species)
+
+    auto radial_dependency = [&](double r)
     {
-        auto n_i = species->second;
-        double omega_k_sqr = pow(2.0 / 3, 3.0) * constants::scientific::G * m_ns / (r_ns * r_ns * r_ns);
-        auto integrand = [&](double r)
-        {
-            return -nbar(r) * 1.0 / omega_k_sqr * (n_i(nbar(r + radius_step)) / nbar(r + radius_step) - n_i(nbar(r)) / nbar(r)) / (tov(r + radius_step)[3] / tov(r)[3] - 1);
-        };
-        double I_i = auxiliaries::math::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)();
-        std::cout << species->first.name() << " " << I_i / (constants::conversion::gev_s * constants::conversion::gev_s) << "\n";
+        return (tov(r)[1] - edensity_low) / (edensity_upp - edensity_low);
+    };
+
+    std::vector<double> x, y;
+    for (double r = radius_step / 2; r < r_ns; r += radius_step)
+    {
+        x.push_back(r / constants::conversion::km_gev);
+        y.push_back(radial_dependency(r));
+        std::cout << r << " " << radial_dependency(r) << "\n";
     }
+
+    #if RHM_HAS_ROOT
+    // draw
+    TCanvas *c1 = new TCanvas("c1", "c1");
+    gPad->SetTicks();
+    gPad->SetTopMargin(0.05);
+    gPad->SetLeftMargin(0.11);
+    gPad->SetRightMargin(0.05);
+    gPad->SetBottomMargin(0.1);
+    gStyle->SetOptStat(0);
+    gStyle->SetOptTitle(0);
+
+    auto gr = new TGraph(x.size(), x.data(), y.data());
+    if (rootfile)
+    {
+        gr->Write();
+        rootfile->Close();
+    }
+    gr->SetLineColor(kBlue);
+    gr->SetLineWidth(2);
+    gr->SetLineStyle(1);
+    gr->Draw("AL");
+    gr->GetYaxis()->SetTitleOffset(1.5);
+    gr->GetXaxis()->SetTitle("r [km]");
+    gr->GetYaxis()->SetTitle("f(r), nat. u.");
+    gr->GetYaxis()->SetLabelFont(43);
+    gr->GetYaxis()->SetLabelSize(22);
+    gr->GetYaxis()->SetTitleFont(43);
+    gr->GetYaxis()->SetTitleSize(26);
+    gr->GetXaxis()->SetTitleOffset(0.5);
+    gr->GetXaxis()->SetLabelFont(43);
+    gr->GetXaxis()->SetLabelSize(22);
+    gr->GetXaxis()->SetTitleFont(43);
+    gr->GetXaxis()->SetTitleSize(26);
+    gr->GetXaxis()->SetTitleOffset(0.9);
+    //gr->GetYaxis()->SetRangeUser(7e2, 7e6);
+    //gr->GetXaxis()->SetLimits(1e-12, 1e7);
+
+    auto legend = new TLegend(0.15, 0.1, 0.43, 0.38);
+    legend->AddEntry(gr, "RH Manager", "l");
+    legend->SetBorderSize(0);
+    legend->SetTextFont(43);
+    legend->SetTextSize(27);
+    legend->SetFillStyle(0);
+    legend->SetMargin(0.35);
+
+    legend->Draw();
+
+    c1->SaveAs(pdf_path.c_str());
+    #endif
 }
