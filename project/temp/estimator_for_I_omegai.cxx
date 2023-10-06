@@ -23,7 +23,7 @@ int main(int argc, char **argv)
     argparse::ArgumentParser parser("estimator_for_I_omegai", "Estimates I_omega quantities (rotochemical heating related) based on EoS", "Argparse powered by SiLeader");
 
     parser.addArgument({"--inputfile"}, "json input file path (optional)");
-    parser.addArgument({"--center_density"}, "center energy density fraction of maxima (optional, default: read from inputfile)");
+    parser.addArgument({"--center_density"}, "center energy density linspaced fraction (optional, default: read from inputfile)");
 
     auto args = parser.parseArgs(argc, argv);
 
@@ -33,7 +33,7 @@ int main(int argc, char **argv)
 
     double center_density = instantiator::center_density;
     if (args.has("center_density"))
-        center_density = std::stod(args.get<std::string>("center_density")) * instantiator::edensity_upp;
+        center_density = std::stod(args.get<std::string>("center_density")) * (instantiator::edensity_upp - instantiator::edensity_low) + instantiator::edensity_low;
 
     // EoS definition
 

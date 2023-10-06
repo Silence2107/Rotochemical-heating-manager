@@ -102,6 +102,7 @@ int main(int argc, char** argv)
     size_t offset = 15;
     std::vector<double> x, y;
     // assemble data for different center densities
+    std::cout << "(rho_E - rho_E^min) / (rho_E^max - rho_E^min)\t M [Ms]\t R [km]\n";
     for(size_t count = offset; count < n - offset + 1; ++count)
     {
         using namespace constants::conversion;
@@ -109,7 +110,7 @@ int main(int argc, char** argv)
         auto point = get_m_r_at_density(edensity);
         x.push_back(point[0] / km_gev);
         y.push_back(point[1] * gev_over_msol);
-        std::cout << "At rho_E/rho_E^max = " << static_cast<double>(count) / n << ". M = " << y.back() << " Ms, R = " << x.back() << " km\n";
+        std::cout << static_cast<double>(count) / n << "\t" << y.back() << "\t" << x.back() << "\n";
     }
 
     #if RHM_HAS_ROOT
