@@ -14,7 +14,7 @@ In order to refer to an example, see <span style="color:blue">_presupplied/Input
 - `"TimeInit"` (double) **:** Defines initial time for cooling PDE in years. Defaults to 0 years.
 - `"TimeEnd"` (double, required*) **:** Defines final time for cooling PDE in years.
 - `"TimeBaseStep"` (double, required*) **:** Defines base time step for cooling PDE in years.
-- `NumberPointsEstimate` (uint, required*) **:** Defines an estimation (disregarding algorithms adaptivity and imprecision) for number of points for cooling PDE. 
+- `"NumberPointsEstimate"` (uint, required*) **:** Defines an estimation (disregarding algorithms adaptivity and imprecision) for number of points for cooling PDE. 
 ```{note}
 This setting is used for reserving memory for the solution, as well as it could be used for estimating the time grid.
 ```

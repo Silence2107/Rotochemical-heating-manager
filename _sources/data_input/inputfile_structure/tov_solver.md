@@ -10,6 +10,10 @@ In order to refer to an example, see <span style="color:blue">_presupplied/Input
 ## Description
 
 - `"EoSDiscretization"` (uint) **:** Defines discretization step for $P(\rho)$ dependence. Defaults to 1000.
+- `"AdaptionLimit"` (uint) **:** Defines how many times TOV solver will try to adapt the radial step before concluding early termination. Defaults to 20.
+```{warning}
+Early termination happens silently and is only well noticeable if the final star's radius is very low.
+```
 - `"EoSInterpolation` (string) **:** Interpolation kind to be used for discretized $P(\rho)$ dependence. Choose from ["Linear", "Cubic"], with "Linear" being default. 
 - `"BarionicDensityInterpolation"` (string) **:** Interpolation kind to be used for discretized $n_b(r)$ dependence. Choose from ["Linear", "Cubic"], with "Linear" being default. 
 ```{note}
@@ -19,13 +23,12 @@ This setting is not used by TOV solver itself (rather for cooling functionality)
 
 - `"RadiusStep"` (double, required) **:** Defines radius discretization step. Units are defined by "LengthUnits" entry.
 
-- `"DensityProvidedAs"` (string, required) **:** The way the "CenterDensity" and "DensityStep" are provided. Choose from ["Same", "LinspacedMinToMax"]. "LinspacedMinToMax" linearly maps $[0,1] \rightarrow [\rho_{min}, \rho_{max}]$, while "Same" assumes same units as for "EnergyDensity".
-
-- `"CenterDensity"` (double, required) **:** Defines central energy density for initial value problem. Units are defined by "DensityUnits" entry.
+- `"CenterDensity"` **:** Defines central energy density for initial value problem.
+    - `"ProvidedAs"` (string, required) **:** The way the "CenterDensity" is provided. Choose from ["Same", "LinspacedMinToMax"]. "LinspacedMinToMax" linearly maps $[0,1] \rightarrow [\rho_{min}, \rho_{max}]$, while "Same" assumes same units as for "EnergyDensity".
+    - `"Value"` (double, required) **:** Value of central energy density. Interpretation depends on "ProvidedAs" entry.
 ```{note}
-Though this setting is a key value for TOV solver, it is not used for producing M-R curves, since M-R curves are parametrized by central density. It, of course, does not undermine its importance during any simulation on a given central density.
+Though this setting is a key value for TOV solver, it is not used for producing M-R curves, since M-R curves are _parametrized_ by central density. It, of course, does not undermine its importance during any simulation on a given central density.
 ```
-- `"DensityStep"` (double, required) **:** Defines energy density at which star's radius is calculated. This same quantity is used for $P(\rho)$ differentiation, as well as it enforces TOV recaching if center density is changed by that much during one program's execution. Units are defined by "DensityUnits" entry.
-```{admonition} devnote
-Appears to be very cumbersome variable. I should consider relaxing its responsibility.
-```
+- `"SurfacePressure"` **:** Defines surface pressure as an ultimate exit condition for TOV.
+    - `"ProvidedAs"` (string, required) **:** The way the "SurfacePressure" is provided. Choose from ["Same", "LinspacedMinToMax"]. "LinspacedMinToMax" linearly maps $[0,1] \rightarrow [P_{min}, P_{max}]$, while "Same" assumes same units as for "Pressure".
+    - `"Value"` (double, required) **:** Value of surface pressure. Interpretation depends on "ProvidedAs" entry.
