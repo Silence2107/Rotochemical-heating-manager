@@ -63,8 +63,10 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &c
 		cache[2].push_back(rho);
 		cache[3].push_back(phi);
 
-		while (eos(rho) > surface_pressure && adaption_count < adaption_limit)
-		{ // while pressure is above desided minima i.e. were not on surface and we didn't exceed adaption limit
+		while (adaption_count < adaption_limit)
+		{ 
+			// while pressure is above desided minima i.e. were not on surface (see below)
+			// and we didn't exceed adaption limit
 			// then proceed
 			std::vector<double> m_rk(4), rho_rk(4); // RK4 variables
 
@@ -85,6 +87,7 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &c
 			}
 			catch (std::runtime_error &e)
 			{
+				// if we encounter negative density, reevaluate with smaller step
 				adaptive_radius_step /= 2;
 				++adaption_count;
 				continue;
@@ -93,11 +96,15 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &c
 			rho += adaptive_radius_step / 6 * (rho_rk[0] + 2 * rho_rk[1] + 2 * rho_rk[2] + rho_rk[3]);
 			if (rho < 0.0)
 			{
+				// if we encounter negative density, reevaluate with smaller step
 				rho -= adaptive_radius_step / 6 * (rho_rk[0] + 2 * rho_rk[1] + 2 * rho_rk[2] + rho_rk[3]);
 				adaptive_radius_step /= 2;
 				++adaption_count;
 				continue;
 			}
+			// if we are below surface pressure, we exit EARLY to avoid going beyond EoS domain
+			if (eos(rho) < surface_pressure)
+				break; 
 			m += adaptive_radius_step / 6 * (m_rk[0] + 2 * m_rk[1] + 2 * m_rk[2] + m_rk[3]);
 			r += adaptive_radius_step;
 			phi += 0.5 * (rho - cache[2].back()) * (phi_integrand(rho) + phi_integrand(cache[2].back())); // trapezoid integral
