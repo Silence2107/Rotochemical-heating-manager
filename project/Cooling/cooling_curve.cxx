@@ -279,10 +279,18 @@ int main(int argc, char **argv)
                 x.back(), t_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
                 exp_lambda, exp_phi, radii, profile, te_tb, cooling_newton_step_eps, cooling_newton_max_iter);
             next_T = t_l_profiles[0].end()[-2];
-            double max_diff = std::abs((y.back() - next_T) / y.back());
+            double max_diff = 0;
+            for (size_t i = 0; i < radii.size() - 1; ++i)
+            {
+                // excluding surface point
+                max_diff = std::max(max_diff, fabs(t_l_profiles[0][i] - profile[i]) / profile[i]);
+            }
+            // std::cout << "max_diff = " << max_diff << '\n';
             if (max_diff > 0.05)
             {
-                t_step /= 2.0;
+                t_step /= 2;
+                // exp_rate_estim = sqrt(exp_rate_estim);
+                // std::cout << "Adapting time step \n";
                 continue;
             }
             profile = t_l_profiles[0];

@@ -279,19 +279,20 @@ int main(int argc, char **argv)
                 break;
             }
             double max_diff = 0;
-            for (size_t i = 0; i < radii.size(); ++i)
+            for (size_t i = 0; i < radii.size() - 1; ++i)
             {
+                // excluding surface point
                 max_diff = std::max(max_diff, fabs(new_profile[i] - profile[i])/profile[i]);
-                profile[i] = new_profile[i];
             }
             // std::cout << "max_diff = " << max_diff << '\n';
             if (max_diff > 0.05)
                 {
-                    time_step *= 0.5;
+                    time_step /= 2;
                     //exp_rate_estim = sqrt(exp_rate_estim);
                     //std::cout << "Adapting time step \n";
                     continue;
                 }
+            profile = new_profile;
             break;
         }
         
