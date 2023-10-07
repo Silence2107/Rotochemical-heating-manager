@@ -23,7 +23,7 @@ Therefore, even running the executable as is
 bin/project/Cooling/cooling_curve.out --inputfile presupplied/Inputfile/RHMconfig.json
 ```
 will not only produce the console tabulation, but also a pdf preview {numref}`apr-example-cooling`.
-```{figure} ../plots/apr_example_cooling.png
+```{figure} ../plots/apr_example_cooling.jpg
 ---
 name: apr-example-cooling
 scale: 30%
@@ -32,7 +32,7 @@ Cooling curve from RHM with presupplied settings. $2M_{\odot}$, APR4 EoS
 ```
 
 Some programs may not have ROOT-free executable available. For example, for the time being, <span style="color:blue">_project/Cooling/plot\_nonequilibrium\_time\_profiles.cxx_</span> only runs with ROOT, as its only purpose yet is to produce a meaningful profiles preview {numref}`apr-example-profile`.
-```{figure} ../plots/apr_example_profiles.png
+```{figure} ../plots/apr_example_profiles.jpg
 ---
 name: apr-example-profile
 scale: 30%
