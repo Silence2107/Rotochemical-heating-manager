@@ -68,8 +68,7 @@ int main()
     auto nbar = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double>(
         [&](std::vector<std::vector<double>> &cache, double r)
         {
-            // cache contains {r, n_B(r)} arrays; recaching is not supported at the moment, call ::erase instead
-            // return nbar(r) for given r
+            // cache and evaluate nbar(r) for given r
 
             if (cache.empty())
             {
@@ -78,6 +77,7 @@ int main()
                 cache = std::vector<std::vector<double>>(2, std::vector<double>());
                 for (double r_current = 0; r_current < R_ns; r_current += radius_step)
                     cache[0].push_back(r_current);
+                cache[0].push_back(R_ns);
                 for (size_t i = 0; i < cache[0].size(); ++i)
                 {
                     double r_current = cache[0][i];
@@ -92,15 +92,18 @@ int main()
                         // while we are too far from appropriate precision for nbar estimate
                         // recalculate via bisection method
                         nbar_mid = (nbar_left + nbar_right) / 2.0;
-                        if (energy_density_of_nbar(nbar_mid) > density_at_r)
+                        double left_val = energy_density_of_nbar(nbar_left) - density_at_r,
+                               right_val = energy_density_of_nbar(nbar_right) - density_at_r,
+                               mid_val = energy_density_of_nbar(nbar_mid) - density_at_r;
+                        if (left_val * mid_val < 0)
                             nbar_right = nbar_mid;
-                        else
+                        else if (right_val * mid_val < 0)
                             nbar_left = nbar_mid;
+                        else
+                            THROW(std::runtime_error, "Bisection method failed. Investigate manually or report to the team.");
                     }
                     cache[1].push_back(nbar_mid);
                 }
-                cache[0].push_back(R_ns);
-                cache[1].push_back(0.0);
             }
             return nbar_interpolator(cache[0], cache[1], r);
         });
