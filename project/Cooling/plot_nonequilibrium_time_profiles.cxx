@@ -47,10 +47,8 @@ int main(int argc, char **argv)
     auto eos_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double>(
         [&](std::vector<std::vector<double>> &cache, double rho)
         {
-            if (rho < 0 || rho > edensity_upp)
+            if (rho < edensity_low || rho > edensity_upp)
                 THROW(std::runtime_error, "Data request out of range.");
-            if (rho <= edensity_low)
-                return 0.0;
             if (cache.empty() || cache[0].size() != discr_size_EoS)
             {                                                                                        // then fill/refill cache
                 cache = std::vector<std::vector<double>>(2, std::vector<double>(discr_size_EoS, 0)); // initialize 2xdiscr_size_EoS matrix
