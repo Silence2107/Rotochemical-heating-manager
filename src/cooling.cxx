@@ -387,7 +387,8 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
                mst_l = m_stars_of_nbar.at(lepton_flavour)(nbar_val);
         double T_loc = T / exp_phi(r);
         double k0 = pow(3 * Pi * Pi * N_sat, 1.0 / 3);
-        double alpha = 1.76 - 0.63 * pow(N_sat / nbar_val, 2.0 / 3), beta = 0.68,
+        // alpha >= 0 is to extend the validity of the formula to very low densities
+        double alpha = std::max(1.76 - 0.63 * pow(N_sat / nbar_val, 2.0 / 3), 0.0), beta = 0.68,
                v_fl = pf_l / mst_l;
         double dens_n = 8.1E21 * v_fl * pow(mst_n / neutron.mass(), 3) * (mst_p / proton.mass()) * (pf_p / k0) *
                         pow(T_loc * gev_over_k / 1.0E9, 8) * alpha * beta * erg_over_cm3_s_gev5;
