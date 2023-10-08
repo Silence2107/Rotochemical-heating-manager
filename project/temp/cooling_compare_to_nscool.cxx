@@ -1,9 +1,10 @@
-
 #include "../../include/auxiliaries.h"
 #include "../../include/cooling.h"
 #include "../../include/constants.h"
 #include "../../include/tov_solver.h"
 #include "../../include/instantiator.hpp"
+
+#include "../../3rd-party/argparse/argparse.hpp"
 
 #include <vector>
 #include <functional>
@@ -13,15 +14,38 @@
 #include <sstream>
 #include <fstream>
 
+#if RHM_HAS_ROOT
 #include <TCanvas.h>
 #include <TGraph.h>
 #include <TAxis.h>
 #include <TLegend.h>
+#include <TFile.h>
 #include <TStyle.h>
+#endif
 
-int main()
+int main(int argc, char **argv)
 {
+    argparse::ArgumentParser parser("cooling_compare_to_nscool", "Superimposes the results of RHM cooling with NSCool output data.", "Argparse powered by SiLeader");
+
+    parser.addArgument({"--inputfile"}, "json input file path (optional)");
+    #if RHM_HAS_ROOT
+    parser.addArgument({"--nscool_path"}, "nscool output file path (required)");
+    parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: Cooling.pdf)");
+    parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
+    #endif
+    auto args = parser.parseArgs(argc, argv);
+
     using namespace instantiator;
+    if (args.has("inputfile"))
+        instantiator::instantiate_system(args.get<std::string>("inputfile"));
+
+    #if RHM_HAS_ROOT
+    std::string pdf_path = args.safeGet<std::string>("pdf_path", "Cooling.pdf");
+    std::string nscool_path = args.get<std::string>("nscool_path");
+    TFile *rootfile = nullptr;
+    if (args.has("rootfile_path"))
+        rootfile = new TFile(args.get<std::string>("rootfile_path").c_str(), "RECREATE");
+    #endif
 
     // RUN --------------------------------------------------------------------------
 
@@ -257,10 +281,18 @@ int main()
                 x.back(), t_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
                 exp_lambda, exp_phi, radii, profile, te_tb, cooling_newton_step_eps, cooling_newton_max_iter);
             next_T = t_l_profiles[0].end()[-2];
-            double max_diff = std::abs((y.back() - next_T) / y.back());
+            double max_diff = 0;
+            for (size_t i = 0; i < radii.size() - 1; ++i)
+            {
+                // excluding surface point
+                max_diff = std::max(max_diff, fabs(t_l_profiles[0][i] - profile[i]) / profile[i]);
+            }
+            // std::cout << "max_diff = " << max_diff << '\n';
             if (max_diff > 0.05)
             {
-                t_step /= 2.0;
+                t_step /= 2;
+                // exp_rate_estim = sqrt(exp_rate_estim);
+                // std::cout << "Adapting time step \n";
                 continue;
             }
             profile = t_l_profiles[0];
@@ -291,20 +323,24 @@ int main()
         y[i] = auxiliaries::phys::te_tb_relation(y[i], r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k;
     }
 
+    #if RHM_HAS_ROOT
     // compare with nscool
-    std::ifstream apr_nscool("../../data/Teff_2.0_nopairing.dat");
+    std::ifstream apr_nscool(nscool_path.c_str());
     std::vector<double> x_nscool, y_nscool;
-    // iterate over file, but skip 26 lines
-    for (int i = 0; i < 26; ++i)
-    {
-        std::string line;
-        std::getline(apr_nscool, line);
-    }
+    // iterate over file, but skip the heading
+    bool heading = true;
     while (apr_nscool.good())
     {
         std::string line;
         std::getline(apr_nscool, line);
         line = auxiliaries::io::retrieve_cleared_line(line);
+        if (heading)
+        {
+            if (line[0] == '#')
+                continue;
+            else
+                heading = false;
+        }
         std::stringstream ss(line);
         double step, t, T;
         ss >> step >> t >> T;
@@ -350,6 +386,15 @@ int main()
     gr_ns_cool->SetLineStyle(9);
     gr_ns_cool->Draw("L");
 
+    if (rootfile)
+    {
+        gr->SetName("RHM");
+        gr->Write();
+        gr_ns_cool->SetName("NSCool");
+        gr_ns_cool->Write();
+        rootfile->Close();
+    }
+
     auto legend = new TLegend(0.15, 0.1, 0.43, 0.38);
     legend->AddEntry(gr, "RH Manager", "l");
     legend->AddEntry(gr_ns_cool, "NSCool", "l");
@@ -361,5 +406,6 @@ int main()
 
     legend->Draw();
 
-    c1->SaveAs("cooling.pdf");
+    c1->SaveAs(pdf_path.c_str());
+    #endif
 }
