@@ -54,7 +54,7 @@ In order to refer to an example, see <span style="color:blue">_presupplied/Input
     - `"EffectiveMasses"` **:** [Effective masses](https://en.wikipedia.org/wiki/Effective_mass_(solid-state_physics)) per each particle at the point.
         - `"$PARTICLE_NAME"` **:** Properties, related to a specific particle. **Substitute** the entry name with actual (fermion) species among provided in "Particles" array one by one.
             - `"Column"` (uint) **:** Column number with effective mass for given particle, counting from 0th.
-            - `"ProvidedAs"` (string, required*) **:** The way the effective mass is provided. Choose from ["FermiEnergy", "EffectiveMass"]. "FermiEnergy" mode incurs the effective mass via relativistic formula with Fermi momentum (occasionally applicable for light particles) and "EffectiveMass" mode expects actual effective mass. If "FermiEnergy" mode is chosen, the "Column" and "Units" entries is ignored.
+            - `"ProvidedAs"` (string, required*) **:** The way the effective mass is provided. Choose from ["FermiEnergy", "EffectiveMass"]. "FermiEnergy" mode incurs the effective mass via relativistic formula with Fermi momentum (occasionally applicable for light particles) and "EffectiveMass" mode expects actual effective mass. If "FermiEnergy" mode is chosen, the "Column" and "Units" entries are ignored.
             - `"Units"` (string/double, required*) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev", "MeV", "NucleonMass"], or specify an actual multiplier. If "FermiEnergy" mode is chosen, "Units" are disregarded.
             
     - `"IonVolumeFraction"` : Ion volume fraction in the crust at the point. Affects neutrino bremhstrahlung in the crust.
