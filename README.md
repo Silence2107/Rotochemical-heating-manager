@@ -9,9 +9,7 @@ The toolset is capable of constructing
 
 ## Input
 
-In order to setup the EoS, one must fill in the instantiator under include/instantiator.hpp . Currently we have no definitive guide on how to construct one, so at best you can replicate the one we provide for APR4 EoS. EoS datafile itself must be supplemented by user.
-
-UI support is provided via instantiator::instantiate_system() call, but the cook book is yet underway. Default instantiator relies on json inputfile being provided.
+In order to setup the EoS, one must supply the program with global data under include/instantiator.hpp . We provide examples for presupplied APR4 EoS, alongside providing users with [inputfile manual](https://silence2107.github.io/Rotochemical-heating-manager/data_input/what_data_program_need.html).
 
 ## Compilation
 
