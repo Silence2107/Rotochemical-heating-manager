@@ -196,12 +196,20 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf_l = k_fermi_of_nbar.at(lepton_flavour)(nbar_val),
-               pf_n = k_fermi_of_nbar.at(neutron)(nbar_val),
-               pf_p = k_fermi_of_nbar.at(proton)(nbar_val);
-        double mst_n = m_stars_of_nbar.at(neutron)(nbar_val),
-               mst_p = m_stars_of_nbar.at(proton)(nbar_val),
-               mst_l = m_stars_of_nbar.at(lepton_flavour)(nbar_val);
+        double pf_l, pf_n, pf_p, mst_n, mst_p, mst_l;
+        try
+        {
+            pf_l = k_fermi_of_nbar.at(lepton_flavour)(nbar_val);
+            pf_n = k_fermi_of_nbar.at(neutron)(nbar_val);
+            pf_p = k_fermi_of_nbar.at(proton)(nbar_val);
+            mst_n = m_stars_of_nbar.at(neutron)(nbar_val);
+            mst_p = m_stars_of_nbar.at(proton)(nbar_val);
+            mst_l = m_stars_of_nbar.at(lepton_flavour)(nbar_val);
+        }
+        catch (const std::out_of_range &e)
+        {
+            return 0.0;
+        }
         double T_loc = T / exp_phi(r);
         double k0 = pow(3 * Pi * Pi * N_sat, 1.0 / 3);
         if (pf_l + pf_p - pf_n <= 0)
@@ -379,12 +387,20 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf_l = k_fermi_of_nbar.at(lepton_flavour)(nbar_val),
-               pf_n = k_fermi_of_nbar.at(neutron)(nbar_val),
-               pf_p = k_fermi_of_nbar.at(proton)(nbar_val);
-        double mst_n = m_stars_of_nbar.at(neutron)(nbar_val),
-               mst_p = m_stars_of_nbar.at(proton)(nbar_val),
-               mst_l = m_stars_of_nbar.at(lepton_flavour)(nbar_val);
+        double pf_l, pf_n, pf_p, mst_n, mst_p, mst_l;
+        try
+        {
+            pf_l = k_fermi_of_nbar.at(lepton_flavour)(nbar_val);
+            pf_n = k_fermi_of_nbar.at(neutron)(nbar_val);
+            pf_p = k_fermi_of_nbar.at(proton)(nbar_val);
+            mst_n = m_stars_of_nbar.at(neutron)(nbar_val);
+            mst_p = m_stars_of_nbar.at(proton)(nbar_val);
+            mst_l = m_stars_of_nbar.at(lepton_flavour)(nbar_val);
+        }
+        catch (const std::out_of_range &e)
+        {
+            return 0.0;
+        }
         double T_loc = T / exp_phi(r);
         double k0 = pow(3 * Pi * Pi * N_sat, 1.0 / 3);
         // alpha >= 0 is to extend the validity of the formula to very low densities
@@ -475,10 +491,18 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf_n = k_fermi_of_nbar.at(neutron)(nbar_val),
-               pf_p = k_fermi_of_nbar.at(proton)(nbar_val);
-        double mst_n = m_stars_of_nbar.at(neutron)(nbar_val),
-               mst_p = m_stars_of_nbar.at(proton)(nbar_val);
+        double pf_n, pf_p, mst_n, mst_p;
+        try
+        {
+            pf_n = k_fermi_of_nbar.at(neutron)(nbar_val);
+            pf_p = k_fermi_of_nbar.at(proton)(nbar_val);
+            mst_n = m_stars_of_nbar.at(neutron)(nbar_val);
+            mst_p = m_stars_of_nbar.at(proton)(nbar_val);
+        }
+        catch (const std::out_of_range &e)
+        {
+            return 0.0;
+        }
         double alpha_nn = 0.59, alpha_np = 1.06, alpha_pp = 0.11,
                beta_nn = 0.56, beta_np = 0.66, beta_pp = 0.7;
         double T_loc = T / exp_phi(r);
@@ -584,8 +608,16 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf = k_fermi_of_nbar.at(hadron)(nbar_val);
-        double mst = m_stars_of_nbar.at(hadron)(nbar_val);
+        double pf, mst;
+        try
+        {
+            pf = k_fermi_of_nbar.at(hadron)(nbar_val);
+            mst = m_stars_of_nbar.at(hadron)(nbar_val);
+        }
+        catch (const std::out_of_range &e)
+        {
+            return 0.0;
+        }
         double a_s, a_t;
         if (hadron == neutron)
         {
@@ -605,7 +637,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
             a_t = 3.18;
         }
         else
-            THROW(std::runtime_error, "Unexpected species: " + hadron.name() + ".");
+            THROW(std::runtime_error, "Hadron PBF is not implemented for " + hadron.name() + ".");
         double T_loc = T / exp_phi(r);
         int n_flavours = 3;
         double base_dens = 1.17E21 * (mst / hadron.mass()) * (pf / hadron.mass()) * n_flavours *
@@ -664,7 +696,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
     };
 }
 
-std::function<double(double, double, double)> cooling::predefined::neutrinic::quark_durca_emissivity(
+std::function<double(double, double, double)> cooling::predefined::neutrinic::quark_ud_durca_emissivity(
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
     const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap)
@@ -676,14 +708,20 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf_u = k_fermi_of_nbar.at(uquark)(nbar_val),
-               pf_d = k_fermi_of_nbar.at(dquark)(nbar_val),
-               pf_s = k_fermi_of_nbar.at(squark)(nbar_val);
+        double pf_u, pf_d;
+        try
+        {
+            pf_u = k_fermi_of_nbar.at(uquark)(nbar_val);
+            pf_d = k_fermi_of_nbar.at(dquark)(nbar_val);
+        }
+        catch (const std::out_of_range &e)
+        {
+            return 0.0;
+        }
         // placeholders for future use
-        double pf_l = 0.0,
-               pf_l_mult_onemincos = 0.0;
-        // rough estimates for the strong coupling and squark mass (natural units)
-        double alpha_c = 1.0, m_s = squark.mass();
+        double pf_l = 0.0;
+        // rough estimate for the strong coupling
+        double alpha_c = 1.0;
         double T_loc = T / exp_phi(r);
 
         // ud
@@ -697,7 +735,40 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
             if (it->first.classify() == auxiliaries::phys::Species::ParticleClassification::kLepton)
                 pf_l += it->second(nbar_val);
         }
+
         dens_ud *= pf_l;
+        // q superconductivity?
+        return dens_ud * exp(-superconduct_q_gap(nbar_val) / T_loc);
+    };
+}
+
+std::function<double(double, double, double)> cooling::predefined::neutrinic::quark_us_durca_emissivity(
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap)
+{
+    return [=](double r, double t, double T)
+    {
+        using namespace constants::scientific;
+        using namespace constants::conversion;
+        using namespace constants::species;
+
+        double nbar_val = nbar_of_r(r);
+        double pf_u, pf_s;
+        try
+        {
+            pf_u = k_fermi_of_nbar.at(uquark)(nbar_val);
+            pf_s = k_fermi_of_nbar.at(squark)(nbar_val);
+        }
+        catch (const std::out_of_range &e)
+        {
+            return 0.0;
+        }
+        // placeholders for future use
+        double pf_l_mult_onemincos = 0.0;
+        // rough estimates for the strong coupling and squark mass (natural units)
+        double alpha_c = 1.0, m_s = squark.mass();
+        double T_loc = T / exp_phi(r);
 
         // us
 
@@ -726,11 +797,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         }
         dens_us *= pf_l_mult_onemincos;
 
-        double dens = dens_ud + dens_us;
-
         // q superconductivity?
-        dens *= exp(-superconduct_q_gap(nbar_val) / T_loc);
-        return dens;
+        return dens_us * exp(-superconduct_q_gap(nbar_val) / T_loc);
     };
 }
 
@@ -746,8 +814,16 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf_u = k_fermi_of_nbar.at(uquark)(nbar_val),
-               pf_d = k_fermi_of_nbar.at(dquark)(nbar_val);
+        double pf_u, pf_d;
+        try
+        {
+            pf_u = k_fermi_of_nbar.at(uquark)(nbar_val);
+            pf_d = k_fermi_of_nbar.at(dquark)(nbar_val);
+        }
+        catch (const std::out_of_range &e)
+        {
+            return 0.0;
+        }
         double alpha_c = 1.0;
         double T_loc = T / exp_phi(r);
 
@@ -774,8 +850,16 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf_u = k_fermi_of_nbar.at(uquark)(nbar_val),
-               pf_d = k_fermi_of_nbar.at(dquark)(nbar_val);
+        double pf_u, pf_d;
+        try
+        {
+            pf_u = k_fermi_of_nbar.at(uquark)(nbar_val);
+            pf_d = k_fermi_of_nbar.at(dquark)(nbar_val);
+        }
+        catch (const std::out_of_range &e)
+        {
+            return 0.0;
+        }
         double alpha_c = 1.0;
         double T_loc = T / exp_phi(r);
 
@@ -802,7 +886,15 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::el
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf_e = k_fermi_of_nbar.at(electron)(nbar_val);
+        double pf_e;
+        try
+        {
+            pf_e = k_fermi_of_nbar.at(electron)(nbar_val);
+        }
+        catch (const std::out_of_range &e)
+        {
+            return 0.0;
+        }
         double k0 = pow(3 * Pi * Pi * N_sat, 1.0 / 3);
         double T_loc = T / exp_phi(r);
 

@@ -139,7 +139,7 @@ namespace cooling
                 double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
                 const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp);
 
-            /// @brief Emissivity of neutrinos from quark DUrca reactions
+            /// @brief Emissivity of neutrinos from up-down quark DUrca reactions
             /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^3]
             /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^3]
             /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
@@ -147,7 +147,20 @@ namespace cooling
             /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^3]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
             /// @cite Base density - Iwamoto, 1982; superconductivity effect - Blaschke, Grigorian 2001
-            std::function<double(double, double, double)> quark_durca_emissivity(
+            std::function<double(double, double, double)> quark_ud_durca_emissivity(
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+                const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap);
+
+            /// @brief Emissivity of neutrinos from up-strange quark DUrca reactions
+            /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^3]
+            /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^3]
+            /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
+            /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
+            /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^3]
+            /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
+            /// @cite Base density - Iwamoto, 1982; superconductivity effect - Blaschke, Grigorian 2001
+            std::function<double(double, double, double)> quark_us_durca_emissivity(
                 const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
                 const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
                 const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap);
@@ -190,6 +203,18 @@ namespace cooling
                 const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
                 const std::function<double(double)> &exp_phi);
         }
+
+        /*
+        /// @brief Rotochemical heating cooling related functionality
+        namespace rotochemical
+        {
+            std::function<double(double, const auxiliaries::phys::Species &, double, double, double)> npl_durca_enhanced_emissivity(
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+                const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+                double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+                const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp);
+            
+        }*/
     }
 }
 
