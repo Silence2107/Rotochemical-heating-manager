@@ -111,7 +111,7 @@
         "CenterDensity" : 
         {
             "ProvidedAs" : "LinspacedMinToMax",
-            "Value" : 0.126
+            "Value" : 0.2166
         },
         "AdaptionLimit" : 20
     },
