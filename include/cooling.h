@@ -43,6 +43,18 @@ namespace cooling
             double t_curr, double t_step, const std::function<double(double, double, double)> &neutrino_rate, const std::function<double(double, double, double)> &cv, const std::function<double(double, double, double)> &lambda,
             const std::function<double(double)> &exp_lambda, const std::function<double(double)> &exp_phi, const std::vector<double> &radii, const std::vector<double> &initial_profile,
             const std::function<double(double)> &te_tb, double newton_eps, size_t newton_iter_max);
+
+        /// @brief Solves the coupled cooling equation dXi(t)/dt = Fi(t,{Xi}). These depend on the context, e.g. they may reflect temperature evolution alongside chemical imbalances
+        /// @param t_curr time at which the initial values were calculated [GeV^{-1}]
+        /// @param t_step time step at which the next values are to be calculated [GeV^{-1}]
+        /// @param rhs right hand vector side term Fi(t, {Xi}) of the cooling equation
+        /// @param initial_values value vector at t=t_curr [GeV]
+        /// @param newton_eps desirable relative accuracy of the solution
+        /// @param newton_iter_max maximum number of iterations for the Newton-Raphson method
+        /// @return Evolved values at t_curr + t_step [GeV]
+        std::vector<double> coupled_cooling(
+            double t_curr, double t_step, const std::vector<std::function<double(double, const std::vector<double> &)>> &rhs,
+            const std::vector<double> &initial_values, double newton_eps, size_t newton_iter_max);
     }
     /// @brief Predefined functionality, including cooling luminosities
     namespace predefined
