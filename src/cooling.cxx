@@ -10,6 +10,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <algorithm>
+#include <limits>
 // #include <iostream>
 
 double cooling::solver::equilibrium_cooling(
@@ -17,7 +18,7 @@ double cooling::solver::equilibrium_cooling(
 {
     // inverse euler solver; I want this method to be stable for any time step, including huge ones
     // solve T_{n+1} - T_n - dt * F(t_{n+1}, T_{n+1}) = 0 with Newton's steps
-        
+
     double t_next = t_curr + t_step;
     size_t iter = 0;
     double T_new = initial_temperature;
@@ -25,7 +26,6 @@ double cooling::solver::equilibrium_cooling(
     double update;
     do
     {
-        ++iter;
         F = cooling_rhs(t_next, T_new);
         auto temp_step = t_step / t_next * T_new;
         F_shift = cooling_rhs(t_next, T_new + temp_step) - F;
@@ -47,7 +47,7 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
 
     // estimate new profile based on old one
     std::vector<double> t_profile = initial_profile, // temperature profile
-                        l_profile(i_m + 1, 0.0); // luminosity profile, to be instantiated later
+        l_profile(i_m + 1, 0.0);                     // luminosity profile, to be instantiated later
 
     double t_next = t_curr + t_step;
 
@@ -70,8 +70,8 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
         double r = radii[rad_index],
                radius_step = radii[rad_index + 1] - r;
 
-        return 4 * constants::scientific::Pi * r * r * exp_lambda(r) * radius_step * 
-            (cv(r, t_next, Bt) * (Bt - initial_profile[rad_index]) / t_step + neutrino_rate(r, t_next, Bt));
+        return 4 * constants::scientific::Pi * r * r * exp_lambda(r) * radius_step *
+               (cv(r, t_next, Bt) * (Bt - initial_profile[rad_index]) / t_step + neutrino_rate(r, t_next, Bt));
     };
 
     // (4) Ld^inf(r_{i_m}, t_next) = -right_boundary(T_{i_m})
@@ -79,7 +79,7 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
     {
         return -constants::scientific::Sigma * 4 * constants::scientific::Pi * radii[i_m] * radii[i_m] * pow(te_tb(Bt), 4);
     };
-    
+
     // Initial estimate for luminosity profile follows from (1), (2)
     l_profile[0] = 0.0;
     for (size_t i = 1; i < l_profile.size(); ++i)
@@ -153,6 +153,7 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
         std::vector<double> updates = jacobi.tridiagonal_solve(rhs);
 
         max_diff = 0.0;
+        max_diff_index = 0;
         // apply the updates
         for (size_t i = 0; i < i_m + 1; ++i)
         {
@@ -161,7 +162,7 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
             if (t_profile[i] < 0.0)
                 THROW(std::runtime_error, "Reached negative temperature with current method.");
             // calculate the abs.-maximum update of the vector
-            if (std::abs(updates[2 * i]) > max_diff)
+            if (std::abs(updates[2 * i + 1] / t_profile[i]) > max_diff)
             {
                 max_diff = std::abs(updates[2 * i + 1] / t_profile[i]);
                 max_diff_index = i;
@@ -171,6 +172,50 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
 
     // return the profiles
     return {t_profile, l_profile};
+}
+
+std::vector<double> cooling::solver::coupled_cooling(
+    double t_curr, double t_step, const std::vector<std::function<double(double, const std::vector<double> &)>> &rhs,
+    const std::vector<double> &initial_values, double newton_eps, size_t newton_iter_max)
+{
+    double t_next = t_curr + t_step;
+    size_t iter = 0;
+    double max_diff;
+    auto new_vals = std::vector<double>(initial_values.size(), 0.0);
+    auto steps = std::vector<double>(initial_values.size(), 0.0);
+    double sqrt_eps = std::sqrt(std::numeric_limits<double>::epsilon());
+    for (size_t i = 0; i < initial_values.size(); ++i)
+    {
+        steps[i] = sqrt_eps * (std::abs(initial_values[i]) + sqrt_eps);
+    }
+    do
+    {
+        auxiliaries::math::MatrixD jacobi(initial_values.size(), initial_values.size(), 0.0);
+        std::vector<double> rhs_vect(initial_values.size(), 0.0);
+        for (size_t i = 0; i < initial_values.size(); ++i)
+        {
+            double unperturbed_val = rhs[i](t_next, initial_values);
+            auto shifted_vals = initial_values;
+            for (size_t j = 0; j < initial_values.size(); ++j)
+            {
+                shifted_vals[j] += steps[j];
+                jacobi.at(i, j) = (rhs[i](t_next, shifted_vals) - unperturbed_val) / steps[j];
+                shifted_vals[j] -= steps[j];
+            }
+            rhs_vect[i] = -unperturbed_val;
+        }
+        auto updates = jacobi.inverse() * rhs_vect;
+        max_diff = 0.0;
+        for (size_t i = 0; i < initial_values.size(); ++i)
+        {
+            new_vals[i] = initial_values[i] + updates.at(i, 0);
+            if (!(new_vals[i] == 0) && std::abs(updates.at(i, 0) / new_vals[i]) > max_diff)
+            {
+                max_diff = std::abs(updates.at(i, 0) / new_vals[i]);
+            }
+        }
+    } while (max_diff > newton_eps && ++iter < newton_iter_max);
+    return new_vals;
 }
 
 std::function<double(double, double)> cooling::predefined::photonic::surface_luminosity(double R, double M, double eta)
@@ -196,12 +241,20 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf_l = k_fermi_of_nbar.at(lepton_flavour)(nbar_val),
-               pf_n = k_fermi_of_nbar.at(neutron)(nbar_val),
-               pf_p = k_fermi_of_nbar.at(proton)(nbar_val);
-        double mst_n = m_stars_of_nbar.at(neutron)(nbar_val),
-               mst_p = m_stars_of_nbar.at(proton)(nbar_val),
-               mst_l = m_stars_of_nbar.at(lepton_flavour)(nbar_val);
+        double pf_l, pf_n, pf_p, mst_n, mst_p, mst_l;
+        try
+        {
+            pf_l = k_fermi_of_nbar.at(lepton_flavour)(nbar_val);
+            pf_n = k_fermi_of_nbar.at(neutron)(nbar_val);
+            pf_p = k_fermi_of_nbar.at(proton)(nbar_val);
+            mst_n = m_stars_of_nbar.at(neutron)(nbar_val);
+            mst_p = m_stars_of_nbar.at(proton)(nbar_val);
+            mst_l = m_stars_of_nbar.at(lepton_flavour)(nbar_val);
+        }
+        catch (const std::out_of_range &e)
+        {
+            return 0.0;
+        }
         double T_loc = T / exp_phi(r);
         double k0 = pow(3 * Pi * Pi * N_sat, 1.0 / 3);
         if (pf_l + pf_p - pf_n <= 0)
@@ -347,8 +400,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
             if (superfluid_n_1s0 && superfluid_n_3p2)
             {
                 return dens *
-                    (nbar_val > nbar_core_limit ? 
-                            r_AB(1 / tau_n_inv, 1 / tau_p_inv)
+                       (nbar_val > nbar_core_limit ? r_AB(1 / tau_n_inv, 1 / tau_p_inv)
                                                    : r_AA(superfluid_gap_1s0(1 / tau_n_inv), superfluid_gap_1s0(1 / tau_p_inv)));
             }
             // pure 1S0 for neutrons
@@ -379,12 +431,20 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf_l = k_fermi_of_nbar.at(lepton_flavour)(nbar_val),
-               pf_n = k_fermi_of_nbar.at(neutron)(nbar_val),
-               pf_p = k_fermi_of_nbar.at(proton)(nbar_val);
-        double mst_n = m_stars_of_nbar.at(neutron)(nbar_val),
-               mst_p = m_stars_of_nbar.at(proton)(nbar_val),
-               mst_l = m_stars_of_nbar.at(lepton_flavour)(nbar_val);
+        double pf_l, pf_n, pf_p, mst_n, mst_p, mst_l;
+        try
+        {
+            pf_l = k_fermi_of_nbar.at(lepton_flavour)(nbar_val);
+            pf_n = k_fermi_of_nbar.at(neutron)(nbar_val);
+            pf_p = k_fermi_of_nbar.at(proton)(nbar_val);
+            mst_n = m_stars_of_nbar.at(neutron)(nbar_val);
+            mst_p = m_stars_of_nbar.at(proton)(nbar_val);
+            mst_l = m_stars_of_nbar.at(lepton_flavour)(nbar_val);
+        }
+        catch (const std::out_of_range &e)
+        {
+            return 0.0;
+        }
         double T_loc = T / exp_phi(r);
         double k0 = pow(3 * Pi * Pi * N_sat, 1.0 / 3);
         // alpha >= 0 is to extend the validity of the formula to very low densities
@@ -475,10 +535,18 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf_n = k_fermi_of_nbar.at(neutron)(nbar_val),
-               pf_p = k_fermi_of_nbar.at(proton)(nbar_val);
-        double mst_n = m_stars_of_nbar.at(neutron)(nbar_val),
-               mst_p = m_stars_of_nbar.at(proton)(nbar_val);
+        double pf_n, pf_p, mst_n, mst_p;
+        try
+        {
+            pf_n = k_fermi_of_nbar.at(neutron)(nbar_val);
+            pf_p = k_fermi_of_nbar.at(proton)(nbar_val);
+            mst_n = m_stars_of_nbar.at(neutron)(nbar_val);
+            mst_p = m_stars_of_nbar.at(proton)(nbar_val);
+        }
+        catch (const std::out_of_range &e)
+        {
+            return 0.0;
+        }
         double alpha_nn = 0.59, alpha_np = 1.06, alpha_pp = 0.11,
                beta_nn = 0.56, beta_np = 0.66, beta_pp = 0.7;
         double T_loc = T / exp_phi(r);
@@ -584,8 +652,16 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf = k_fermi_of_nbar.at(hadron)(nbar_val);
-        double mst = m_stars_of_nbar.at(hadron)(nbar_val);
+        double pf, mst;
+        try
+        {
+            pf = k_fermi_of_nbar.at(hadron)(nbar_val);
+            mst = m_stars_of_nbar.at(hadron)(nbar_val);
+        }
+        catch (const std::out_of_range &e)
+        {
+            return 0.0;
+        }
         double a_s, a_t;
         if (hadron == neutron)
         {
@@ -605,7 +681,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
             a_t = 3.18;
         }
         else
-            THROW(std::runtime_error, "Unexpected species: " + hadron.name() + ".");
+            THROW(std::runtime_error, "Hadron PBF is not implemented for " + hadron.name() + ".");
         double T_loc = T / exp_phi(r);
         int n_flavours = 3;
         double base_dens = 1.17E21 * (mst / hadron.mass()) * (pf / hadron.mass()) * n_flavours *
@@ -664,7 +740,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
     };
 }
 
-std::function<double(double, double, double)> cooling::predefined::neutrinic::quark_durca_emissivity(
+std::function<double(double, double, double)> cooling::predefined::neutrinic::quark_ud_durca_emissivity(
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
     const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap)
@@ -676,14 +752,20 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf_u = k_fermi_of_nbar.at(uquark)(nbar_val),
-               pf_d = k_fermi_of_nbar.at(dquark)(nbar_val),
-               pf_s = k_fermi_of_nbar.at(squark)(nbar_val);
+        double pf_u, pf_d;
+        try
+        {
+            pf_u = k_fermi_of_nbar.at(uquark)(nbar_val);
+            pf_d = k_fermi_of_nbar.at(dquark)(nbar_val);
+        }
+        catch (const std::out_of_range &e)
+        {
+            return 0.0;
+        }
         // placeholders for future use
-        double pf_l = 0.0,
-               pf_l_mult_onemincos = 0.0;
-        // rough estimates for the strong coupling and squark mass (natural units)
-        double alpha_c = 1.0, m_s = squark.mass();
+        double pf_l = 0.0;
+        // rough estimate for the strong coupling
+        double alpha_c = 1.0;
         double T_loc = T / exp_phi(r);
 
         // ud
@@ -697,7 +779,40 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
             if (it->first.classify() == auxiliaries::phys::Species::ParticleClassification::kLepton)
                 pf_l += it->second(nbar_val);
         }
+
         dens_ud *= pf_l;
+        // q superconductivity?
+        return dens_ud * exp(-superconduct_q_gap(nbar_val) / T_loc);
+    };
+}
+
+std::function<double(double, double, double)> cooling::predefined::neutrinic::quark_us_durca_emissivity(
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap)
+{
+    return [=](double r, double t, double T)
+    {
+        using namespace constants::scientific;
+        using namespace constants::conversion;
+        using namespace constants::species;
+
+        double nbar_val = nbar_of_r(r);
+        double pf_u, pf_s;
+        try
+        {
+            pf_u = k_fermi_of_nbar.at(uquark)(nbar_val);
+            pf_s = k_fermi_of_nbar.at(squark)(nbar_val);
+        }
+        catch (const std::out_of_range &e)
+        {
+            return 0.0;
+        }
+        // placeholders for future use
+        double pf_l_mult_onemincos = 0.0;
+        // rough estimates for the strong coupling and squark mass (natural units)
+        double alpha_c = 1.0, m_s = squark.mass();
+        double T_loc = T / exp_phi(r);
 
         // us
 
@@ -726,11 +841,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         }
         dens_us *= pf_l_mult_onemincos;
 
-        double dens = dens_ud + dens_us;
-
         // q superconductivity?
-        dens *= exp(-superconduct_q_gap(nbar_val) / T_loc);
-        return dens;
+        return dens_us * exp(-superconduct_q_gap(nbar_val) / T_loc);
     };
 }
 
@@ -746,8 +858,16 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf_u = k_fermi_of_nbar.at(uquark)(nbar_val),
-               pf_d = k_fermi_of_nbar.at(dquark)(nbar_val);
+        double pf_u, pf_d;
+        try
+        {
+            pf_u = k_fermi_of_nbar.at(uquark)(nbar_val);
+            pf_d = k_fermi_of_nbar.at(dquark)(nbar_val);
+        }
+        catch (const std::out_of_range &e)
+        {
+            return 0.0;
+        }
         double alpha_c = 1.0;
         double T_loc = T / exp_phi(r);
 
@@ -774,8 +894,16 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf_u = k_fermi_of_nbar.at(uquark)(nbar_val),
-               pf_d = k_fermi_of_nbar.at(dquark)(nbar_val);
+        double pf_u, pf_d;
+        try
+        {
+            pf_u = k_fermi_of_nbar.at(uquark)(nbar_val);
+            pf_d = k_fermi_of_nbar.at(dquark)(nbar_val);
+        }
+        catch (const std::out_of_range &e)
+        {
+            return 0.0;
+        }
         double alpha_c = 1.0;
         double T_loc = T / exp_phi(r);
 
@@ -802,7 +930,15 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::el
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf_e = k_fermi_of_nbar.at(electron)(nbar_val);
+        double pf_e;
+        try
+        {
+            pf_e = k_fermi_of_nbar.at(electron)(nbar_val);
+        }
+        catch (const std::out_of_range &e)
+        {
+            return 0.0;
+        }
         double k0 = pow(3 * Pi * Pi * N_sat, 1.0 / 3);
         double T_loc = T / exp_phi(r);
 
@@ -810,5 +946,184 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::el
         double dens = 2 * 2.8E12 * (pf_e / k0) * pow(T_loc * gev_over_k / 1.0E9, 8) * erg_over_cm3_s_gev5;
 
         return dens;
+    };
+}
+
+std::function<double(double, const auxiliaries::phys::Species &, double, double, double)> cooling::predefined::rotochemical::hadron_durca_enhanced_emissivity(
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+    const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
+{
+    return [=](double r, const auxiliaries::phys::Species &lepton_flavour, double t, double T, double eta)
+    {
+        // DISCLAIMER FOR FUTURE ME
+        // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
+        double base_emissivity = cooling::predefined::neutrinic::hadron_durca_emissivity(
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, nbar_core_limit, exp_phi, superfluid_n_1s0,
+            superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp)(r, lepton_flavour, t, T);
+        double u = eta / (constants::scientific::Pi * T);
+        return base_emissivity * (1 + 1071.0 / 457 * pow(u, 2.0) + 315.0 / 457 * pow(u, 4.0) + 21.0 / 457 * pow(u, 6.0));
+    };
+}
+
+std::function<double(double, const auxiliaries::phys::Species &, double, double, double)> cooling::predefined::rotochemical::hadron_murca_enhanced_emissivity(
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+    const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
+{
+    return [=](double r, const auxiliaries::phys::Species &lepton_flavour, double t, double T, double eta)
+    {
+        // DISCLAIMER FOR FUTURE ME
+        // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
+        double base_emissivity = cooling::predefined::neutrinic::hadron_murca_emissivity(
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, nbar_core_limit, exp_phi, superfluid_n_1s0,
+            superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp)(r, lepton_flavour, t, T);
+        double u = eta / (constants::scientific::Pi * T);
+        return base_emissivity * (1 + 22020.0 / 11513 * pow(u, 2.0) + 5670.0 / 11513 * pow(u, 4.0) + 420.0 / 11513 * pow(u, 6.0) + 9.0 / 11513 * pow(u, 8.0));
+    };
+}
+
+std::function<double(double, double, double, double)> cooling::predefined::rotochemical::quark_ud_durca_enhanced_emissivity(
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap)
+{
+    return [=](double r, double t, double T, double eta)
+    {
+        // DISCLAIMER FOR FUTURE ME
+        // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
+        double base_emissivity = cooling::predefined::neutrinic::quark_ud_durca_emissivity(
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, T);
+        double u = eta / (constants::scientific::Pi * T);
+        return base_emissivity * (1 + 1071.0 / 457 * pow(u, 2.0) + 315.0 / 457 * pow(u, 4.0) + 21.0 / 457 * pow(u, 6.0));
+    };
+}
+
+std::function<double(double, double, double, double)> cooling::predefined::rotochemical::quark_us_durca_enhanced_emissivity(
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap)
+{
+    return [=](double r, double t, double T, double eta)
+    {
+        // DISCLAIMER FOR FUTURE ME
+        // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
+        double base_emissivity = cooling::predefined::neutrinic::quark_us_durca_emissivity(
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, T);
+        double u = eta / (constants::scientific::Pi * T);
+        return base_emissivity * (1 + 1071.0 / 457 * pow(u, 2.0) + 315.0 / 457 * pow(u, 4.0) + 21.0 / 457 * pow(u, 6.0));
+    };
+}
+
+std::function<double(double, double, double, double)> cooling::predefined::rotochemical::quark_murca_enhanced_emissivity(
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap)
+{
+    return [=](double r, double t, double T, double eta)
+    {
+        // DISCLAIMER FOR FUTURE ME
+        // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
+        double base_emissivity = cooling::predefined::neutrinic::quark_murca_emissivity(
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, T);
+        double u = eta / (constants::scientific::Pi * T);
+        return base_emissivity * (1 + 22020.0 / 11513 * pow(u, 2.0) + 5670.0 / 11513 * pow(u, 4.0) + 420.0 / 11513 * pow(u, 6.0) + 9.0 / 11513 * pow(u, 8.0));
+    };
+}
+
+std::function<double(double, const auxiliaries::phys::Species &, double, double, double)> cooling::predefined::rotochemical::hadron_durca_rate_difference(
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+    const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
+{
+    return [=](double r, const auxiliaries::phys::Species &lepton_flavour, double t, double T, double eta)
+    {
+        // DISCLAIMER FOR FUTURE ME
+        // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
+        double base_emissivity = cooling::predefined::neutrinic::hadron_durca_emissivity(
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, nbar_core_limit, exp_phi, superfluid_n_1s0,
+            superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp)(r, lepton_flavour, t, T);
+        double T_loc = T / exp_phi(r);
+        using constants::scientific::Pi;
+        double u = eta / (Pi * T);
+        return base_emissivity / T_loc / Pi * (714.0 / 457 * pow(u, 1.0) + 420.0 / 457 * pow(u, 3.0) + 42.0 / 457 * pow(u, 5.0));
+        ;
+    };
+}
+
+std::function<double(double, const auxiliaries::phys::Species &, double, double, double)> cooling::predefined::rotochemical::hadron_murca_rate_difference(
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+    const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
+{
+    return [=](double r, const auxiliaries::phys::Species &lepton_flavour, double t, double T, double eta)
+    {
+        // DISCLAIMER FOR FUTURE ME
+        // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
+        double base_emissivity = cooling::predefined::neutrinic::hadron_murca_emissivity(
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, nbar_core_limit, exp_phi, superfluid_n_1s0,
+            superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp)(r, lepton_flavour, t, T);
+        double T_loc = T / exp_phi(r);
+        using constants::scientific::Pi;
+        double u = eta / (Pi * T);
+        return base_emissivity / T_loc / Pi * (14680.0 / 11513 * pow(u, 1.0) + 7560.0 / 11513 * pow(u, 3.0) + 840.0 / 11513 * pow(u, 5.0) + 24.0 / 11513 * pow(u, 7.0));
+    };
+}
+
+std::function<double(double, double, double, double)> cooling::predefined::rotochemical::quark_ud_durca_rate_difference(
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap)
+{
+    return [=](double r, double t, double T, double eta)
+    {
+        // DISCLAIMER FOR FUTURE ME
+        // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
+        double base_emissivity = cooling::predefined::neutrinic::quark_ud_durca_emissivity(
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, T);
+        double T_loc = T / exp_phi(r);
+        using constants::scientific::Pi;
+        double u = eta / (Pi * T);
+        return base_emissivity / T_loc / Pi * (714.0 / 457 * pow(u, 1.0) + 420.0 / 457 * pow(u, 3.0) + 42.0 / 457 * pow(u, 5.0));
+    };
+}
+
+std::function<double(double, double, double, double)> cooling::predefined::rotochemical::quark_us_durca_rate_difference(
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap)
+{
+    return [=](double r, double t, double T, double eta)
+    {
+        // DISCLAIMER FOR FUTURE ME
+        // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
+        double base_emissivity = cooling::predefined::neutrinic::quark_us_durca_emissivity(
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, T);
+        double T_loc = T / exp_phi(r);
+        using constants::scientific::Pi;
+        double u = eta / (Pi * T);
+        return base_emissivity / T_loc / Pi * (714.0 / 457 * pow(u, 1.0) + 420.0 / 457 * pow(u, 3.0) + 42.0 / 457 * pow(u, 5.0));
+    };
+}
+
+std::function<double(double, double, double, double)> cooling::predefined::rotochemical::quark_murca_rate_difference(
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap)
+{
+    return [=](double r, double t, double T, double eta)
+    {
+        // DISCLAIMER FOR FUTURE ME
+        // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
+        double base_emissivity = cooling::predefined::neutrinic::quark_murca_emissivity(
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, T);
+        double T_loc = T / exp_phi(r);
+        using constants::scientific::Pi;
+        double u = eta / (Pi * T);
+        return base_emissivity / T_loc / Pi * (14680.0 / 11513 * pow(u, 1.0) + 7560.0 / 11513 * pow(u, 3.0) + 840.0 / 11513 * pow(u, 5.0) + 24.0 / 11513 * pow(u, 7.0));
     };
 }
