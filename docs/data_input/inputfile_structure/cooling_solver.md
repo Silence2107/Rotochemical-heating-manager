@@ -11,9 +11,9 @@ In order to refer to an example, see <span style="color:blue">_presupplied/Input
 - `"NewtonTolerance"` (double) **:** Defines Newton step tolerance (desired relative difference between subsequent iterations) for cooling PDE. Defaults to $10^{-5}$
 - `"NewtonMaxIter"` (uint) **:** Defines maximum number of Newton iterations for cooling PDE. Defaults to 50 
 - `"TimeUnits"` (string/double, required*) **:** Conversion factor from time to natural units (GeV powers). It must either be supplied as a choice from ["Gev-1", "S", "Yr", "Myr"], or as an actual multiplier. Used for "TimeBaseStep", "TimeInit", "TimeEnd" and "UponReachingTime".
-- `"TimeInit"` (double) **:** Defines initial time for cooling PDE in years. Defaults to 0 years.
-- `"TimeEnd"` (double, required*) **:** Defines final time for cooling PDE in years.
-- `"TimeBaseStep"` (double, required*) **:** Defines base time step for cooling PDE in years.
+- `"TimeInit"` (double) **:** Defines initial time for cooling PDE in "TimeUnits". Defaults to 0 "TimeUnits".
+- `"TimeEnd"` (double, required*) **:** Defines final time for cooling PDE in "TimeUnits".
+- `"TimeBaseStep"` (double, required*) **:** Defines base time step for cooling PDE in "TimeUnits".
 - `"NumberPointsEstimate"` (uint, required*) **:** Defines an estimation (disregarding algorithms adaptivity and imprecision) for number of points for cooling PDE. 
 ```{note}
 This setting is used for reserving memory for the solution, as well as it could be used for estimating the time grid.
@@ -73,7 +73,7 @@ It should be made possible to define "LocalFlat" profile.
     ```
     - `"Mode"` (string) **:** Choose the way you'd like equilibrium solver to be enabled. Choose from ["Immediately", "Never", "Conditional"], with "Never" being a default. As the names suggest, "Never" mode never enables equilibrium solver, "Immediately" mode enables it immediately after the start of the simulation, and "Conditional" mode relies on external conditions (see below).
     - `"Conditions"` **:** Choice of conditions upon which cooling mode will get switched.
-        - `"UponReachingTime"` (double) **:** Provide time in years, upon reaching which the equilibrium solver will be enabled. Disabled by default.
+        - `"UponReachingTime"` (double) **:** Provide time in "TimeUnits", upon reaching which the equilibrium solver will be enabled. Disabled by default.
         - `"UponProfileFlattening"` (double) **:** Provide desired flattening ratio $\left|\frac{T^{\infty}(R) - T^{\infty}(0)}{T^{\infty}(R)}\right|$ (dimensionless), upon reaching which the equilibrium solver will be enabled. Disabled by default.
         ```{note}
         If none conditions are supplemented, then the equilibrium solver will get invoked immediately.
