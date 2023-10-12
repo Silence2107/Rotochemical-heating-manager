@@ -57,7 +57,7 @@ In order to refer to an example, see <span style="color:blue">_presupplied/Input
             - `"ProvidedAs"` (string, required*) **:** The way the effective mass is provided. Choose from ["FermiEnergy", "EffectiveMass"]. "FermiEnergy" mode incurs the effective mass via relativistic formula with Fermi momentum (occasionally applicable for light particles) and "EffectiveMass" mode expects actual effective mass. If "FermiEnergy" mode is chosen, the "Column" and "Units" entries are ignored.
             - `"Units"` (string/double, required*) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev", "MeV", "NucleonMass"], or specify an actual multiplier. If "FermiEnergy" mode is chosen, "Units" are disregarded.
             
-    - `"IonVolumeFraction"` : Ion volume fraction in the crust at the point. Affects neutrino bremhstrahlung in the crust.
+    - `"IonVolumeFraction"` : Ion volume fraction in the crust at the point. Affects neutrino bremsstrahlung in the crust.
         - `"Column"` (uint) **:** Column number with ion volume fraction, counting from 0th.
         - `"ProvidedAs"` (string, required*) **:** The way the ion volume fraction is provided. Choose from ["IonVolumeFraction", "Absent", "ExcludedVolume"]. "IonVolumeFraction" mode expects actual ion volume fraction, "Absent" mode renders the ratio zero and "ExcludedVolume" mode performs calculation in the crust
         $\eta = \text{min}\left[\dfrac{4}{3}\pi (1.1 \text{fm})^3 \dfrac{\rho_E}{m_{\text{nucleon}}}, 1.0\right]$. Defaults to "Absent". "Column" entry is only used in "IonVolumeFraction" mode.
