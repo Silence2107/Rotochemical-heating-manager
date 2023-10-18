@@ -53,7 +53,7 @@ namespace cooling
         /// @param newton_iter_max maximum number of iterations for the Newton-Raphson method
         /// @return Evolved values at t_curr + t_step [GeV]
         std::vector<double> coupled_cooling(
-            double t_curr, double t_step, const std::vector<std::function<double(double, const std::vector<double> &)>> &rhs,
+            double t_curr, double t_step, const std::function<std::vector<double>(double, const std::vector<double> &)> &rhs,
             const std::vector<double> &initial_values, double newton_eps, size_t newton_iter_max);
     }
     /// @brief Predefined functionality, including cooling luminosities

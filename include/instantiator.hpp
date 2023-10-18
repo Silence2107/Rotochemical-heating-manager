@@ -129,6 +129,20 @@ namespace instantiator
     // time step expansion rate (set to 1.0 for constant time step)
     double exp_rate_estim;
 
+    // (4) Rotochemical heating setup
+
+    // Bij matrix independent entries density dependence on nbar
+    // ee, emu, eu, es, mumu, ss
+    std::function<double(double)> dne_to_dmue,
+        dne_to_dmum,
+        dnm_to_dmum,
+        dnu_to_dmuu,
+        dnu_to_dmus,
+        dns_to_dmus;
+
+    // rotational 2 omega omega_dot dependency of time
+    std::function<double(double)> omega_sqr_dot;
+
     /// @brief instantiate the system from json input
     /// @param json_input json inputfile path
     void instantiate_system(const std::string &json_input)
@@ -252,7 +266,7 @@ namespace instantiator
                 {
                     THROW(std::runtime_error, "Bad EoS request. " + e.what());
                 }
-                        });
+            });
 
         // energy density function of baryonic density (natural units)
         auto energy_density_index = j["EoSSetup"]["Quantities"]["EnergyDensity"]["Column"];
@@ -502,7 +516,7 @@ namespace instantiator
         {
             THROW(std::runtime_error, "UI error: TOV center density may only be provided in \"LinspacedMinToMax\" or \"Same\" modes.");
         }
-        
+
         // (->1) EoS Setup
         // provided particles
         auto particles_read = j["EoSSetup"]["Particles"];
@@ -628,10 +642,10 @@ namespace instantiator
             if (particle.classify() != auxiliaries::phys::Species::ParticleClassification::kMeson)
                 k_fermi_of_nbar.insert(
                     {particle, [particle](double nbar)
-                    {
-                        using constants::scientific::Pi;
-                        return pow(3.0 * Pi * Pi * number_densities_of_nbar[particle](nbar), 1.0 / 3.0);
-                    }});
+                     {
+                         using constants::scientific::Pi;
+                         return pow(3.0 * Pi * Pi * number_densities_of_nbar[particle](nbar), 1.0 / 3.0);
+                     }});
         }
 
         // effective mass functions of baryonic density (natural units)
@@ -642,7 +656,7 @@ namespace instantiator
             auto particle_mst_read = j["EoSSetup"]["Quantities"]["EffectiveMasses"][particle_name];
 
             if (particle.classify() == auxiliaries::phys::Species::ParticleClassification::kMeson)
-            {   
+            {
                 if (!particle_mst_read.is_null())
                     THROW(std::runtime_error, "UI error: Effective mass is not expected for " + particle.name() + ".");
                 continue; // mesons have no effective mass
@@ -1096,6 +1110,152 @@ namespace instantiator
             {
                 return 0.0;
             };
+        }
+
+        // (4) Rotochemical heating setup
+
+        if (j["RHSolver"].is_null())
+            // assume rotochemical heating is disabled
+            return;
+
+        auto bij_density_read = j["EoSSetup"]["Quantities"]["DensityChemPotentialDerivatives"];
+        if (bij_density_read.is_null())
+            THROW(std::runtime_error, "UI error: Number density derivatives of chemical potentials must be provided for rotochemical heating.");
+        else
+        {
+            // we expect npemuds (H{npem} + Q{udse}) matter at most.
+            using namespace constants::species;
+
+            // we first see which entries are provided by the user
+
+            auto bee_density_read = bij_density_read["Electron"]["Electron"],
+                 bem_density_read = bij_density_read["Electron"]["Muon"],
+                 bmm_density_read = bij_density_read["Muon"]["Muon"],
+                 buu_density_read = bij_density_read["Uquark"]["Uquark"],
+                 bus_density_read = bij_density_read["Uquark"]["Squark"],
+                 bss_density_read = bij_density_read["Squark"]["Squark"];
+            bem_density_read = (bem_density_read.is_null() ? bij_density_read["Muon"]["Electron"] : bem_density_read);
+            bus_density_read = (bus_density_read.is_null() ? bij_density_read["Squark"]["Uquark"] : bus_density_read);
+
+            // if all npemuds matter plays role in rotochemical heating,
+            // the number of rows is reduced to 4 (via conservation laws),
+            // namely, (dNe, dNm, dNu, dNs), with 6 independent entries within the matrix.
+
+            // all checks reflecting whether the user provided any good info will be done in the main program
+
+            auto bij_vars = std::vector<std::reference_wrapper<decltype(dne_to_dmue)>>({dne_to_dmue, dne_to_dmum, dnm_to_dmum, dnu_to_dmuu, dnu_to_dmus, dns_to_dmus});
+            auto bij_reads = std::vector<decltype(bee_density_read)>({bee_density_read, bem_density_read, bmm_density_read, buu_density_read, bus_density_read, bss_density_read});
+
+            for (size_t entry_num = 0; entry_num < bij_vars.size(); ++entry_num)
+            {
+                auto read = bij_reads[entry_num];
+                auto &entry = bij_vars[entry_num];
+                if (!read.is_null())
+                {
+                    auto column_read = read["Column"];
+                    auto conversion_read = read["Units"];
+                    double conversion;
+                    if (conversion_read.is_null())
+                        THROW(std::runtime_error, "UI error: Units must be provided for each \"DensityChemPotentialDerivatives\" entry.");
+                    else if (conversion_read.is_number())
+                        conversion = conversion_read.get<double>();
+                    else if (conversion_read.is_string())
+                    {
+                        if (conversion_read == "Gev2")
+                        {
+                            conversion = 1.0;
+                        }
+                        else if (conversion_read == "Mev-1Fm-3")
+                        {
+                            conversion = constants::conversion::gev_over_mev / constants::conversion::fm3_gev3;
+                        }
+                        else
+                        {
+                            THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for an \"DensityChemPotentialDerivatives\" entry.");
+                        }
+                    }
+                    else
+                        THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for an \"DensityChemPotentialDerivatives\" entry.");
+                    if (!column_read.is_number_integer())
+                        THROW(std::runtime_error, "UI error: Column number must be provided as an integer for an \"DensityChemPotentialDerivatives\" entry.");
+                    entry.get() = [column_read, conversion](double nbar)
+                    {
+                        return data_reader({nbar}, column_read) * conversion;
+                    };
+                }
+                else
+                    entry.get() = [](double)
+                    {
+                        return 0.0;
+                    };
+            }
+        }
+        auto roto_time_units = j["RHSolver"]["TimeUnits"];
+        double roto_time_conversion;
+        if (roto_time_units.is_null())
+            THROW(std::runtime_error, "UI error: Time units must be provided for rotochemical heating.");
+        else if (roto_time_units.is_number())
+            roto_time_conversion = roto_time_units.get<double>();
+        else if (roto_time_units.is_string())
+        {
+            if (roto_time_units == "Gev-1")
+            {
+                roto_time_conversion = 1.0;
+            }
+            else if (roto_time_units == "Yr")
+            {
+                roto_time_conversion = 1E-6 * constants::conversion::myr_over_s * constants::conversion::gev_s;
+            }
+            else if (roto_time_units == "S")
+            {
+                roto_time_conversion = constants::conversion::gev_s;
+            }
+            else if (roto_time_units == "Ms")
+            {
+                roto_time_conversion = 1E-3 * constants::conversion::gev_s;
+            }
+            else
+            {
+                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for rotochemical heating time.");
+            }
+        }
+        else
+            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for rotochemical heating time.");
+        // rotational 2 omega omega_dot dependency of time
+        auto roto_omega_sqr_dot_read = j["RHSolver"]["RotationalOmegaSquareDot"];
+        if (!roto_omega_sqr_dot_read.is_array())
+            THROW(std::runtime_error, "UI error: Rotational law and related settings must be provided as an array.");
+        else
+        {
+            auto roto_omega_sqr_dot_provided_as_read = roto_omega_sqr_dot_read[0];
+            if (roto_omega_sqr_dot_provided_as_read == "BeyondMagneticDipole")
+            {
+                auto braking_index_read = roto_omega_sqr_dot_read[1];
+                auto p0_read = roto_omega_sqr_dot_read[2],
+                     p0_dot_read = roto_omega_sqr_dot_read[3];
+                if (!(braking_index_read.is_number()))
+                    THROW(std::runtime_error, "UI error: Braking index for rotational law must be provided as a number.");
+                if (!(p0_read.is_number()))
+                    THROW(std::runtime_error, "UI error: Initial rotational period must be provided as a number.");
+                if (!(p0_dot_read.is_number()))
+                    THROW(std::runtime_error, "UI error: Initial rotational period derivative must be provided as a number.");
+
+                auto braking_index = braking_index_read.get<double>(),
+                     p0 = roto_time_conversion * p0_read.get<double>(),
+                     p0_dot = p0_dot_read.get<double>();
+
+                omega_sqr_dot = [braking_index, p0, p0_dot](double t)
+                {
+                    using constants::scientific::Pi;
+                    if (braking_index == 1)
+                    {
+                        return -8 * Pi * Pi * p0_dot / pow(p0, 3.0) * std::exp(-2 * p0_dot * t / p0);
+                    }
+                    return -8 * Pi * Pi * p0_dot / pow(p0, 3.0) * pow(1 + (braking_index - 1) * p0_dot * t / p0, (braking_index + 1) / (1 - braking_index));
+                };
+            }
+            else
+                THROW(std::runtime_error, "UI error: Rotational law and related settings must be provided in \"BeyondMagneticDipole\" mode.");
         }
     }
 }

@@ -175,47 +175,56 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
 }
 
 std::vector<double> cooling::solver::coupled_cooling(
-    double t_curr, double t_step, const std::vector<std::function<double(double, const std::vector<double> &)>> &rhs,
+    double t_curr, double t_step, const std::function<std::vector<double>(double, const std::vector<double> &)> &rhs,
     const std::vector<double> &initial_values, double newton_eps, size_t newton_iter_max)
 {
     double t_next = t_curr + t_step;
     size_t iter = 0;
     double max_diff;
-    auto new_vals = std::vector<double>(initial_values.size(), 0.0);
+    auto results = initial_values;
     auto steps = std::vector<double>(initial_values.size(), 0.0);
     double sqrt_eps = std::sqrt(std::numeric_limits<double>::epsilon());
-    for (size_t i = 0; i < initial_values.size(); ++i)
-    {
-        steps[i] = sqrt_eps * (std::abs(initial_values[i]) + sqrt_eps);
-    }
     do
     {
-        auxiliaries::math::MatrixD jacobi(initial_values.size(), initial_values.size(), 0.0);
-        std::vector<double> rhs_vect(initial_values.size(), 0.0);
         for (size_t i = 0; i < initial_values.size(); ++i)
         {
-            double unperturbed_val = rhs[i](t_next, initial_values);
-            auto shifted_vals = initial_values;
-            for (size_t j = 0; j < initial_values.size(); ++j)
-            {
-                shifted_vals[j] += steps[j];
-                jacobi.at(i, j) = (rhs[i](t_next, shifted_vals) - unperturbed_val) / steps[j];
-                shifted_vals[j] -= steps[j];
-            }
-            rhs_vect[i] = -unperturbed_val;
+            if (results[i] == 0)
+                steps[i] = sqrt_eps * sqrt_eps;
+            else
+                steps[i] = sqrt_eps * std::abs(results[i]);
         }
-        auto updates = jacobi.inverse() * rhs_vect;
+        auxiliaries::math::MatrixD jacobi(initial_values.size(), initial_values.size(), 0.0);
+        auto unperturbed_rhs = rhs(t_next, results);
+        for (size_t j = 0; j < initial_values.size(); ++j)
+        {
+            auto shifted_vals = results;
+            shifted_vals[j] += steps[j];
+            auto perturbed_rhs = rhs(t_next, shifted_vals);
+            for (size_t i = 0; i < initial_values.size(); ++i)
+            {
+                jacobi.at(i, j) = - t_step * (perturbed_rhs[i] - unperturbed_rhs[i]) / steps[j];
+                jacobi.at(i, j) += (i == j); // add 1 to diagonal
+            }
+            shifted_vals[j] -= steps[j];
+        }
+        auto unperturbed_eqs = unperturbed_rhs;
+        for (size_t i = 0; i < initial_values.size(); ++i)
+        {
+            unperturbed_eqs[i] *= -t_step;
+            unperturbed_eqs[i] += results[i] - initial_values[i];
+        }
+        auto updates = (-1) * jacobi.inverse() * unperturbed_eqs;
         max_diff = 0.0;
         for (size_t i = 0; i < initial_values.size(); ++i)
         {
-            new_vals[i] = initial_values[i] + updates.at(i, 0);
-            if (!(new_vals[i] == 0) && std::abs(updates.at(i, 0) / new_vals[i]) > max_diff)
+            results[i] += updates.at(i, 0);
+            if (!(results[i] == 0) && std::abs(updates.at(i, 0) / results[i]) > max_diff)
             {
-                max_diff = std::abs(updates.at(i, 0) / new_vals[i]);
+                max_diff = std::abs(updates.at(i, 0) / results[i]);
             }
         }
     } while (max_diff > newton_eps && ++iter < newton_iter_max);
-    return new_vals;
+    return results;
 }
 
 std::function<double(double, double)> cooling::predefined::photonic::surface_luminosity(double R, double M, double eta)
