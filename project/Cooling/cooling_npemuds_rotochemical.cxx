@@ -454,9 +454,10 @@ int main(int argc, char **argv)
 
         for (size_t species_count = 0; species_count < supported_rh_particles.size(); ++species_count)
         {
-            if (std::find(rh_particles.begin(), rh_particles.end(), supported_rh_particles[species_count]) != rh_particles.end())
+            auto pos = std::find(rh_particles.begin(), rh_particles.end(), supported_rh_particles[species_count]);
+            if (pos != rh_particles.end())
             {
-                etas[supported_rh_particles[species_count]] = funcs[species_count + 1];
+                etas[supported_rh_particles[species_count]] = funcs[pos - rh_particles.begin() + 1];
             }
             else
             {
