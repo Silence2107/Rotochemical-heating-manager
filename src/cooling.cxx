@@ -213,14 +213,14 @@ std::vector<double> cooling::solver::coupled_cooling(
             unperturbed_eqs[i] *= -t_step;
             unperturbed_eqs[i] += results[i] - initial_values[i];
         }
-        auto updates = (-1) * jacobi.inverse() * unperturbed_eqs;
+        auto updates = jacobi.solve(unperturbed_eqs);
         max_diff = 0.0;
         for (size_t i = 0; i < initial_values.size(); ++i)
         {
-            results[i] += updates.at(i, 0);
-            if (!(results[i] == 0) && std::abs(updates.at(i, 0) / results[i]) > max_diff)
+            results[i] -= updates[i];
+            if (!(results[i] == 0) && std::abs(updates[i] / results[i]) > max_diff)
             {
-                max_diff = std::abs(updates.at(i, 0) / results[i]);
+                max_diff = std::abs(updates[i] / results[i]);
             }
         }
     } while (max_diff > newton_eps && ++iter < newton_iter_max);

@@ -775,6 +775,75 @@ auxiliaries::math::MatrixD auxiliaries::math::MatrixD::inverse() const
     return result;
 }
 
+std::vector<double> auxiliaries::math::MatrixD::solve(const std::vector<double> &rhs) const
+{
+    if (this->rows() != this->columns())
+    {
+        THROW(std::runtime_error, "Non-square matrix cannot be subjected to solver.");
+    }
+    if (this->rows() != rhs.size())
+    {
+        THROW(std::runtime_error, "Matrix and right-hand side vector dimensions do not match.");
+    }
+
+    // Gaussian elimination of augmented matrix
+    MatrixD augmented = MatrixD(this->rows(), this->columns() + 1, 0.0);
+    for (size_t row = 0; row < this->rows(); ++row)
+    {
+        for (size_t col = 0; col < this->columns(); ++col)
+        {
+            augmented.at(row, col) = this->at(row, col);
+        }
+        augmented.at(row, this->columns()) = rhs[row];
+    }
+    for (size_t row = 0; row < this->rows(); ++row)
+    {
+        double max_entry = std::abs(augmented.at(row, row));
+        size_t max_entry_row = row;
+        // Swap considered row with the one with abs max entry in this column
+        for (size_t row2 = row + 1; row2 < augmented.rows(); ++row2)
+        {
+            if (std::abs(augmented.at(row2, row)) > max_entry)
+            {
+                max_entry = std::abs(augmented.at(row2, row));
+                max_entry_row = row2;
+            }
+        }
+        if (max_entry == 0.0)
+        {
+            THROW(std::runtime_error, "Matrix is not invertible.");
+        }
+        if (max_entry_row != row)
+        {
+            auto temp = augmented.row(row);
+            augmented.set_row(row, augmented.row(max_entry_row));
+            augmented.set_row(max_entry_row, temp);
+        }
+        // Forward elimination
+        for (size_t row2 = row + 1; row2 < augmented.rows(); ++row2)
+        {
+            double factor = augmented.at(row2, row) / augmented.at(row, row);
+            for (size_t col = row; col < augmented.columns(); ++col)
+            {
+                augmented.at(row2, col) -= factor * augmented.at(row, col);
+            }
+        }
+    }
+    // Backsustitution
+    std::vector<double> result(this->rows(), 0.0);
+    for (size_t row = augmented.rows(); row > 0; --row)
+    {
+        // here row is forwarded one space ahead to not cause size_t overflow
+        double row_sum = 0.0;
+        for (size_t col = augmented.columns() - 2; col > row - 1; --col)
+        {
+            row_sum += augmented.at(row - 1, col) * result[col];
+        }
+        result[row - 1] = (augmented.at(row - 1, augmented.columns() - 1) - row_sum) / augmented.at(row - 1, row - 1);
+    }
+    return result;
+}
+
 auxiliaries::math::MatrixD auxiliaries::math::MatrixD::tridiagonal_inverse() const
 {
     if (this->rows() != this->columns())
