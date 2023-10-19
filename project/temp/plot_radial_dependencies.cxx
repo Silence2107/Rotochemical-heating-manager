@@ -146,15 +146,17 @@ int main(int argc, char **argv)
 
     auto radial_dependency = [&](double r)
     {
-        return (tov(r)[1] - edensity_low) / (edensity_upp - edensity_low);
+        return cooling::predefined::neutrinic::quark_ud_durca_emissivity(
+            k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap)(r, 0, 1e9 / constants::conversion::gev_over_k);
     };
 
     std::vector<double> x, y;
     for (double r = radius_step / 2; r < r_ns; r += radius_step)
     {
         x.push_back(r / constants::conversion::km_gev);
-        y.push_back(radial_dependency(r));
-        std::cout << r << " " << radial_dependency(r) << "\n";
+        auto val = radial_dependency(r);
+        y.push_back(val);
+        std::cout << r << " " << val << "\n";
     }
 
     #if RHM_HAS_ROOT

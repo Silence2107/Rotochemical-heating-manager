@@ -779,7 +779,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
 
         // ud
 
-        // 314/915 G_F^2 \cos^2 \theta_c = 3.726E-10 GeV^{-4}, therefore the prefactor
+        // 914/315 G_F^2 \cos^2 \theta_c = 3.726E-10 GeV^{-4}, therefore the prefactor
         double dens_ud = 3.726E-10 * alpha_c * pf_u * pf_d * pow(T_loc, 6);
         // We now need to multiply this by the lepton's Fermi momentum. In order to extend the
         // formula for multiple lepton species, we employ NSCool approach (add them all up)
