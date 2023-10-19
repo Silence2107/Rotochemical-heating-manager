@@ -146,8 +146,7 @@ int main(int argc, char **argv)
 
     auto radial_dependency = [&](double r)
     {
-        return cooling::predefined::neutrinic::quark_ud_durca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap)(r, 0, 1e9 / constants::conversion::gev_over_k);
+        return (tov(r)[1] - edensity_low) / (edensity_upp - edensity_low);
     };
 
     std::vector<double> x, y;
