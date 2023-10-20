@@ -120,7 +120,7 @@ namespace instantiator
     // estimate for the number of time points (is also used for time step expansion, if enabled)
     double cooling_n_points_estimate;
     // initial temperature profile
-    std::function<double(double, double)> initial_t_profile_inf;
+    std::function<double(double, double, const std::function<double(double)> &, const std::function<double(double)> &)> initial_t_profile_inf;
     // cooling grid step
     double cooling_radius_step;
     // condition on which to switch to equilibrium cooling
@@ -801,43 +801,78 @@ namespace instantiator
         }
         else
             THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for temperature.");
-        if (!initial_t_profile_read.is_array())
-            THROW(std::runtime_error, "UI error: Initial temperature profile settings must be provided as an array.");
-        else
+        
+        auto initial_t_profile_provided_as_read = initial_t_profile_read["ProvidedAs"];
+        std::function<double(double, double, const std::function<double(double)> &)> redshift_factor;
+        if (initial_t_profile_provided_as_read == "Redshifted")
         {
-            auto initial_t_profile_provided_as_read = initial_t_profile_read[0];
-            if (initial_t_profile_provided_as_read == "InfiniteFlat")
+            redshift_factor = [](double r, double r_ns, const std::function<double(double)> &exp_phi)
             {
-                auto initial_t_profile_T_read = initial_t_profile_read[1];
-                if (!(initial_t_profile_T_read.is_number()))
-                    THROW(std::runtime_error, "UI error: Initial temperature profile temperature must be provided as a number.");
-                else
-                {
-                    double temp = initial_t_profile_T_read.get<double>() * cooling_temp_conversion;
-                    initial_t_profile_inf = [temp](double r, double exp_phi_at_R)
-                    {
-                        return temp;
-                    };
-                }
-            }
-            else if (initial_t_profile_provided_as_read == "InfiniteFlatSurfaceRedshifted")
-            {
-                auto initial_t_profile_T_read = initial_t_profile_read[1];
-                if (!(initial_t_profile_T_read.is_number()))
-                    THROW(std::runtime_error, "UI error: Initial temperature profile temperature must be provided as a number.");
-                else
-                {
-                    double temp = initial_t_profile_T_read.get<double>() * cooling_temp_conversion;
-                    initial_t_profile_inf = [temp](double r, double exp_phi_at_R)
-                    {
-                        return temp * exp_phi_at_R;
-                    };
-                }
-            }
-            else
-                THROW(std::runtime_error, "UI error: Initial temperature profile must be provided in \"InfiniteFlat\" or \"InfiniteFlatSurfaceRedshifted\" modes.");
+                return 1;
+            };
         }
+        else if (initial_t_profile_provided_as_read == "SurfaceRedshifted")
+        {
+            redshift_factor = [](double r, double r_ns, const std::function<double(double)> &exp_phi)
+            {
+                return exp_phi(r_ns);
+            };
+        }
+        else if (initial_t_profile_provided_as_read == "Local")
+        {
+            redshift_factor = [](double r, double r_ns, const std::function<double(double)> &exp_phi)
+            {
+                return exp_phi(r);
+            };
+        }
+        else
+            THROW(std::runtime_error, "UI error: Initial temperature profile must be provided as \"Redshifted\", \"SurfaceRedshifted\" or \"Local\" .");
 
+        auto initial_t_profile_mode_read = initial_t_profile_read["Mode"];
+        auto initial_t_profile_params_read = initial_t_profile_read["Parameters"];
+        if (!initial_t_profile_params_read.is_array())
+            THROW(std::runtime_error, "UI error: Initial temperature profile parameters must be provided as an array.");
+
+        if (initial_t_profile_mode_read == "Flat")
+        {
+            // expected parameters: [T]
+            if (initial_t_profile_params_read.size() != 1)
+                THROW(std::runtime_error, "UI error: Initial temperature profile parameters must be of size 1 for the \"Flat\" mode.");
+            auto temp_init_read = initial_t_profile_params_read[0];
+            double temp_init;
+            if (!(temp_init_read.is_number()))
+                THROW(std::runtime_error, "UI error: Initial temperature must be provided as a number.");
+            else
+                temp_init = temp_init_read.get<double>() * cooling_temp_conversion;
+            initial_t_profile_inf = [temp_init, redshift_factor](double r, double r_ns, const std::function<double(double)> &exp_phi, const std::function<double(double)> &nbar_of_r)
+            {
+                return temp_init * redshift_factor(r, r_ns, exp_phi);
+            };
+        }
+        else if (initial_t_profile_mode_read == "CoreJump")
+        {
+            // expected parameters: [T_core, T_crust]
+            if (initial_t_profile_params_read.size() != 2)
+                THROW(std::runtime_error, "UI error: Initial temperature profile parameters must be of size 2 for the \"CoreJump\" mode.");
+            auto temp_core_read = initial_t_profile_params_read[0];
+            auto temp_crust_read = initial_t_profile_params_read[1];
+            double temp_core, temp_crust;
+            if (!(temp_core_read.is_number()))
+                THROW(std::runtime_error, "UI error: Initial temperature in the core must be provided as a number.");
+            else
+                temp_core = temp_core_read.get<double>() * cooling_temp_conversion;
+            if (!(temp_crust_read.is_number()))
+                THROW(std::runtime_error, "UI error: Initial temperature in the crust must be provided as a number.");
+            else
+                temp_crust = temp_crust_read.get<double>() * cooling_temp_conversion;
+
+            initial_t_profile_inf = [temp_core, temp_crust, redshift_factor](double r, double r_ns, const std::function<double(double)> &exp_phi, const std::function<double(double)> &nbar_of_r)
+            {
+                return (nbar_of_r(r) > nbar_core_limit ? temp_core : temp_crust) * redshift_factor(r, r_ns, exp_phi);
+            };
+        }
+        else
+            THROW(std::runtime_error, "UI error: Initial temperature profile must be provided in \"Flat\" or \"CoreJump\" mode .");
         // Evolution settings
         auto time_conversion_read = j["CoolingSolver"]["TimeUnits"];
         double time_conversion;

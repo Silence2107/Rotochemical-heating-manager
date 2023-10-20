@@ -402,7 +402,7 @@ int main(int argc, char **argv)
     for (double r = cooling_radius_step / 2.0; r < r_ns; r += cooling_radius_step)
     {
         radii.push_back(r);
-        profile.push_back(initial_t_profile_inf(r, exp_phi_at_R));
+        profile.push_back(initial_t_profile_inf(r, r_ns, exp_phi, nbar));
     }
     initial_values[0] = profile.end()[-2];
     // initial chemical imbalances are zero
