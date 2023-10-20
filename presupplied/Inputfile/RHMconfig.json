@@ -132,9 +132,9 @@
         "NumberPointsEstimate" : 1000,
         "TemperatureProfile" :
         {
-            "ProvidedAs" : "Local",
-            "Mode" : "CoreJump",
-            "Parameters" : [1E+9, 1E+8]
+            "ProvidedAs" : "SurfaceRedshifted",
+            "Mode" : "Flat",
+            "Parameters" : [5E+9]
         },
         "EnableEquilibrium" : 
         {
