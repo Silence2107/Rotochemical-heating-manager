@@ -12,6 +12,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <fstream>
 #include <algorithm>
@@ -27,13 +28,14 @@
 
 int main(int argc, char **argv)
 {
-    argparse::ArgumentParser parser("cooling_npemuds_rotochemical", "Solves the cooling equation coupled with chemical imbalances evolution based on EoS", "Argparse powered by SiLeader");
+    argparse::ArgumentParser parser("cooling_npemuds_rotochemical", "Solves the cooling equation coupled with chemical imbalances based on EoS", "Argparse powered by SiLeader");
 
     parser.addArgument({"--inputfile"}, "json input file path (optional)");
 #if RHM_HAS_ROOT
     parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: Cooling.pdf)");
     parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
 #endif
+    parser.addArgument({"--save_chemical_imbalances"}, "print & write chemical imbalances (optional, value-free, default: false)", argparse::ArgumentType::StoreTrue);
 
     auto args = parser.parseArgs(argc, argv);
 
@@ -47,6 +49,8 @@ int main(int argc, char **argv)
     if (args.has("rootfile_path"))
         rootfile = new TFile(args.get<std::string>("rootfile_path").c_str(), "RECREATE");
 #endif
+
+    bool save_chemical_imbalances = args.has("save_chemical_imbalances");
 
     // RUN --------------------------------------------------------------------------
 
@@ -523,8 +527,6 @@ int main(int argc, char **argv)
     // solve cooling equations
     double exp_phi_at_R = pow(1 - 2 * constants::scientific::G * m_ns / r_ns, 0.5);
 
-    // initial values for rotochemical heating (T and nontrivial etas)
-    std::vector<double> initial_values(1 + rh_particles.size(), 0);
     // initial temperature profile
     std::vector<double> radii, profile;
     for (double r = cooling_radius_step / 2.0; r < r_ns; r += cooling_radius_step)
@@ -532,27 +534,43 @@ int main(int argc, char **argv)
         radii.push_back(r);
         profile.push_back(initial_t_profile_inf(r, r_ns, exp_phi, nbar));
     }
-    initial_values[0] = profile.end()[-2];
+    double t_step = base_t_step,
+           t_curr = t_init;
+    //instantiate initial values for (T, etas)
+    std::vector<double> previous_values(1 + rh_particles.size(), 0);
+    previous_values[0] = profile.end()[-2];
     // initial chemical imbalances are zero
 
-    // plot the solution (assumes exp_rate_estim > 1)
-    std::vector<double> x;
-    std::vector<double> y;
-    x.reserve(cooling_n_points_estimate);
-    y.reserve(cooling_n_points_estimate);
-    std::cout << "M/Msol " << m_ns * constants::conversion::gev_over_msol << std::endl;
-    std::cout << "t [years] "
-              << "\tTe^inf [K] "
-              << "\tL_ph [erg/s] "
-              << "\tL_nu [erg/s] " << std::endl;
-    x.push_back(t_init);
-    y.push_back(initial_values[0]);
-    double t_step = base_t_step;
-    std::vector<double> previous_values = initial_values;
-
-    while (x.back() < t_end)
+    // solution arrays
+    std::vector<double> time, surface_temp;
+    std::vector<std::vector<double>> others(save_chemical_imbalances ? 2 + rh_particles.size() : 2);
+    time.reserve(cooling_n_points_estimate);
+    surface_temp.reserve(cooling_n_points_estimate);
+    for (size_t i = 0; i < others.size(); ++i)
     {
-        auto values = cooling::solver::coupled_cooling(x.back(), t_step, rotochemical_vector_rhs, previous_values, cooling_newton_step_eps, cooling_newton_max_iter);
+        others[i].reserve(cooling_n_points_estimate);
+    }
+
+    size_t indent = 20;
+    std::cout << "M = " << m_ns * constants::conversion::gev_over_msol << " [Ms]\n";
+    std::cout << std::left << std::setw(indent) << "t [years] "
+              << std::setw(indent) << "Te^inf [K] "
+              << std::setw(indent) << "L_ph [erg/s] "
+              << std::setw(indent) << "L_nu [erg/s] ";
+    if (save_chemical_imbalances)
+    {
+        for (auto rh_species = rh_particles.begin(); rh_species != rh_particles.end(); ++rh_species)
+        {
+            std::stringstream ss;
+            ss << "eta^inf_" << rh_species->name() << " [K]";
+            std::cout << std::left << std::setw(indent) << ss.str();
+        }
+    }
+    std::cout << '\n';
+
+    while (t_curr < t_end)
+    {
+        auto values = cooling::solver::coupled_cooling(t_curr, t_step, rotochemical_vector_rhs, previous_values, cooling_newton_step_eps, cooling_newton_max_iter);
         double max_diff = 0;
         for (size_t i = 0; i < values.size(); ++i)
         {
@@ -563,19 +581,34 @@ int main(int argc, char **argv)
             t_step /= 2.0;
             continue;
         }
-        y.push_back(values[0]);
-        x.push_back(x.back() + t_step);
-        t_step *= exp_rate_estim;
         previous_values = values;
+        t_curr += t_step;
+        t_step *= exp_rate_estim;
 
         // print in understandable units
-        std::cout << 1.0E6 * x.back() / (constants::conversion::myr_over_s * constants::conversion::gev_s) << "\t" << auxiliaries::phys::te_tb_relation(y.back(), r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k << "\t" << photon_luminosity(x.back(), y.back()) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << (-rotochemical_vector_rhs(x.back(), previous_values)[0] * heat_capacity(x.back(), y.back()) - photon_luminosity(x.back(), y.back())) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << '\n';
-    }
-    // rescale to same units as in the printout
-    for (size_t i = 0; i < x.size(); ++i)
-    {
-        x[i] *= 1.0E6 / (constants::conversion::myr_over_s * constants::conversion::gev_s);
-        y[i] = auxiliaries::phys::te_tb_relation(y[i], r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k;
+        // std::cout << 1.0E6 * t_curr / (constants::conversion::myr_over_s * constants::conversion::gev_s) << "\t" << auxiliaries::phys::te_tb_relation(y.back(), r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k << "\t" << photon_luminosity(t_curr, y.back()) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << (-rotochemical_vector_rhs(t_curr, previous_values)[0] * heat_capacity(t_curr, y.back()) - photon_luminosity(t_curr, y.back())) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << '\n';
+        // save in understandable units
+        time.push_back(1.0E6 * t_curr / (constants::conversion::myr_over_s * constants::conversion::gev_s));
+        surface_temp.push_back(auxiliaries::phys::te_tb_relation(values[0], r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k);
+        others[0].push_back(photon_luminosity(t_curr, values[0]) * constants::conversion::gev_s / constants::conversion::erg_over_gev);
+        others[1].push_back((-rotochemical_vector_rhs(t_curr, previous_values)[0] * heat_capacity(t_curr, values[0]) - photon_luminosity(t_curr, values[0])) * constants::conversion::gev_s / constants::conversion::erg_over_gev);
+        if (save_chemical_imbalances)
+        {
+            for (size_t i = 0; i < rh_particles.size(); ++i)
+            {
+                others[i + 2].push_back(values[i + 1] * constants::conversion::gev_over_k);
+            }
+        }
+        // print
+        std::cout << std::left << std::setw(indent) << time.back() << std::setw(indent) << surface_temp.back() << std::setw(indent) << others[0].back() << std::setw(indent) << others[1].back();
+        if (save_chemical_imbalances)
+        {
+            for (size_t i = 0; i < rh_particles.size(); ++i)
+            {
+                std::cout << std::left << std::setw(indent) << others[i + 2].back();
+            }
+        }
+        std::cout << '\n';
     }
 
 #if RHM_HAS_ROOT
@@ -591,10 +624,33 @@ int main(int argc, char **argv)
     gStyle->SetOptStat(0);
     gStyle->SetOptTitle(0);
 
-    auto gr = new TGraph(x.size(), x.data(), y.data());
+    auto gr = new TGraph(time.size(), time.data(), surface_temp.data());
+    gr->GetXaxis()->SetTitle("t [yr]");
+    gr->GetYaxis()->SetTitle("T^{#infty}_{s} [K]");
     if (rootfile)
     {
-        gr->Write();
+        auto gr_l_gamma = new TGraph(time.size(), time.data(), others[0].data());
+        gr_l_gamma->GetXaxis()->SetTitle("t [yr]");
+        gr_l_gamma->GetYaxis()->SetTitle("L_{#gamma} [erg/s]");
+        auto gr_l_nu = new TGraph(time.size(), time.data(), others[1].data());
+        gr_l_nu->GetXaxis()->SetTitle("t [yr]");
+        gr_l_nu->GetYaxis()->SetTitle("L_{#nu} [erg/s]");
+        rootfile->cd();
+        if (save_chemical_imbalances)
+        {
+            for (size_t i = 0; i < rh_particles.size(); ++i)
+            {
+                auto gr_eta = new TGraph(time.size(), time.data(), others[i + 2].data());
+                gr_eta->GetXaxis()->SetTitle("t [yr]");
+                std::stringstream ss;
+                ss << "#eta^{#infty}_{" << rh_particles[i].name() << "} [K]";
+                gr_eta->GetYaxis()->SetTitle(ss.str().c_str());
+                rootfile->WriteObject(gr_eta, ss.str().c_str());
+            }
+        }
+        rootfile->WriteObject(gr, "cooling_curve");
+        rootfile->WriteObject(gr_l_gamma, "l_gamma");
+        rootfile->WriteObject(gr_l_nu, "l_nu");
         rootfile->Close();
     }
     gr->SetLineColor(kBlue);
@@ -602,8 +658,6 @@ int main(int argc, char **argv)
     gr->SetLineStyle(1);
     gr->Draw("AL");
     gr->GetYaxis()->SetTitleOffset(1.5);
-    gr->GetXaxis()->SetTitle("t [yr]");
-    gr->GetYaxis()->SetTitle("T^{#infty}_{s} [K]");
     gr->GetYaxis()->SetLabelFont(43);
     gr->GetYaxis()->SetLabelSize(22);
     gr->GetYaxis()->SetTitleFont(43);
@@ -614,8 +668,8 @@ int main(int argc, char **argv)
     gr->GetXaxis()->SetTitleFont(43);
     gr->GetXaxis()->SetTitleSize(26);
     gr->GetXaxis()->SetTitleOffset(0.9);
-    gr->GetYaxis()->SetRangeUser(7e2, 7e6);
-    gr->GetXaxis()->SetLimits(1e-12, 1e7);
+    gr->GetYaxis()->SetLimits(surface_temp.front(), surface_temp.back());
+    gr->GetXaxis()->SetLimits(time.front(), time.back());
 
     auto legend = new TLegend(0.15, 0.1, 0.43, 0.38);
     legend->AddEntry(gr, "RH Manager", "l");
