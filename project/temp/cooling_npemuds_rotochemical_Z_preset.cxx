@@ -354,25 +354,26 @@ int main(int argc, char **argv)
         {
             return exp_phi(r) * (quark_us_durca_rate_difference(r, t, T, etas.at(species)));
         };
-        auto npl_reaction_change = auxiliaries::math::integrate_volume<const auxiliaries::phys::Species &>(std::function<double(double, const auxiliaries::phys::Species &)>(diff_npl_inf), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p),
-             due_reaction_change = auxiliaries::math::integrate_volume<const auxiliaries::phys::Species &>(std::function<double(double, const auxiliaries::phys::Species &)>(diff_due_inf), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p),
-             sue_reaction_change = auxiliaries::math::integrate_volume<const auxiliaries::phys::Species &>(std::function<double(double, const auxiliaries::phys::Species &)>(diff_sue_inf), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p);
+        auto npe_reaction_change = auxiliaries::math::integrate_volume<const auxiliaries::phys::Species &>(std::function<double(double, const auxiliaries::phys::Species &)>(diff_npl_inf), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)(electron),
+             npm_reaction_change = auxiliaries::math::integrate_volume<const auxiliaries::phys::Species &>(std::function<double(double, const auxiliaries::phys::Species &)>(diff_npl_inf), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)(muon),
+             due_reaction_change = auxiliaries::math::integrate_volume<const auxiliaries::phys::Species &>(std::function<double(double, const auxiliaries::phys::Species &)>(diff_due_inf), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)(uquark),
+             sue_reaction_change = auxiliaries::math::integrate_volume<const auxiliaries::phys::Species &>(std::function<double(double, const auxiliaries::phys::Species &)>(diff_sue_inf), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)(squark);
 
-        auto e_particle_change = npl_reaction_change(electron) + due_reaction_change(electron) + sue_reaction_change(electron),
-             m_particle_change = npl_reaction_change(muon),
-             u_particle_change = due_reaction_change(uquark) + sue_reaction_change(uquark),
-             s_particle_change = -sue_reaction_change(squark);
+        auto e_particle_change_H = npe_reaction_change,
+             m_particle_change = npm_reaction_change,
+             u_particle_change = due_reaction_change + sue_reaction_change,
+             s_particle_change = -sue_reaction_change;
 
-        auto rotochemical_luminosity = e_particle_change * etas.at(electron) +
+        auto rotochemical_luminosity = e_particle_change_H * etas.at(electron) +
                                        m_particle_change * etas.at(muon) +
-                                       u_particle_change * (etas.at(uquark) - etas.at(electron)) +
+                                       u_particle_change * etas.at(uquark) +
                                        s_particle_change * (etas.at(uquark) - etas.at(squark));
 
         // rhs for the temperature balance equation
         evaluated_rhs.push_back(-(photon_luminosity(t, T) + neutrino_luminosity(t, T, etas) - rotochemical_luminosity) / heat_capacity(t, T));
 
         // make particle change relevant for convoluting with Z matrix
-        std::vector<double> del_particle_changes{e_particle_change - (i_omegas.at(electron) - i_omegas.at(uquark)) * omega_sqr_dot(t),
+        std::vector<double> del_particle_changes{e_particle_change_H - (i_omegas.at(electron) - i_omegas.at(uquark)) * omega_sqr_dot(t),
                                                  m_particle_change - i_omegas.at(muon) * omega_sqr_dot(t),
                                                  u_particle_change - i_omegas.at(uquark) * omega_sqr_dot(t),
                                                  s_particle_change - i_omegas.at(squark) * omega_sqr_dot(t)};
