@@ -2,10 +2,17 @@ CXX:=g++
 
 CXX_FLAGS_RELEASE:=-O3
 CXX_FLAGS_DEBUG:=-Wall -Wextra -g
-RHM_HAS_ROOT:=0
-ifneq (, $(shell echo ${ROOTSYS}))
-	CXX_FLAGS_EXTRALIBS:=`root-config --cflags --glibs`
-	RHM_HAS_ROOT:=1
+CXX_FLAGS_EXTRALIBS:=
+
+ifeq (1, $(shell echo ${RHM_HAS_ROOT}))
+	CXX_FLAGS_EXTRALIBS:=$(CXX_FLAGS_EXTRALIBS) `root-config --cflags --glibs`
+else ifeq (, $(shell echo ${RHM_HAS_ROOT}))
+	ifneq (, $(shell echo ${ROOTSYS}))
+		CXX_FLAGS_EXTRALIBS:=$(CXX_FLAGS_EXTRALIBS) `root-config --cflags --glibs`
+		RHM_HAS_ROOT:=1
+	else
+		RHM_HAS_ROOT:=0
+	endif
 endif
 
 HEADERS:=$(wildcard include/*.h)
