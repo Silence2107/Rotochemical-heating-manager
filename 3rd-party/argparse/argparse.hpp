@@ -11,6 +11,8 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
+//
+//   Modified by Silence2107
 
 #ifndef PYLIKE_UTILITY_ARGPARSE_HPP
 #define PYLIKE_UTILITY_ARGPARSE_HPP
@@ -144,7 +146,7 @@ namespace argparse {
             buf = std::stoull(_arguments.at(kw)[index]);
             return true;
         }
-        // BY PAVLO PANASIUK
+        // MODIFIED BY SILENCE2107
         bool get(const std::string &kw, double &buf, std::size_t index = 0) const {
             if (_arguments.count(kw) == 0)
                 return false;
