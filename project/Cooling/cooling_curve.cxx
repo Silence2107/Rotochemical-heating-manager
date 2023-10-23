@@ -258,8 +258,8 @@ int main(int argc, char **argv)
     std::cout << "M = " << m_ns * constants::conversion::gev_over_msol << " [Ms]\n";
     std::cout << std::left << std::setw(indent) << "t [years] "
               << std::setw(indent) << "Te^inf [K] "
-              << std::setw(indent) << "L_ph [erg/s] "
-              << std::setw(indent) << "L_nu [erg/s] " << '\n';
+              << std::setw(indent) << "L^inf_ph [erg/s] "
+              << std::setw(indent) << "L^inf_nu [erg/s] " << '\n';
 
     while (t_curr < t_end)
     {
@@ -334,10 +334,10 @@ int main(int argc, char **argv)
     {
         auto gr_l_gamma = new TGraph(time.size(), time.data(), others[0].data());
         gr_l_gamma->GetXaxis()->SetTitle("t [yr]");
-        gr_l_gamma->GetYaxis()->SetTitle("L_{#gamma} [erg/s]");
+        gr_l_gamma->GetYaxis()->SetTitle("L^{#infty}_{#gamma} [erg/s]");
         auto gr_l_nu = new TGraph(time.size(), time.data(), others[1].data());
         gr_l_nu->GetXaxis()->SetTitle("t [yr]");
-        gr_l_nu->GetYaxis()->SetTitle("L_{#nu} [erg/s]");
+        gr_l_nu->GetYaxis()->SetTitle("L^{#infty}_{#nu} [erg/s]");
         rootfile->cd();
         rootfile->WriteObject(gr, "cooling_curve");
         rootfile->WriteObject(gr_l_gamma, "l_gamma");

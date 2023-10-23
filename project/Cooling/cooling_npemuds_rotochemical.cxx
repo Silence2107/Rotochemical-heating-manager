@@ -555,8 +555,8 @@ int main(int argc, char **argv)
     std::cout << "M = " << m_ns * constants::conversion::gev_over_msol << " [Ms]\n";
     std::cout << std::left << std::setw(indent) << "t [years] "
               << std::setw(indent) << "Te^inf [K] "
-              << std::setw(indent) << "L_ph [erg/s] "
-              << std::setw(indent) << "L_nu [erg/s] ";
+              << std::setw(indent) << "L^inf_ph [erg/s] "
+              << std::setw(indent) << "L^inf_nu [erg/s] ";
     if (save_chemical_imbalances)
     {
         for (auto rh_species = rh_particles.begin(); rh_species != rh_particles.end(); ++rh_species)
@@ -631,10 +631,10 @@ int main(int argc, char **argv)
     {
         auto gr_l_gamma = new TGraph(time.size(), time.data(), others[0].data());
         gr_l_gamma->GetXaxis()->SetTitle("t [yr]");
-        gr_l_gamma->GetYaxis()->SetTitle("L_{#gamma} [erg/s]");
+        gr_l_gamma->GetYaxis()->SetTitle("L^{#infty}_{#gamma} [erg/s]");
         auto gr_l_nu = new TGraph(time.size(), time.data(), others[1].data());
         gr_l_nu->GetXaxis()->SetTitle("t [yr]");
-        gr_l_nu->GetYaxis()->SetTitle("L_{#nu} [erg/s]");
+        gr_l_nu->GetYaxis()->SetTitle("L^{#infty}_{#nu} [erg/s]");
         rootfile->cd();
         if (save_chemical_imbalances)
         {
@@ -645,6 +645,8 @@ int main(int argc, char **argv)
                 std::stringstream ss;
                 ss << "#eta^{#infty}_{" << rh_particles[i].name() << "} [K]";
                 gr_eta->GetYaxis()->SetTitle(ss.str().c_str());
+                ss.str(std::string());
+                ss << "eta_" << rh_particles[i].name();
                 rootfile->WriteObject(gr_eta, ss.str().c_str());
             }
         }
