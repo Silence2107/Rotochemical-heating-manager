@@ -34,7 +34,7 @@ int main(int argc, char **argv)
     parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
     #endif
     parser.addArgument({"--write_exp"}, "multiplier between consecutive write times (optional, default: 10.0)");
-    parser.addArgument({"--no_intermediate_print"}, "whether to print minimal information at each time step (optional, value-free, default: true)", argparse::ArgumentType::StoreTrue);
+    parser.addArgument({"--no_intermediate_print"}, "whether to print minimal information at each time step (optional, value-free, default: print)", argparse::ArgumentType::StoreTrue);
     
     auto args = parser.parseArgs(argc, argv);
 
