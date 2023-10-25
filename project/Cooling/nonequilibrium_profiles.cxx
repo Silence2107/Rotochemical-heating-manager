@@ -177,7 +177,10 @@ int main(int argc, char **argv)
     auto quark_us_durca_emissivity = cooling::predefined::neutrinic::quark_us_durca_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap);
 
-    auto quark_murca_emissivity = cooling::predefined::neutrinic::quark_murca_emissivity(
+    auto quark_ud_murca_emissivity = cooling::predefined::neutrinic::quark_ud_murca_emissivity(
+        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap);
+
+    auto quark_us_murca_emissivity = cooling::predefined::neutrinic::quark_us_murca_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap);
 
     auto quark_bremsstrahlung_emissivity = cooling::predefined::neutrinic::quark_bremsstrahlung_emissivity(
@@ -205,7 +208,9 @@ int main(int argc, char **argv)
             }
         }
         result += hadron_bremsstrahlung_emissivity(r, t, T);
-        result += quark_ud_durca_emissivity(r, t, T) + quark_us_durca_emissivity(r, t, T) + quark_murca_emissivity(r, t, T) + quark_bremsstrahlung_emissivity(r, t, T);
+        result += quark_ud_durca_emissivity(r, t, T) + quark_us_durca_emissivity(r, t, T) +
+                  quark_ud_murca_emissivity(r, t, T) + quark_us_murca_emissivity(r, t, T) +
+                  quark_bremsstrahlung_emissivity(r, t, T);
         result += electron_bremsstrahlung_emissivity(r, t, T);
         return result * exp_phi(r) * exp_phi(r);
     };
