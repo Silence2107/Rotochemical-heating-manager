@@ -32,7 +32,7 @@ double cooling::solver::equilibrium_cooling(
         update = -(T_new - initial_temperature - t_step * F) / (1 - t_step * F_shift / temp_step);
         T_new += update;
         if (T_new < 0)
-            THROW(std::runtime_error, "Reached negative temperature with current method.");
+            RHM_THROW(std::runtime_error, "Reached negative temperature with current method.");
     } while (std::abs(update / initial_temperature) > newton_eps && ++iter < newton_iter_max);
     return T_new;
 }
@@ -160,7 +160,7 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
             t_profile[i] += updates[2 * i + 1];
             l_profile[i] += updates[2 * i];
             if (t_profile[i] < 0.0)
-                THROW(std::runtime_error, "Reached negative temperature with current method.");
+                RHM_THROW(std::runtime_error, "Reached negative temperature with current method.");
             // calculate the abs.-maximum update of the vector
             if (std::abs(updates[2 * i + 1] / t_profile[i]) > max_diff)
             {
@@ -690,7 +690,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
             a_t = 3.18;
         }
         else
-            THROW(std::runtime_error, "Hadron PBF is not implemented for " + hadron.name() + ".");
+            RHM_THROW(std::runtime_error, "Hadron PBF is not implemented for " + hadron.name() + ".");
         double T_loc = T / exp_phi(r);
         int n_flavours = 3;
         double base_dens = 1.17E21 * (mst / hadron.mass()) * (pf / hadron.mass()) * n_flavours *

@@ -32,7 +32,7 @@ namespace auxiliaries
         /// @brief Note it is not actually enclosed by the namespace!
         /// @param exceptionClass exception class
         /// @param message exception message
-        #define THROW(exceptionClass, message) throw exceptionClass("Encountered in " + std::string(__FILE__) + "//" + std::string(__func__) + ", line " + std::to_string(__LINE__) + " : " + message)
+        #define RHM_THROW(exceptionClass, message) throw exceptionClass("Encountered in " + std::string(__FILE__) + "//" + std::string(__func__) + ", line " + std::to_string(__LINE__) + " : " + message)
     }
 
     /// @brief Math auxiliary functionality.
@@ -189,7 +189,7 @@ namespace auxiliaries
                     return result;
                 }
                 default:
-                    THROW(std::runtime_error, "Unimplemented integration mode.");
+                    RHM_THROW(std::runtime_error, "Unimplemented integration mode.");
                 }
             };
         }

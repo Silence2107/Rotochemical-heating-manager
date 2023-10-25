@@ -31,14 +31,14 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &c
 	auto m_prime = [](double rho, double r)
 	{
 		if (rho < 0)
-			THROW(std::runtime_error, "Negative density encountered.");
+			RHM_THROW(std::runtime_error, "Negative density encountered.");
 		return 4 * Pi * r * r * rho;
 	};
 
 	auto rho_prime = [&eos, &eos_prime, radius_step](double rho, double m, double r)
 	{
 		if (rho < 0)
-			THROW(std::runtime_error, "Negative density encountered.");
+			RHM_THROW(std::runtime_error, "Negative density encountered.");
 		// zero radius approx -- explicitly get rid of singularity
 		if (r < radius_step / 2)
 			return -(4 * Pi * G * r) / eos_prime(rho) * (rho + eos(rho)) * (rho / 3 + eos(rho));

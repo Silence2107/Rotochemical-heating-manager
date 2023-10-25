@@ -15,7 +15,7 @@ std::vector<std::vector<double>> auxiliaries::io::read_tabulated_file(const std:
 {
     std::ifstream fstr(path);
     if (!fstr.is_open())
-        THROW(std::runtime_error, "Cannot open file " + path + ". ");
+        RHM_THROW(std::runtime_error, "Cannot open file " + path + ". ");
     std::vector<std::vector<double>> table;
     std::vector<std::string> lines;
     std::string line;
@@ -32,7 +32,7 @@ std::vector<std::vector<double>> auxiliaries::io::read_tabulated_file(const std:
             ++columns.second;
     }
     if (rows.second <= rows.first || columns.second <= columns.first)
-        THROW(std::runtime_error, "Invalid rows or columns count extracted from input file.");
+        RHM_THROW(std::runtime_error, "Invalid rows or columns count extracted from input file.");
     std::vector<std::vector<std::string>> str_data(rows.second - rows.first, std::vector<std::string>(columns.second - columns.first));
     for (size_t i = rows.first; i < rows.second; ++i)
     {
@@ -60,7 +60,7 @@ std::vector<std::vector<double>> auxiliaries::io::read_tabulated_file(const std:
             }
             catch (const std::invalid_argument &e)
             {
-                THROW(std::runtime_error, "Intractable argument: " + std::string(e.what()) + ".");
+                RHM_THROW(std::runtime_error, "Intractable argument: " + std::string(e.what()) + ".");
             }
         }
         table.push_back(column);
@@ -95,13 +95,13 @@ double auxiliaries::math::interpolate(const std::vector<double> &input, const st
     if (enable_checks)
     {
         if (input.size() != output.size())
-            THROW(std::runtime_error, "Input and output arrays have different sizes.");
+            RHM_THROW(std::runtime_error, "Input and output arrays have different sizes.");
     }
     // determine if input is increasing or decreasing
     bool decreasingly_sorted = (input[0] > input[1]) ? true : false;
     if (!extrapolate && enable_checks)
         if ((!decreasingly_sorted && (x < input.front() || x > input.back())) || (decreasingly_sorted && (x > input.front() || x < input.back())))
-            THROW(std::runtime_error, "Searched value is out of range.");
+            RHM_THROW(std::runtime_error, "Searched value is out of range.");
 
     // find index of x in input sorted array in reasonable time
     size_t low_pos;
@@ -132,7 +132,7 @@ double auxiliaries::math::interpolate(const std::vector<double> &input, const st
     {
         if (enable_checks)
             if (input.size() < 2)
-                THROW(std::runtime_error, "Cannot perform linear interpolation with less than 2 points.");
+                RHM_THROW(std::runtime_error, "Cannot perform linear interpolation with less than 2 points.");
         return output[low_pos] + (output[low_pos + 1] - output[low_pos]) * (x - input[low_pos]) / (input[low_pos + 1] - input[low_pos]);
     }
     break;
@@ -140,7 +140,7 @@ double auxiliaries::math::interpolate(const std::vector<double> &input, const st
     {
         if (enable_checks)
             if (input.size() < 5)
-                THROW(std::runtime_error, "Cannot perform cubic interpolation with less than 5 points.");
+                RHM_THROW(std::runtime_error, "Cannot perform cubic interpolation with less than 5 points.");
         auto tridiagonal_solve = [](const std::vector<double> &subdiag, const std::vector<double> &diag, const std::vector<double> &superdiag, const std::vector<double> &rhs)
         {
             auxiliaries::math::MatrixD A(diag.size(), diag.size(), 0.0);
@@ -185,7 +185,7 @@ double auxiliaries::math::interpolate(const std::vector<double> &input, const st
     }
     break;
     default:
-        THROW(std::runtime_error, "Unknown interpolation mode.");
+        RHM_THROW(std::runtime_error, "Unknown interpolation mode.");
     }
 }
 
@@ -195,13 +195,13 @@ double auxiliaries::math::interpolate_cached(std::function<double(double)> &cach
     bool decreasingly_sorted = (input[0] > input[1]) ? true : false;
     if (!extrapolate && enable_checks)
         if ((!decreasingly_sorted && (x < input.front() || x > input.back())) || (decreasingly_sorted && (x > input.front() || x < input.back())))
-            THROW(std::runtime_error, "Searched value is out of range.");
+            RHM_THROW(std::runtime_error, "Searched value is out of range.");
     if (!cache) // if a callable is not stored, cache one
     {
         if (enable_checks)
         {
             if (input.size() != output.size())
-                THROW(std::runtime_error, "Input and output arrays have different sizes.");
+                RHM_THROW(std::runtime_error, "Input and output arrays have different sizes.");
         }
 
         // interpolate
@@ -211,7 +211,7 @@ double auxiliaries::math::interpolate_cached(std::function<double(double)> &cach
         {
             if (enable_checks)
                 if (input.size() < 2)
-                    THROW(std::runtime_error, "Cannot perform linear interpolation with less than 2 points.");
+                    RHM_THROW(std::runtime_error, "Cannot perform linear interpolation with less than 2 points.");
             cache = [=](double x)
             {
                 // find index of x in input sorted array in reasonable time
@@ -244,7 +244,7 @@ double auxiliaries::math::interpolate_cached(std::function<double(double)> &cach
         {
             if (enable_checks)
                 if (input.size() < 5)
-                    THROW(std::runtime_error, "Cannot perform cubic interpolation with less than 5 points.");
+                    RHM_THROW(std::runtime_error, "Cannot perform cubic interpolation with less than 5 points.");
             auto tridiagonal_solve = [](const std::vector<double> &subdiag, const std::vector<double> &diag, const std::vector<double> &superdiag, const std::vector<double> &rhs)
             {
                 auxiliaries::math::MatrixD A(diag.size(), diag.size(), 0.0);
@@ -318,7 +318,7 @@ double auxiliaries::math::interpolate_cached(std::function<double(double)> &cach
         }
         break;
         default:
-            THROW(std::runtime_error, "Unknown interpolation mode.");
+            RHM_THROW(std::runtime_error, "Unknown interpolation mode.");
         }
     }
     return cache(x);
@@ -569,7 +569,7 @@ double auxiliaries::phys::critical_temperature(double k_fermi, auxiliaries::phys
     case CriticalTemperatureModel::kHadronToQGP:
         return 0.15;
     default:
-        THROW(std::runtime_error, "Unknown critical temperature model.");
+        RHM_THROW(std::runtime_error, "Unknown critical temperature model.");
     }
 }
 
@@ -638,7 +638,7 @@ double auxiliaries::math::MatrixD::det() const
 {
     if (this->rows() != this->columns())
     {
-        THROW(std::runtime_error, "Non-square matrix has no determinant.");
+        RHM_THROW(std::runtime_error, "Non-square matrix has no determinant.");
     }
     if (this->rows() == 1)
     {
@@ -704,7 +704,7 @@ auxiliaries::math::MatrixD auxiliaries::math::MatrixD::inverse() const
 {
     if (this->rows() != this->columns())
     {
-        THROW(std::runtime_error, "Non-square matrix has no inverse.");
+        RHM_THROW(std::runtime_error, "Non-square matrix has no inverse.");
     }
     MatrixD result(this->rows(), this->columns());
     // Gaussian elimination of augmented matrix
@@ -732,7 +732,7 @@ auxiliaries::math::MatrixD auxiliaries::math::MatrixD::inverse() const
         }
         if (max_entry == 0.0)
         {
-            THROW(std::runtime_error, "Matrix is not invertible.");
+            RHM_THROW(std::runtime_error, "Matrix is not invertible.");
         }
         if (max_entry_row != row)
         {
@@ -779,11 +779,11 @@ std::vector<double> auxiliaries::math::MatrixD::solve(const std::vector<double> 
 {
     if (this->rows() != this->columns())
     {
-        THROW(std::runtime_error, "Non-square matrix cannot be subjected to solver.");
+        RHM_THROW(std::runtime_error, "Non-square matrix cannot be subjected to solver.");
     }
     if (this->rows() != rhs.size())
     {
-        THROW(std::runtime_error, "Matrix and right-hand side vector dimensions do not match.");
+        RHM_THROW(std::runtime_error, "Matrix and right-hand side vector dimensions do not match.");
     }
 
     // Gaussian elimination of augmented matrix
@@ -811,7 +811,7 @@ std::vector<double> auxiliaries::math::MatrixD::solve(const std::vector<double> 
         }
         if (max_entry == 0.0)
         {
-            THROW(std::runtime_error, "Matrix is not invertible.");
+            RHM_THROW(std::runtime_error, "Matrix is not invertible.");
         }
         if (max_entry_row != row)
         {
@@ -848,7 +848,7 @@ auxiliaries::math::MatrixD auxiliaries::math::MatrixD::tridiagonal_inverse() con
 {
     if (this->rows() != this->columns())
     {
-        THROW(std::runtime_error, "Non-square matrix has no inverse.");
+        RHM_THROW(std::runtime_error, "Non-square matrix has no inverse.");
     }
     MatrixD result(this->rows(), this->columns());
     // Gaussian elimination of augmented matrix
@@ -861,7 +861,7 @@ auxiliaries::math::MatrixD auxiliaries::math::MatrixD::tridiagonal_inverse() con
         }
         if (augmented.at(row, row) == 0.0)
         {
-            THROW(std::runtime_error, "Tridiagonal inverse cannot be applied with zeros on the diagonal.");
+            RHM_THROW(std::runtime_error, "Tridiagonal inverse cannot be applied with zeros on the diagonal.");
         }
         augmented.at(row, row + this->columns()) = 1.0;
     }
@@ -899,11 +899,11 @@ std::vector<double> auxiliaries::math::MatrixD::tridiagonal_solve(const std::vec
 {
     if (this->rows() != this->columns())
     {
-        THROW(std::runtime_error, "Non-square matrix cannot be subjected to tridiagonal solver.");
+        RHM_THROW(std::runtime_error, "Non-square matrix cannot be subjected to tridiagonal solver.");
     }
     if (this->rows() != rhs.size())
     {
-        THROW(std::runtime_error, "Matrix and right-hand side vector dimensions do not match.");
+        RHM_THROW(std::runtime_error, "Matrix and right-hand side vector dimensions do not match.");
     }
 
     size_t n = this->rows();
@@ -930,7 +930,7 @@ auxiliaries::math::MatrixD auxiliaries::math::MatrixD::operator+(const MatrixD &
 {
     if (this->rows() != other.rows() || this->columns() != other.columns())
     {
-        THROW(std::runtime_error, "Matrix dimensions do not match.");
+        RHM_THROW(std::runtime_error, "Matrix dimensions do not match.");
     }
     MatrixD result(this->rows(), this->columns(), 0.0);
     for (size_t row = 0; row < this->rows(); ++row)
@@ -947,7 +947,7 @@ auxiliaries::math::MatrixD auxiliaries::math::MatrixD::operator-(const MatrixD& 
 {
     if (this->rows() != other.rows() || this->columns() != other.columns())
     {
-        THROW(std::runtime_error, "Matrix dimensions do not match.");
+        RHM_THROW(std::runtime_error, "Matrix dimensions do not match.");
     }
     MatrixD result(this->rows(), this->columns(), 0.0);
     for (size_t row = 0; row < this->rows(); ++row)
@@ -964,7 +964,7 @@ auxiliaries::math::MatrixD auxiliaries::math::MatrixD::operator*(const MatrixD& 
 {
     if (this->columns() != other.rows())
     {
-        THROW(std::runtime_error, "Matrix dimensions do not match.");
+        RHM_THROW(std::runtime_error, "Matrix dimensions do not match.");
     }
     MatrixD result(this->rows(), other.columns(), 0.0);
     for (size_t row = 0; row < this->rows(); ++row)
