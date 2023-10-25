@@ -161,23 +161,23 @@ int main(int argc, char **argv)
            b_em = auxiliaries::math::integrate_volume<>(
                std::function<double(double)>([&nbar, &exp_phi](double r)
                                              { return dne_to_dmum(nbar(r)) / exp_phi(r); }),
-               0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)(),
+               0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)(),
            b_mm = auxiliaries::math::integrate_volume<>(
                std::function<double(double)>([&nbar, &exp_phi](double r)
                                              { return dnm_to_dmum(nbar(r)) / exp_phi(r); }),
-               0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)(),
+               0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)(),
            b_uu = auxiliaries::math::integrate_volume<>(
                std::function<double(double)>([&nbar, &exp_phi](double r)
                                              { return dnu_to_dmuu(nbar(r)) / exp_phi(r); }),
-               0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)(),
+               0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)(),
            b_us = auxiliaries::math::integrate_volume<>(
                std::function<double(double)>([&nbar, &exp_phi](double r)
                                              { return dnu_to_dmus(nbar(r)) / exp_phi(r); }),
-               0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)(),
+               0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)(),
            b_ss = auxiliaries::math::integrate_volume<>(
                std::function<double(double)>([&nbar, &exp_phi](double r)
                                              { return dns_to_dmus(nbar(r)) / exp_phi(r); }),
-               0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)();
+               0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)();
     // std::cout << "b_ee = " << b_ee << " b_em = " << b_em << " b_mm = " << b_mm << " b_uu = " << b_uu << " b_us = " << b_us << " b_ss = " << b_ss << std::endl;
     // We have explicit expressions for inverted bij, so let's calculate them
     double z_npe, z_npm, z_np, z_due, z_us, z_sue;
@@ -394,7 +394,7 @@ int main(int argc, char **argv)
         {
             return -nbar(r) * 1.0 / omega_k_sqr * (n_i(nbar(r + radius_step)) / nbar(r + radius_step) - n_i(nbar(r)) / nbar(r)) / (tov(r + radius_step)[3] / tov(r)[3] - 1);
         };
-        i_omegas[species->first] = auxiliaries::math::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)();
+        i_omegas[species->first] = auxiliaries::math::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_ns - radius_step, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)();
     }
     for (auto rh_species = supported_rh_particles.begin(); rh_species != supported_rh_particles.end(); ++rh_species)
     {

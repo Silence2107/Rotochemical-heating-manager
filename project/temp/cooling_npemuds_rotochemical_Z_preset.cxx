@@ -273,7 +273,7 @@ int main(int argc, char **argv)
         {
             return -nbar(r) * 1.0 / omega_k_sqr * (n_i(nbar(r + radius_step)) / nbar(r + radius_step) - n_i(nbar(r)) / nbar(r)) / (tov(r + radius_step)[3] / tov(r)[3] - 1);
         };
-        i_omegas[species->first] = auxiliaries::math::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)();
+        i_omegas[species->first] = auxiliaries::math::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_ns - radius_step, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)();
     }
     for (auto rh_species = supported_rh_particles.begin(); rh_species != supported_rh_particles.end(); ++rh_species)
     {
