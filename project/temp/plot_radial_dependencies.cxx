@@ -28,23 +28,26 @@ int main(int argc, char **argv)
 {
     argparse::ArgumentParser parser("plot_radial_dependencies", "Evaluates a function of choice (predefined within the code) radial dependency based on EoS", "Argparse powered by SiLeader");
 
-    parser.addArgument({"--inputfile"}, "json input file path (optional)");
-    #if RHM_HAS_ROOT
+#if RHM_REQUIRES_INPUTFILE
+    parser.addArgument({"--inputfile"}, "json input file path (required)");
+#endif
+#if RHM_HAS_ROOT
     parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: Dependency.pdf)");
     parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
-    #endif
+#endif
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
-    if (args.has("inputfile"))
-        instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#if RHM_REQUIRES_INPUTFILE
+    instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#endif
 
-    #if RHM_HAS_ROOT
+#if RHM_HAS_ROOT
     std::string pdf_path = args.safeGet<std::string>("pdf_path", "Dependency.pdf");
     TFile *rootfile = nullptr;
     if (args.has("rootfile_path"))
         rootfile = new TFile(args.get<std::string>("rootfile_path").c_str(), "RECREATE");
-    #endif
+#endif
 
     // RUN --------------------------------------------------------------------------
 
@@ -158,7 +161,7 @@ int main(int argc, char **argv)
         std::cout << r << " " << val << "\n";
     }
 
-    #if RHM_HAS_ROOT
+#if RHM_HAS_ROOT
     // draw
     TCanvas *c1 = new TCanvas("c1", "c1");
     gPad->SetTicks();
@@ -192,8 +195,8 @@ int main(int argc, char **argv)
     gr->GetXaxis()->SetTitleFont(43);
     gr->GetXaxis()->SetTitleSize(26);
     gr->GetXaxis()->SetTitleOffset(0.9);
-    //gr->GetYaxis()->SetRangeUser(7e2, 7e6);
-    //gr->GetXaxis()->SetLimits(1e-12, 1e7);
+    // gr->GetYaxis()->SetRangeUser(7e2, 7e6);
+    // gr->GetXaxis()->SetLimits(1e-12, 1e7);
 
     auto legend = new TLegend(0.15, 0.1, 0.43, 0.38);
     legend->AddEntry(gr, "RH Manager", "l");
@@ -206,5 +209,5 @@ int main(int argc, char **argv)
     legend->Draw();
 
     c1->SaveAs(pdf_path.c_str());
-    #endif
+#endif
 }

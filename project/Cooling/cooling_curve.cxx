@@ -29,23 +29,26 @@ int main(int argc, char **argv)
 {
     argparse::ArgumentParser parser("cooling_curve", "Evaluates surface temperature time dependency based on EoS", "Argparse powered by SiLeader");
 
-    parser.addArgument({"--inputfile"}, "json input file path (optional)");
-    #if RHM_HAS_ROOT
+#if RHM_REQUIRES_INPUTFILE
+    parser.addArgument({"--inputfile"}, "json input file path (required)");
+#endif
+#if RHM_HAS_ROOT
     parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: Cooling.pdf)");
     parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
-    #endif
+#endif
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
-    if (args.has("inputfile"))
-        instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#if RHM_REQUIRES_INPUTFILE
+    instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#endif
 
-    #if RHM_HAS_ROOT
+#if RHM_HAS_ROOT
     std::string pdf_path = args.safeGet<std::string>("pdf_path", "Cooling.pdf");
     TFile *rootfile = nullptr;
     if (args.has("rootfile_path"))
         rootfile = new TFile(args.get<std::string>("rootfile_path").c_str(), "RECREATE");
-    #endif
+#endif
 
     // RUN --------------------------------------------------------------------------
 
@@ -319,7 +322,7 @@ int main(int argc, char **argv)
         std::cout << std::left << std::setw(indent) << time.back() << std::setw(indent) << surface_temp.back() << std::setw(indent) << others[0].back() << std::setw(indent) << others[1].back() << '\n';
     }
 
-    #if RHM_HAS_ROOT
+#if RHM_HAS_ROOT
     // draw
     TCanvas *c1 = new TCanvas("c1", "c1");
     gPad->SetLogy();

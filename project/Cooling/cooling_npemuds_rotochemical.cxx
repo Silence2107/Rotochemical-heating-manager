@@ -30,7 +30,9 @@ int main(int argc, char **argv)
 {
     argparse::ArgumentParser parser("cooling_npemuds_rotochemical", "Solves the cooling equation coupled with chemical imbalances based on EoS", "Argparse powered by SiLeader");
 
-    parser.addArgument({"--inputfile"}, "json input file path (optional)");
+#if RHM_REQUIRES_INPUTFILE
+    parser.addArgument({"--inputfile"}, "json input file path (required)");
+#endif
 #if RHM_HAS_ROOT
     parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: Cooling.pdf)");
     parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
@@ -40,8 +42,9 @@ int main(int argc, char **argv)
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
-    if (args.has("inputfile"))
-        instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#if RHM_REQUIRES_INPUTFILE
+    instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#endif
 
 #if RHM_HAS_ROOT
     std::string pdf_path = args.safeGet<std::string>("pdf_path", "Cooling.pdf");

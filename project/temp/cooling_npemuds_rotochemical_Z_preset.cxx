@@ -29,7 +29,9 @@ int main(int argc, char **argv)
 {
     argparse::ArgumentParser parser("cooling_npemuds_rotochemical_Z_preset", "Solves the cooling equation coupled with chemical imbalances evolution based on EoS. Z matrix is supplied manually within the code.", "Argparse powered by SiLeader");
 
-    parser.addArgument({"--inputfile"}, "json input file path (optional)");
+#if RHM_REQUIRES_INPUTFILE
+    parser.addArgument({"--inputfile"}, "json input file path (required)");
+#endif
 #if RHM_HAS_ROOT
     parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: Cooling.pdf)");
     parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
@@ -39,8 +41,9 @@ int main(int argc, char **argv)
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
-    if (args.has("inputfile"))
-        instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#if RHM_REQUIRES_INPUTFILE
+    instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#endif
 
 #if RHM_HAS_ROOT
     std::string pdf_path = args.safeGet<std::string>("pdf_path", "Cooling.pdf");
@@ -224,7 +227,10 @@ int main(int argc, char **argv)
     auto quark_us_durca_enhanced_emissivity = cooling::predefined::rotochemical::quark_us_durca_enhanced_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap);
 
-    auto quark_murca_enhanced_emissivity = cooling::predefined::rotochemical::quark_murca_enhanced_emissivity(
+    auto quark_ud_murca_enhanced_emissivity = cooling::predefined::rotochemical::quark_ud_murca_enhanced_emissivity(
+        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap);
+
+    auto quark_us_murca_enhanced_emissivity = cooling::predefined::rotochemical::quark_us_murca_enhanced_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap);
 
     auto quark_bremsstrahlung_emissivity = cooling::predefined::neutrinic::quark_bremsstrahlung_emissivity(
@@ -249,7 +255,10 @@ int main(int argc, char **argv)
     auto quark_us_durca_rate_difference = cooling::predefined::rotochemical::quark_us_durca_rate_difference(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap);
 
-    auto quark_murca_rate_difference = cooling::predefined::rotochemical::quark_murca_rate_difference(
+    auto quark_ud_murca_rate_difference = cooling::predefined::rotochemical::quark_ud_murca_rate_difference(
+        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap);
+
+    auto quark_us_murca_rate_difference = cooling::predefined::rotochemical::quark_us_murca_rate_difference(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap);
 
     // I_omega estimates
@@ -299,7 +308,8 @@ int main(int argc, char **argv)
         // quark processes
         result += quark_ud_durca_enhanced_emissivity(r, t, T, etas.at(uquark)) +
                   quark_us_durca_enhanced_emissivity(r, t, T, etas.at(squark)) +
-                  quark_murca_enhanced_emissivity(r, t, T, etas.at(uquark)) +
+                  quark_ud_murca_enhanced_emissivity(r, t, T, etas.at(uquark)) +
+                  quark_us_murca_enhanced_emissivity(r, t, T, etas.at(squark)) +
                   quark_bremsstrahlung_emissivity(r, t, T);
         // extra
         result += electron_bremsstrahlung_emissivity(r, t, T);
@@ -358,11 +368,12 @@ int main(int argc, char **argv)
         auto diff_due_inf = [&](double r, const auxiliaries::phys::Species &species)
         {
             return exp_phi(r) * (quark_ud_durca_rate_difference(r, t, T, etas.at(species)) +
-                                 quark_murca_rate_difference(r, t, T, etas.at(species)));
+                                 quark_ud_murca_rate_difference(r, t, T, etas.at(species)));
         };
         auto diff_sue_inf = [&](double r, const auxiliaries::phys::Species &species)
         {
-            return exp_phi(r) * (quark_us_durca_rate_difference(r, t, T, etas.at(species)));
+            return exp_phi(r) * (quark_us_durca_rate_difference(r, t, T, etas.at(species)) +
+                                 quark_us_murca_rate_difference(r, t, T, etas.at(species)));
         };
         auto npe_reaction_change = auxiliaries::math::integrate_volume<const auxiliaries::phys::Species &>(std::function<double(double, const auxiliaries::phys::Species &)>(diff_npl_inf), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)(electron),
              npm_reaction_change = auxiliaries::math::integrate_volume<const auxiliaries::phys::Species &>(std::function<double(double, const auxiliaries::phys::Species &)>(diff_npl_inf), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)(muon),

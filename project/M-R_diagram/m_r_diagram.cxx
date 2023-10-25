@@ -24,30 +24,33 @@
 #include <TFile.h>
 #endif
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     argparse::ArgumentParser parser("m_r_diagram", "Maps central densities selection to corresponding mass and radius based on EoS", "Argparse powered by SiLeader");
 
-    parser.addArgument({"--inputfile"}, "json input file path (optional)");
-    #if RHM_HAS_ROOT
+#if RHM_REQUIRES_INPUTFILE
+    parser.addArgument({"--inputfile"}, "json input file path (required)");
+#endif
+#if RHM_HAS_ROOT
     parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: M-R-diagram.pdf)");
     parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
-    #endif
+#endif
     parser.addArgument({"--left_fraction"}, "least fraction of central density to consider (optional, default: 0.001)");
     parser.addArgument({"--right_fraction"}, "greatest fraction of central density to consider (optional, default: 0.999)");
     parser.addArgument({"--selection_size"}, "number of points to discretize density interval (optional, default: 1000)");
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
-    if (args.has("inputfile"))
-        instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#if RHM_REQUIRES_INPUTFILE
+    instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#endif
 
-    #if RHM_HAS_ROOT
+#if RHM_HAS_ROOT
     std::string pdf_path = args.safeGet<std::string>("pdf_path", "M-R-diagram.pdf");
     TFile *rootfile = nullptr;
     if (args.has("rootfile_path"))
         rootfile = new TFile(args.get<std::string>("rootfile_path").c_str(), "RECREATE");
-    #endif
+#endif
 
     double left_fraction = args.safeGet<double>("left_fraction", 0.001);
     double right_fraction = args.safeGet<double>("right_fraction", 0.999);
@@ -88,7 +91,7 @@ int main(int argc, char** argv)
     {
         // TOV solver
         auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
-                                                  const std::function<double(double)> &, double, double, double, double, size_t>(tov_solver::tov_solution);
+                                                        const std::function<double(double)> &, double, double, double, double, size_t>(tov_solver::tov_solution);
         auto tov = [&tov_cached, &eos_cached, edensity](double r)
         {
             // TOV solution cached
@@ -119,7 +122,7 @@ int main(int argc, char** argv)
         std::cout << std::left << std::setw(indent) << frac << std::setw(indent) << edensity / energy_density_conversion << std::setw(indent) << y.back() << std::setw(indent) << x.back() << "\n";
     }
 
-    #if RHM_HAS_ROOT
+#if RHM_HAS_ROOT
     // draw
     TCanvas *c1 = new TCanvas("c1", "c1");
     auto gr = new TGraph(x.size(), x.data(), y.data());
@@ -149,11 +152,11 @@ int main(int argc, char** argv)
     // gPad->SetLogx();
     // gPad->SetLogy();
 
-    //auto legend = new TLegend(0.1, 0.1, 0.38, 0.38);
-    //legend->AddEntry(gr, "RH Manager", "l");
+    // auto legend = new TLegend(0.1, 0.1, 0.38, 0.38);
+    // legend->AddEntry(gr, "RH Manager", "l");
 
-    //legend->Draw();
+    // legend->Draw();
 
     c1->SaveAs(pdf_path.c_str());
-    #endif
+#endif
 }

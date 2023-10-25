@@ -28,26 +28,29 @@ int main(int argc, char **argv)
 {
     argparse::ArgumentParser parser("nonequilibrium_profiles", "Evaluates radial temperature profiles with time based on EoS", "Argparse powered by SiLeader");
 
-    parser.addArgument({"--inputfile"}, "json input file path (optional)");
-    #if RHM_HAS_ROOT
+#if RHM_REQUIRES_INPUTFILE
+    parser.addArgument({"--inputfile"}, "json input file path (required)");
+#endif
+#if RHM_HAS_ROOT
     parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: CoolingProfiles.pdf)");
     parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
-    #endif
+#endif
     parser.addArgument({"--write_exp"}, "multiplier between consecutive write times (optional, default: 10.0)");
     parser.addArgument({"--no_intermediate_print"}, "whether to print minimal information at each time step (optional, value-free, default: print)", argparse::ArgumentType::StoreTrue);
-    
+
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
-    if (args.has("inputfile"))
-        instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#if RHM_REQUIRES_INPUTFILE
+    instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#endif
 
-    #if RHM_HAS_ROOT
+#if RHM_HAS_ROOT
     std::string pdf_path = args.safeGet<std::string>("pdf_path", "CoolingProfiles.pdf");
     TFile *rootfile = nullptr;
     if (args.has("rootfile_path"))
         rootfile = new TFile(args.get<std::string>("rootfile_path").c_str(), "RECREATE");
-    #endif
+#endif
 
     double write_time_expansion = args.safeGet<double>("write_exp", 10.0);
     bool print_all_time = !args.has("no_intermediate_print");
@@ -257,19 +260,20 @@ int main(int argc, char **argv)
     while (t_curr + time_step < t_end)
     {
         using namespace constants::conversion;
-        
+
         // if exception is met
         bool error = false;
         // update
         while (true)
         {
             std::vector<double> new_profile;
-            try{
+            try
+            {
                 new_profile = cooling::solver::nonequilibrium_cooling(
                     t_curr, time_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
                     exp_lambda, exp_phi, radii, profile, te_tb, cooling_newton_step_eps, cooling_newton_max_iter)[0];
             }
-            catch(const std::exception &e)
+            catch (const std::exception &e)
             {
                 std::cout << e.what() << '\n';
                 error = true;
@@ -285,21 +289,21 @@ int main(int argc, char **argv)
             for (size_t i = 0; i < radii.size() - 1; ++i)
             {
                 // excluding surface point
-                max_diff = std::max(max_diff, fabs(new_profile[i] - profile[i])/profile[i]);
+                max_diff = std::max(max_diff, fabs(new_profile[i] - profile[i]) / profile[i]);
             }
             // std::cout << "max_diff = " << max_diff << '\n';
             if (max_diff > 0.05)
-                {
-                    time_step /= 2;
-                    //exp_rate_estim = sqrt(exp_rate_estim);
-                    //std::cout << "Adapting time step \n";
-                    continue;
-                }
+            {
+                time_step /= 2;
+                // exp_rate_estim = sqrt(exp_rate_estim);
+                // std::cout << "Adapting time step \n";
+                continue;
+            }
             profile = new_profile;
             break;
         }
-        
-        if(error)
+
+        if (error)
             break;
 
         t_curr += time_step;
@@ -342,7 +346,7 @@ int main(int argc, char **argv)
         std::cout << '\n';
     }
 
-    #if RHM_HAS_ROOT
+#if RHM_HAS_ROOT
     // draw
     TCanvas *c1 = new TCanvas("c1", "c1");
     TMultiGraph *mg = new TMultiGraph("mg", "mg");
@@ -370,5 +374,5 @@ int main(int argc, char **argv)
     gPad->SetLogy();
 
     c1->SaveAs(pdf_path.c_str());
-    #endif
+#endif
 }

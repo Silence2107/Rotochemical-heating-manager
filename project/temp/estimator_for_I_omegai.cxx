@@ -22,14 +22,17 @@ int main(int argc, char **argv)
     // where \omega_K is the Keplerian frequency and i being particle species
     argparse::ArgumentParser parser("estimator_for_I_omegai", "Estimates I_omega quantities (rotochemical heating related) based on EoS", "Argparse powered by SiLeader");
 
-    parser.addArgument({"--inputfile"}, "json input file path (optional)");
+#if RHM_REQUIRES_INPUTFILE
+    parser.addArgument({"--inputfile"}, "json input file path (required)");
+#endif
     parser.addArgument({"--center_density"}, "center energy density linspaced fraction (optional, default: read from inputfile)");
 
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
-    if (args.has("inputfile"))
-        instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#if RHM_REQUIRES_INPUTFILE
+    instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#endif
 
     double center_density = instantiator::center_density;
     if (args.has("center_density"))
