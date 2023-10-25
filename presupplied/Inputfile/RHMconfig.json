@@ -87,9 +87,6 @@
             {
                 "Units" : "Mev",
                 "Column" : 13
-            },
-            "DensityChemPotentialDerivatives": 
-            {
             }
         },
         "Misc" :
@@ -125,6 +122,7 @@
         "TemperatureUnits" : "K",
         "NewtonTolerance" : 1E-5,
         "NewtonMaxIter" : 50,
+        "StepTolerance": 0.05,
         "RadiusStep" : 0.1,
         "TimeInit" : 0.0,
         "TimeEnd" : 1E+9,

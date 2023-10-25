@@ -292,7 +292,7 @@ int main(int argc, char **argv)
                 max_diff = std::max(max_diff, fabs(new_profile[i] - profile[i]) / profile[i]);
             }
             // std::cout << "max_diff = " << max_diff << '\n';
-            if (max_diff > 0.05)
+            if (max_diff > cooling_newton_step_eps)
             {
                 time_step /= 2;
                 // exp_rate_estim = sqrt(exp_rate_estim);

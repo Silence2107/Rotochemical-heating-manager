@@ -587,7 +587,7 @@ int main(int argc, char **argv)
         {
             max_diff = (previous_values[i] != 0) ? std::max(max_diff, std::abs((values[i] - previous_values[i]) / previous_values[i])) : max_diff;
         }
-        if (max_diff > 0.05)
+        if (max_diff > cooling_newton_step_eps)
         {
             t_step /= 2.0;
             continue;

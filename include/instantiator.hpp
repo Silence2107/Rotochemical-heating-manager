@@ -100,6 +100,9 @@ namespace instantiator
     // maximum number of iterations of the cooling solvers
     size_t cooling_newton_max_iter;
 
+    // desirable relative accuracy of the cooling solvers per time step
+    double cooling_max_diff_per_t_step;
+
     // Cooling settings
     double crust_eta;
 
@@ -396,6 +399,9 @@ namespace instantiator
 
         // (2) TOV solver setup
 
+        if (j["TOVSolver"].is_null())
+            RHM_THROW(std::runtime_error, "UI error: TOV solver setup is essential for any simulation and must be provided.");
+
         auxiliaries::math::InterpolationMode eos_interp_mode;
         auto eos_interp_mode_read = j["TOVSolver"]["EoSInterpolation"];
         if (eos_interp_mode_read.is_null())
@@ -518,10 +524,12 @@ namespace instantiator
         }
 
         // (->1) EoS Setup
+
+        if (j["CoolingSolver"].is_null())
+            return; // user presents no interest in cooling
+
         // provided particles
         auto particles_read = j["EoSSetup"]["Particles"];
-        if (particles_read.size() < 1)
-            return; // no particles provided -> user expresses no interest in cooling
         if (!particles_read.is_array())
             RHM_THROW(std::runtime_error, "UI error: Particle types must be provided as an array.");
 
@@ -774,6 +782,15 @@ namespace instantiator
         else
             cooling_newton_max_iter = cooling_newton_max_iter_read.get<size_t>();
 
+        // desirable relative accuracy of the cooling solvers per time step
+        auto cooling_newton_step_eps_per_step_read = j["CoolingSolver"]["StepTolerance"];
+        if (cooling_newton_step_eps_per_step_read.is_null())
+            cooling_newton_step_eps = 1E-5;
+        else if (!(cooling_newton_step_eps_per_step_read.is_number()))
+            RHM_THROW(std::runtime_error, "UI error: Cooling solver relative tolerance per step must be provided as a number.");
+        else
+            cooling_newton_step_eps = cooling_newton_step_eps_per_step_read.get<double>();
+
         // initial temperature profile
         auto initial_t_profile_read = j["CoolingSolver"]["TemperatureProfile"];
         auto cooling_temp_conversion_read = j["CoolingSolver"]["TemperatureUnits"];
@@ -801,7 +818,7 @@ namespace instantiator
         }
         else
             RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for temperature.");
-        
+
         auto initial_t_profile_provided_as_read = initial_t_profile_read["ProvidedAs"];
         std::function<double(double, double, const std::function<double(double)> &)> redshift_factor;
         if (initial_t_profile_provided_as_read == "Redshifted")
@@ -1150,80 +1167,75 @@ namespace instantiator
         // (4) Rotochemical heating setup
 
         if (j["RHSolver"].is_null())
-            // assume rotochemical heating is disabled
-            return;
+            return; // user does not want rotochemical heating
 
         auto bij_density_read = j["EoSSetup"]["Quantities"]["DensityChemPotentialDerivatives"];
-        if (bij_density_read.is_null())
-            RHM_THROW(std::runtime_error, "UI error: Number density derivatives of chemical potentials must be provided for rotochemical heating.");
-        else
+
+        // we expect npemuds (H{npem} + Q{udse}) matter at most.
+        using namespace constants::species;
+
+        // we first see which entries are provided by the user
+
+        auto bee_density_read = bij_density_read["Electron"]["Electron"],
+             bem_density_read = bij_density_read["Electron"]["Muon"],
+             bmm_density_read = bij_density_read["Muon"]["Muon"],
+             buu_density_read = bij_density_read["Uquark"]["Uquark"],
+             bus_density_read = bij_density_read["Uquark"]["Squark"],
+             bss_density_read = bij_density_read["Squark"]["Squark"];
+        bem_density_read = (bem_density_read.is_null() ? bij_density_read["Muon"]["Electron"] : bem_density_read);
+        bus_density_read = (bus_density_read.is_null() ? bij_density_read["Squark"]["Uquark"] : bus_density_read);
+
+        // if all npemuds matter plays role in rotochemical heating,
+        // the number of rows is reduced to 4 (via conservation laws),
+        // namely, (dNe, dNm, dNu, dNs), with 6 independent entries within the matrix.
+
+        // all checks reflecting whether the user provided any good info will be done in the main program
+
+        auto bij_vars = std::vector<std::reference_wrapper<decltype(dne_to_dmue)>>({dne_to_dmue, dne_to_dmum, dnm_to_dmum, dnu_to_dmuu, dnu_to_dmus, dns_to_dmus});
+        auto bij_reads = std::vector<decltype(bee_density_read)>({bee_density_read, bem_density_read, bmm_density_read, buu_density_read, bus_density_read, bss_density_read});
+
+        for (size_t entry_num = 0; entry_num < bij_vars.size(); ++entry_num)
         {
-            // we expect npemuds (H{npem} + Q{udse}) matter at most.
-            using namespace constants::species;
-
-            // we first see which entries are provided by the user
-
-            auto bee_density_read = bij_density_read["Electron"]["Electron"],
-                 bem_density_read = bij_density_read["Electron"]["Muon"],
-                 bmm_density_read = bij_density_read["Muon"]["Muon"],
-                 buu_density_read = bij_density_read["Uquark"]["Uquark"],
-                 bus_density_read = bij_density_read["Uquark"]["Squark"],
-                 bss_density_read = bij_density_read["Squark"]["Squark"];
-            bem_density_read = (bem_density_read.is_null() ? bij_density_read["Muon"]["Electron"] : bem_density_read);
-            bus_density_read = (bus_density_read.is_null() ? bij_density_read["Squark"]["Uquark"] : bus_density_read);
-
-            // if all npemuds matter plays role in rotochemical heating,
-            // the number of rows is reduced to 4 (via conservation laws),
-            // namely, (dNe, dNm, dNu, dNs), with 6 independent entries within the matrix.
-
-            // all checks reflecting whether the user provided any good info will be done in the main program
-
-            auto bij_vars = std::vector<std::reference_wrapper<decltype(dne_to_dmue)>>({dne_to_dmue, dne_to_dmum, dnm_to_dmum, dnu_to_dmuu, dnu_to_dmus, dns_to_dmus});
-            auto bij_reads = std::vector<decltype(bee_density_read)>({bee_density_read, bem_density_read, bmm_density_read, buu_density_read, bus_density_read, bss_density_read});
-
-            for (size_t entry_num = 0; entry_num < bij_vars.size(); ++entry_num)
+            auto read = bij_reads[entry_num];
+            auto &entry = bij_vars[entry_num];
+            if (!read.is_null())
             {
-                auto read = bij_reads[entry_num];
-                auto &entry = bij_vars[entry_num];
-                if (!read.is_null())
+                auto column_read = read["Column"];
+                auto conversion_read = read["Units"];
+                double conversion;
+                if (conversion_read.is_null())
+                    RHM_THROW(std::runtime_error, "UI error: Units must be provided for each \"DensityChemPotentialDerivatives\" entry.");
+                else if (conversion_read.is_number())
+                    conversion = conversion_read.get<double>();
+                else if (conversion_read.is_string())
                 {
-                    auto column_read = read["Column"];
-                    auto conversion_read = read["Units"];
-                    double conversion;
-                    if (conversion_read.is_null())
-                        RHM_THROW(std::runtime_error, "UI error: Units must be provided for each \"DensityChemPotentialDerivatives\" entry.");
-                    else if (conversion_read.is_number())
-                        conversion = conversion_read.get<double>();
-                    else if (conversion_read.is_string())
+                    if (conversion_read == "Gev2")
                     {
-                        if (conversion_read == "Gev2")
-                        {
-                            conversion = 1.0;
-                        }
-                        else if (conversion_read == "Mev-1Fm-3")
-                        {
-                            conversion = constants::conversion::gev_over_mev / constants::conversion::fm3_gev3;
-                        }
-                        else
-                        {
-                            RHM_THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for an \"DensityChemPotentialDerivatives\" entry.");
-                        }
+                        conversion = 1.0;
+                    }
+                    else if (conversion_read == "Mev-1Fm-3")
+                    {
+                        conversion = constants::conversion::gev_over_mev / constants::conversion::fm3_gev3;
                     }
                     else
-                        RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for an \"DensityChemPotentialDerivatives\" entry.");
-                    if (!column_read.is_number_integer())
-                        RHM_THROW(std::runtime_error, "UI error: Column number must be provided as an integer for an \"DensityChemPotentialDerivatives\" entry.");
-                    entry.get() = [column_read, conversion](double nbar)
                     {
-                        return data_reader({nbar}, column_read) * conversion;
-                    };
+                        RHM_THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for an \"DensityChemPotentialDerivatives\" entry.");
+                    }
                 }
                 else
-                    entry.get() = [](double)
-                    {
-                        return 0.0;
-                    };
+                    RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for an \"DensityChemPotentialDerivatives\" entry.");
+                if (!column_read.is_number_integer())
+                    RHM_THROW(std::runtime_error, "UI error: Column number must be provided as an integer for an \"DensityChemPotentialDerivatives\" entry.");
+                entry.get() = [column_read, conversion](double nbar)
+                {
+                    return data_reader({nbar}, column_read) * conversion;
+                };
             }
+            else
+                entry.get() = [](double)
+                {
+                    return 0.0;
+                };
         }
         auto roto_time_units = j["RHSolver"]["TimeUnits"];
         double roto_time_conversion;
