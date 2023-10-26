@@ -121,7 +121,7 @@ namespace instantiator
         t_end,
         base_t_step;
     // estimate for the number of time points (is also used for time step expansion, if enabled)
-    double cooling_n_points_estimate;
+    size_t cooling_n_points_estimate;
     // initial temperature profile
     std::function<double(double, double, const std::function<double(double)> &, const std::function<double(double)> &)> initial_t_profile_inf;
     // cooling grid step
@@ -783,13 +783,13 @@ namespace instantiator
             cooling_newton_max_iter = cooling_newton_max_iter_read.get<size_t>();
 
         // desirable relative accuracy of the cooling solvers per time step
-        auto cooling_newton_step_eps_per_step_read = j["CoolingSolver"]["StepTolerance"];
-        if (cooling_newton_step_eps_per_step_read.is_null())
-            cooling_newton_step_eps = 0.05;
-        else if (!(cooling_newton_step_eps_per_step_read.is_number()))
+        auto cooling_max_diff_per_t_step_read = j["CoolingSolver"]["StepTolerance"];
+        if (cooling_max_diff_per_t_step_read.is_null())
+            cooling_max_diff_per_t_step = 0.05;
+        else if (!(cooling_max_diff_per_t_step_read.is_number()))
             RHM_THROW(std::runtime_error, "UI error: Cooling solver relative tolerance per step must be provided as a number.");
         else
-            cooling_newton_step_eps = cooling_newton_step_eps_per_step_read.get<double>();
+            cooling_max_diff_per_t_step = cooling_max_diff_per_t_step_read.get<double>();
 
         // initial temperature profile
         auto initial_t_profile_read = j["CoolingSolver"]["TemperatureProfile"];

@@ -100,6 +100,9 @@ namespace instantiator
     // maximum number of iterations of the cooling solvers
     size_t cooling_newton_max_iter;
 
+    // desirable relative accuracy of the cooling solvers per time step
+    double cooling_max_diff_per_t_step;
+
     // Cooling settings
     double crust_eta;
 
@@ -118,9 +121,9 @@ namespace instantiator
         t_end,
         base_t_step;
     // estimate for the number of time points (is also used for time step expansion, if enabled)
-    double cooling_n_points_estimate;
+    size_t cooling_n_points_estimate;
     // initial temperature profile
-    std::function<double(double, double)> initial_t_profile_inf;
+    std::function<double(double, double, const std::function<double(double)> &, const std::function<double(double)> &)> initial_t_profile_inf;
     // cooling grid step
     double cooling_radius_step;
     // condition on which to switch to equilibrium cooling
@@ -128,6 +131,20 @@ namespace instantiator
 
     // time step expansion rate (set to 1.0 for constant time step)
     double exp_rate_estim;
+
+    // (4) Rotochemical heating setup
+
+    // Bij matrix independent entries density dependence on nbar
+    // ee, emu, eu, es, mumu, ss
+    std::function<double(double)> dne_to_dmue,
+        dne_to_dmum,
+        dnm_to_dmum,
+        dnu_to_dmuu,
+        dnu_to_dmus,
+        dns_to_dmus;
+
+    // rotational 2 omega omega_dot dependency of time
+    std::function<double(double)> omega_sqr_dot;
 
     /// @brief instantiate the system from json input
     /// @param json_input json inputfile path
@@ -382,6 +399,9 @@ namespace instantiator
 
         // (2) TOV solver setup
 
+        if (j["TOVSolver"].is_null())
+            RHM_THROW(std::runtime_error, "UI error: TOV solver setup is essential for any simulation and must be provided.");
+
         auxiliaries::math::InterpolationMode eos_interp_mode;
         auto eos_interp_mode_read = j["TOVSolver"]["EoSInterpolation"];
         if (eos_interp_mode_read.is_null())
@@ -504,10 +524,12 @@ namespace instantiator
         }
 
         // (->1) EoS Setup
+
+        if (j["CoolingSolver"].is_null())
+            return; // user presents no interest in cooling
+
         // provided particles
         auto particles_read = j["EoSSetup"]["Particles"];
-        if (particles_read.size() < 1)
-            return; // no particles provided -> user expresses no interest in cooling
         if (!particles_read.is_array())
             RHM_THROW(std::runtime_error, "UI error: Particle types must be provided as an array.");
 
@@ -760,6 +782,15 @@ namespace instantiator
         else
             cooling_newton_max_iter = cooling_newton_max_iter_read.get<size_t>();
 
+        // desirable relative accuracy of the cooling solvers per time step
+        auto cooling_max_diff_per_t_step_read = j["CoolingSolver"]["StepTolerance"];
+        if (cooling_max_diff_per_t_step_read.is_null())
+            cooling_max_diff_per_t_step = 0.05;
+        else if (!(cooling_max_diff_per_t_step_read.is_number()))
+            RHM_THROW(std::runtime_error, "UI error: Cooling solver relative tolerance per step must be provided as a number.");
+        else
+            cooling_max_diff_per_t_step = cooling_max_diff_per_t_step_read.get<double>();
+
         // initial temperature profile
         auto initial_t_profile_read = j["CoolingSolver"]["TemperatureProfile"];
         auto cooling_temp_conversion_read = j["CoolingSolver"]["TemperatureUnits"];
@@ -787,43 +818,78 @@ namespace instantiator
         }
         else
             RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for temperature.");
-        if (!initial_t_profile_read.is_array())
-            RHM_THROW(std::runtime_error, "UI error: Initial temperature profile settings must be provided as an array.");
-        else
-        {
-            auto initial_t_profile_provided_as_read = initial_t_profile_read[0];
-            if (initial_t_profile_provided_as_read == "InfiniteFlat")
-            {
-                auto initial_t_profile_T_read = initial_t_profile_read[1];
-                if (!(initial_t_profile_T_read.is_number()))
-                    RHM_THROW(std::runtime_error, "UI error: Initial temperature profile temperature must be provided as a number.");
-                else
-                {
-                    double temp = initial_t_profile_T_read.get<double>() * cooling_temp_conversion;
-                    initial_t_profile_inf = [temp](double r, double exp_phi_at_R)
-                    {
-                        return temp;
-                    };
-                }
-            }
-            else if (initial_t_profile_provided_as_read == "InfiniteFlatSurfaceRedshifted")
-            {
-                auto initial_t_profile_T_read = initial_t_profile_read[1];
-                if (!(initial_t_profile_T_read.is_number()))
-                    RHM_THROW(std::runtime_error, "UI error: Initial temperature profile temperature must be provided as a number.");
-                else
-                {
-                    double temp = initial_t_profile_T_read.get<double>() * cooling_temp_conversion;
-                    initial_t_profile_inf = [temp](double r, double exp_phi_at_R)
-                    {
-                        return temp * exp_phi_at_R;
-                    };
-                }
-            }
-            else
-                RHM_THROW(std::runtime_error, "UI error: Initial temperature profile must be provided in \"InfiniteFlat\" or \"InfiniteFlatSurfaceRedshifted\" modes.");
-        }
 
+        auto initial_t_profile_provided_as_read = initial_t_profile_read["ProvidedAs"];
+        std::function<double(double, double, const std::function<double(double)> &)> redshift_factor;
+        if (initial_t_profile_provided_as_read == "Redshifted")
+        {
+            redshift_factor = [](double r, double r_ns, const std::function<double(double)> &exp_phi)
+            {
+                return 1;
+            };
+        }
+        else if (initial_t_profile_provided_as_read == "SurfaceRedshifted")
+        {
+            redshift_factor = [](double r, double r_ns, const std::function<double(double)> &exp_phi)
+            {
+                return exp_phi(r_ns);
+            };
+        }
+        else if (initial_t_profile_provided_as_read == "Local")
+        {
+            redshift_factor = [](double r, double r_ns, const std::function<double(double)> &exp_phi)
+            {
+                return exp_phi(r);
+            };
+        }
+        else
+            RHM_THROW(std::runtime_error, "UI error: Initial temperature profile must be provided as \"Redshifted\", \"SurfaceRedshifted\" or \"Local\" .");
+
+        auto initial_t_profile_mode_read = initial_t_profile_read["Mode"];
+        auto initial_t_profile_params_read = initial_t_profile_read["Parameters"];
+        if (!initial_t_profile_params_read.is_array())
+            RHM_THROW(std::runtime_error, "UI error: Initial temperature profile parameters must be provided as an array.");
+
+        if (initial_t_profile_mode_read == "Flat")
+        {
+            // expected parameters: [T]
+            if (initial_t_profile_params_read.size() != 1)
+                RHM_THROW(std::runtime_error, "UI error: Initial temperature profile parameters must be of size 1 for the \"Flat\" mode.");
+            auto temp_init_read = initial_t_profile_params_read[0];
+            double temp_init;
+            if (!(temp_init_read.is_number()))
+                RHM_THROW(std::runtime_error, "UI error: Initial temperature must be provided as a number.");
+            else
+                temp_init = temp_init_read.get<double>() * cooling_temp_conversion;
+            initial_t_profile_inf = [temp_init, redshift_factor](double r, double r_ns, const std::function<double(double)> &exp_phi, const std::function<double(double)> &nbar_of_r)
+            {
+                return temp_init * redshift_factor(r, r_ns, exp_phi);
+            };
+        }
+        else if (initial_t_profile_mode_read == "CoreJump")
+        {
+            // expected parameters: [T_core, T_crust]
+            if (initial_t_profile_params_read.size() != 2)
+                RHM_THROW(std::runtime_error, "UI error: Initial temperature profile parameters must be of size 2 for the \"CoreJump\" mode.");
+            auto temp_core_read = initial_t_profile_params_read[0];
+            auto temp_crust_read = initial_t_profile_params_read[1];
+            double temp_core, temp_crust;
+            if (!(temp_core_read.is_number()))
+                RHM_THROW(std::runtime_error, "UI error: Initial temperature in the core must be provided as a number.");
+            else
+                temp_core = temp_core_read.get<double>() * cooling_temp_conversion;
+            if (!(temp_crust_read.is_number()))
+                RHM_THROW(std::runtime_error, "UI error: Initial temperature in the crust must be provided as a number.");
+            else
+                temp_crust = temp_crust_read.get<double>() * cooling_temp_conversion;
+
+            initial_t_profile_inf = [temp_core, temp_crust, redshift_factor](double r, double r_ns, const std::function<double(double)> &exp_phi, const std::function<double(double)> &nbar_of_r)
+            {
+                return (nbar_of_r(r) > nbar_core_limit ? temp_core : temp_crust) * redshift_factor(r, r_ns, exp_phi);
+            };
+        }
+        else
+            RHM_THROW(std::runtime_error, "UI error: Initial temperature profile must be provided in \"Flat\" or \"CoreJump\" mode .");
         // Evolution settings
         auto time_conversion_read = j["CoolingSolver"]["TimeUnits"];
         double time_conversion;
@@ -1096,6 +1162,147 @@ namespace instantiator
             {
                 return 0.0;
             };
+        }
+
+        // (4) Rotochemical heating setup
+
+        if (j["RHSolver"].is_null())
+            return; // user does not want rotochemical heating
+
+        auto bij_density_read = j["EoSSetup"]["Quantities"]["DensityChemPotentialDerivatives"];
+
+        // we expect npemuds (H{npem} + Q{udse}) matter at most.
+        using namespace constants::species;
+
+        // we first see which entries are provided by the user
+
+        auto bee_density_read = bij_density_read["Electron"]["Electron"],
+             bem_density_read = bij_density_read["Electron"]["Muon"],
+             bmm_density_read = bij_density_read["Muon"]["Muon"],
+             buu_density_read = bij_density_read["Uquark"]["Uquark"],
+             bus_density_read = bij_density_read["Uquark"]["Squark"],
+             bss_density_read = bij_density_read["Squark"]["Squark"];
+        bem_density_read = (bem_density_read.is_null() ? bij_density_read["Muon"]["Electron"] : bem_density_read);
+        bus_density_read = (bus_density_read.is_null() ? bij_density_read["Squark"]["Uquark"] : bus_density_read);
+
+        // if all npemuds matter plays role in rotochemical heating,
+        // the number of rows is reduced to 4 (via conservation laws),
+        // namely, (dNe, dNm, dNu, dNs), with 6 independent entries within the matrix.
+
+        // all checks reflecting whether the user provided any good info will be done in the main program
+
+        auto bij_vars = std::vector<std::reference_wrapper<decltype(dne_to_dmue)>>({dne_to_dmue, dne_to_dmum, dnm_to_dmum, dnu_to_dmuu, dnu_to_dmus, dns_to_dmus});
+        auto bij_reads = std::vector<decltype(bee_density_read)>({bee_density_read, bem_density_read, bmm_density_read, buu_density_read, bus_density_read, bss_density_read});
+
+        for (size_t entry_num = 0; entry_num < bij_vars.size(); ++entry_num)
+        {
+            auto read = bij_reads[entry_num];
+            auto &entry = bij_vars[entry_num];
+            if (!read.is_null())
+            {
+                auto column_read = read["Column"];
+                auto conversion_read = read["Units"];
+                double conversion;
+                if (conversion_read.is_null())
+                    RHM_THROW(std::runtime_error, "UI error: Units must be provided for each \"DensityChemPotentialDerivatives\" entry.");
+                else if (conversion_read.is_number())
+                    conversion = conversion_read.get<double>();
+                else if (conversion_read.is_string())
+                {
+                    if (conversion_read == "Gev2")
+                    {
+                        conversion = 1.0;
+                    }
+                    else if (conversion_read == "Mev-1Fm-3")
+                    {
+                        conversion = constants::conversion::gev_over_mev / constants::conversion::fm3_gev3;
+                    }
+                    else
+                    {
+                        RHM_THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for an \"DensityChemPotentialDerivatives\" entry.");
+                    }
+                }
+                else
+                    RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for an \"DensityChemPotentialDerivatives\" entry.");
+                if (!column_read.is_number_integer())
+                    RHM_THROW(std::runtime_error, "UI error: Column number must be provided as an integer for an \"DensityChemPotentialDerivatives\" entry.");
+                entry.get() = [column_read, conversion](double nbar)
+                {
+                    return data_reader({nbar}, column_read) * conversion;
+                };
+            }
+            else
+                entry.get() = [](double)
+                {
+                    return 0.0;
+                };
+        }
+        auto roto_time_units = j["RHSolver"]["TimeUnits"];
+        double roto_time_conversion;
+        if (roto_time_units.is_null())
+            RHM_THROW(std::runtime_error, "UI error: Time units must be provided for rotochemical heating.");
+        else if (roto_time_units.is_number())
+            roto_time_conversion = roto_time_units.get<double>();
+        else if (roto_time_units.is_string())
+        {
+            if (roto_time_units == "Gev-1")
+            {
+                roto_time_conversion = 1.0;
+            }
+            else if (roto_time_units == "Yr")
+            {
+                roto_time_conversion = 1E-6 * constants::conversion::myr_over_s * constants::conversion::gev_s;
+            }
+            else if (roto_time_units == "S")
+            {
+                roto_time_conversion = constants::conversion::gev_s;
+            }
+            else if (roto_time_units == "Ms")
+            {
+                roto_time_conversion = 1E-3 * constants::conversion::gev_s;
+            }
+            else
+            {
+                RHM_THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for rotochemical heating time.");
+            }
+        }
+        else
+            RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for rotochemical heating time.");
+        // rotational 2 omega omega_dot dependency of time
+        auto roto_omega_sqr_dot_read = j["RHSolver"]["RotationalOmegaSquareDot"];
+        if (!roto_omega_sqr_dot_read.is_array())
+            RHM_THROW(std::runtime_error, "UI error: Rotational law and related settings must be provided as an array.");
+        else
+        {
+            auto roto_omega_sqr_dot_provided_as_read = roto_omega_sqr_dot_read[0];
+            if (roto_omega_sqr_dot_provided_as_read == "BeyondMagneticDipole")
+            {
+                auto braking_index_read = roto_omega_sqr_dot_read[1];
+                auto p0_read = roto_omega_sqr_dot_read[2],
+                     p0_dot_read = roto_omega_sqr_dot_read[3];
+                if (!(braking_index_read.is_number()))
+                    RHM_THROW(std::runtime_error, "UI error: Braking index for rotational law must be provided as a number.");
+                if (!(p0_read.is_number()))
+                    RHM_THROW(std::runtime_error, "UI error: Initial rotational period must be provided as a number.");
+                if (!(p0_dot_read.is_number()))
+                    RHM_THROW(std::runtime_error, "UI error: Initial rotational period derivative must be provided as a number.");
+
+                auto braking_index = braking_index_read.get<double>(),
+                     p0 = roto_time_conversion * p0_read.get<double>(),
+                     p0_dot = p0_dot_read.get<double>();
+
+                omega_sqr_dot = [braking_index, p0, p0_dot](double t)
+                {
+                    using constants::scientific::Pi;
+                    if (braking_index == 1)
+                    {
+                        return -8 * Pi * Pi * p0_dot / pow(p0, 3.0) * std::exp(-2 * p0_dot * t / p0);
+                    }
+                    return -8 * Pi * Pi * p0_dot / pow(p0, 3.0) * pow(1 + (braking_index - 1) * p0_dot * t / p0, (braking_index + 1) / (1 - braking_index));
+                };
+            }
+            else
+                RHM_THROW(std::runtime_error, "UI error: Rotational law and related settings must be provided in \"BeyondMagneticDipole\" mode.");
         }
     }
 }

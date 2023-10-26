@@ -287,7 +287,7 @@ int main(int argc, char **argv)
                 max_diff = std::max(max_diff, fabs(t_l_profiles[0][i] - profile[i]) / profile[i]);
             }
             // std::cout << "max_diff = " << max_diff << '\n';
-            if (max_diff > cooling_newton_step_eps)
+            if (max_diff > cooling_max_diff_per_t_step)
             {
                 t_step /= 2;
                 // exp_rate_estim = sqrt(exp_rate_estim);
@@ -302,7 +302,7 @@ int main(int argc, char **argv)
         {
             next_T = cooling::solver::equilibrium_cooling(t_curr, t_step, cooling_rhs, temp_curr, cooling_newton_step_eps, cooling_newton_max_iter);
             double max_diff = std::abs((temp_curr - next_T) / temp_curr);
-            if (max_diff > cooling_newton_step_eps)
+            if (max_diff > cooling_max_diff_per_t_step)
             {
                 t_step /= 2.0;
                 continue;
