@@ -12,6 +12,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <fstream>
 
@@ -26,25 +27,28 @@
 
 int main(int argc, char **argv)
 {
-    argparse::ArgumentParser parser("cooling_curve", "Evaluates temperature-time dependency based on EoS", "Argparse powered by SiLeader");
+    argparse::ArgumentParser parser("cooling_curve", "Evaluates surface temperature time dependency based on EoS", "Argparse powered by SiLeader");
 
-    parser.addArgument({"--inputfile"}, "json input file path (optional)");
-    #if RHM_HAS_ROOT
+#if RHM_REQUIRES_INPUTFILE
+    parser.addArgument({"--inputfile"}, "json input file path (required)");
+#endif
+#if RHM_HAS_ROOT
     parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: Cooling.pdf)");
     parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
-    #endif
+#endif
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
-    if (args.has("inputfile"))
-        instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#if RHM_REQUIRES_INPUTFILE
+    instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#endif
 
-    #if RHM_HAS_ROOT
+#if RHM_HAS_ROOT
     std::string pdf_path = args.safeGet<std::string>("pdf_path", "Cooling.pdf");
     TFile *rootfile = nullptr;
     if (args.has("rootfile_path"))
         rootfile = new TFile(args.get<std::string>("rootfile_path").c_str(), "RECREATE");
-    #endif
+#endif
 
     // RUN --------------------------------------------------------------------------
 
@@ -54,7 +58,7 @@ int main(int argc, char **argv)
         [&](std::vector<std::vector<double>> &cache, double rho)
         {
             if (rho < edensity_low || rho > edensity_upp)
-                THROW(std::runtime_error, "Data request out of range.");
+                RHM_THROW(std::runtime_error, "Data request out of range.");
             if (cache.empty() || cache[0].size() != discr_size_EoS)
             {                                                                                        // then fill/refill cache
                 cache = std::vector<std::vector<double>>(2, std::vector<double>(discr_size_EoS, 0)); // initialize 2xdiscr_size_EoS matrix
@@ -121,7 +125,7 @@ int main(int argc, char **argv)
                         else if (right_val * mid_val < 0)
                             nbar_left = nbar_mid;
                         else
-                            THROW(std::runtime_error, "Bisection method failed. Investigate manually or report to the team.");
+                            RHM_THROW(std::runtime_error, "Bisection method failed. Investigate manually or report to the team.");
                     }
                     cache[1].push_back(nbar_mid);
                 }
@@ -172,7 +176,10 @@ int main(int argc, char **argv)
     auto quark_us_durca_emissivity = cooling::predefined::neutrinic::quark_us_durca_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap);
 
-    auto quark_murca_emissivity = cooling::predefined::neutrinic::quark_murca_emissivity(
+    auto quark_ud_murca_emissivity = cooling::predefined::neutrinic::quark_ud_murca_emissivity(
+        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap);
+
+    auto quark_us_murca_emissivity = cooling::predefined::neutrinic::quark_us_murca_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap);
 
     auto quark_bremsstrahlung_emissivity = cooling::predefined::neutrinic::quark_bremsstrahlung_emissivity(
@@ -200,7 +207,9 @@ int main(int argc, char **argv)
             }
         }
         result += hadron_bremsstrahlung_emissivity(r, t, T);
-        result += quark_ud_durca_emissivity(r, t, T) + quark_us_durca_emissivity(r, t, T) + quark_murca_emissivity(r, t, T) + quark_bremsstrahlung_emissivity(r, t, T);
+        result += quark_ud_durca_emissivity(r, t, T) + quark_us_durca_emissivity(r, t, T) +
+                  quark_ud_murca_emissivity(r, t, T) + quark_us_murca_emissivity(r, t, T) +
+                  quark_bremsstrahlung_emissivity(r, t, T);
         result += electron_bremsstrahlung_emissivity(r, t, T);
         return result * exp_phi(r) * exp_phi(r);
     };
@@ -239,32 +248,36 @@ int main(int argc, char **argv)
     for (double r = cooling_radius_step / 2.0; r < r_ns; r += cooling_radius_step)
     {
         radii.push_back(r);
-        profile.push_back(initial_t_profile_inf(r, exp_phi_at_R));
+        profile.push_back(initial_t_profile_inf(r, r_ns, exp_phi, nbar));
     }
+    double t_step = base_t_step,
+           t_curr = t_init,
+           temp_curr = profile.end()[-2];
 
-    // plot the solution (assumes exp_rate_estim > 1)
-    std::vector<double> x;
-    std::vector<double> y;
-    x.reserve(cooling_n_points_estimate);
-    y.reserve(cooling_n_points_estimate);
-    std::cout << "M/Msol " << m_ns * constants::conversion::gev_over_msol << std::endl;
-    std::cout << "t [years] "
-              << "\tTe^inf [K] "
-              << "\tL_ph [erg/s] "
-              << "\tL_nu [erg/s] " << std::endl;
-    x.push_back(t_init);
-    y.push_back(profile.end()[-2]);
-    double t_step = base_t_step;
+    // solution arrays
+    std::vector<double> time, surface_temp;
+    std::vector<std::vector<double>> others(2);
+    time.reserve(cooling_n_points_estimate);
+    surface_temp.reserve(cooling_n_points_estimate);
+    others[0].reserve(cooling_n_points_estimate);
+    others[1].reserve(cooling_n_points_estimate);
 
-    while (x.back() < t_end)
+    size_t indent = 20;
+    std::cout << "M = " << m_ns * constants::conversion::gev_over_msol << " [Ms]\n";
+    std::cout << std::left << std::setw(indent) << "t [years] "
+              << std::setw(indent) << "Te^inf [K] "
+              << std::setw(indent) << "L^inf_ph [erg/s] "
+              << std::setw(indent) << "L^inf_nu [erg/s] " << '\n';
+
+    while (t_curr < t_end)
     {
         double next_T; // predicted T
 
         // non-equilibrium stage
-        if (!switch_to_equilibrium(x.back(), profile))
+        if (!switch_to_equilibrium(t_curr, profile))
         {
             auto t_l_profiles = cooling::solver::nonequilibrium_cooling(
-                x.back(), t_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
+                t_curr, t_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
                 exp_lambda, exp_phi, radii, profile, te_tb, cooling_newton_step_eps, cooling_newton_max_iter);
             next_T = t_l_profiles[0].end()[-2];
             double max_diff = 0;
@@ -274,7 +287,7 @@ int main(int argc, char **argv)
                 max_diff = std::max(max_diff, fabs(t_l_profiles[0][i] - profile[i]) / profile[i]);
             }
             // std::cout << "max_diff = " << max_diff << '\n';
-            if (max_diff > 0.05)
+            if (max_diff > cooling_max_diff_per_t_step)
             {
                 t_step /= 2;
                 // exp_rate_estim = sqrt(exp_rate_estim);
@@ -287,29 +300,29 @@ int main(int argc, char **argv)
         // equilibrium stage
         else
         {
-            next_T = cooling::solver::equilibrium_cooling(x.back(), t_step, cooling_rhs, y.back(), cooling_newton_step_eps, cooling_newton_max_iter);
-            double max_diff = std::abs((y.back() - next_T) / y.back());
-            if (max_diff > 0.05)
+            next_T = cooling::solver::equilibrium_cooling(t_curr, t_step, cooling_rhs, temp_curr, cooling_newton_step_eps, cooling_newton_max_iter);
+            double max_diff = std::abs((temp_curr - next_T) / temp_curr);
+            if (max_diff > cooling_max_diff_per_t_step)
             {
                 t_step /= 2.0;
                 continue;
             }
         }
-        y.push_back(next_T);
-        x.push_back(x.back() + t_step);
+        temp_curr = next_T;
+        t_curr += t_step;
         t_step *= exp_rate_estim;
 
-        // print in understandable units
-        std::cout << 1.0E6 * x.back() / (constants::conversion::myr_over_s * constants::conversion::gev_s) << "\t" << auxiliaries::phys::te_tb_relation(y.back(), r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k << "\t" << photon_luminosity(x.back(), y.back()) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << neutrino_luminosity(x.back(), y.back()) * constants::conversion::gev_s / constants::conversion::erg_over_gev << "\t" << '\n';
-    }
-    // rescale to same units as in the printout
-    for (size_t i = 0; i < x.size(); ++i)
-    {
-        x[i] *= 1.0E6 / (constants::conversion::myr_over_s * constants::conversion::gev_s);
-        y[i] = auxiliaries::phys::te_tb_relation(y[i], r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k;
+        // save in understandable units
+        time.push_back(1.0E6 * t_curr / (constants::conversion::myr_over_s * constants::conversion::gev_s));
+        surface_temp.push_back(auxiliaries::phys::te_tb_relation(temp_curr, r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k);
+        others[0].push_back(photon_luminosity(t_curr, temp_curr) * constants::conversion::gev_s / constants::conversion::erg_over_gev);
+        others[1].push_back(neutrino_luminosity(t_curr, temp_curr) * constants::conversion::gev_s / constants::conversion::erg_over_gev);
+
+        // print
+        std::cout << std::left << std::setw(indent) << time.back() << std::setw(indent) << surface_temp.back() << std::setw(indent) << others[0].back() << std::setw(indent) << others[1].back() << '\n';
     }
 
-    #if RHM_HAS_ROOT
+#if RHM_HAS_ROOT
     // draw
     TCanvas *c1 = new TCanvas("c1", "c1");
     gPad->SetLogy();
@@ -322,10 +335,21 @@ int main(int argc, char **argv)
     gStyle->SetOptStat(0);
     gStyle->SetOptTitle(0);
 
-    auto gr = new TGraph(x.size(), x.data(), y.data());
+    auto gr = new TGraph(time.size(), time.data(), surface_temp.data());
+    gr->GetXaxis()->SetTitle("t [yr]");
+    gr->GetYaxis()->SetTitle("T^{#infty}_{s} [K]");
     if (rootfile)
     {
-        gr->Write();
+        auto gr_l_gamma = new TGraph(time.size(), time.data(), others[0].data());
+        gr_l_gamma->GetXaxis()->SetTitle("t [yr]");
+        gr_l_gamma->GetYaxis()->SetTitle("L^{#infty}_{#gamma} [erg/s]");
+        auto gr_l_nu = new TGraph(time.size(), time.data(), others[1].data());
+        gr_l_nu->GetXaxis()->SetTitle("t [yr]");
+        gr_l_nu->GetYaxis()->SetTitle("L^{#infty}_{#nu} [erg/s]");
+        rootfile->cd();
+        rootfile->WriteObject(gr, "cooling_curve");
+        rootfile->WriteObject(gr_l_gamma, "l_gamma");
+        rootfile->WriteObject(gr_l_nu, "l_nu");
         rootfile->Close();
     }
     gr->SetLineColor(kBlue);
@@ -333,8 +357,6 @@ int main(int argc, char **argv)
     gr->SetLineStyle(1);
     gr->Draw("AL");
     gr->GetYaxis()->SetTitleOffset(1.5);
-    gr->GetXaxis()->SetTitle("t [yr]");
-    gr->GetYaxis()->SetTitle("T^{#infty}_{s} [K]");
     gr->GetYaxis()->SetLabelFont(43);
     gr->GetYaxis()->SetLabelSize(22);
     gr->GetYaxis()->SetTitleFont(43);
@@ -345,8 +367,8 @@ int main(int argc, char **argv)
     gr->GetXaxis()->SetTitleFont(43);
     gr->GetXaxis()->SetTitleSize(26);
     gr->GetXaxis()->SetTitleOffset(0.9);
-    gr->GetYaxis()->SetRangeUser(7e2, 7e6);
-    gr->GetXaxis()->SetLimits(1e-12, 1e7);
+    gr->GetYaxis()->SetLimits(surface_temp.front(), surface_temp.back());
+    gr->GetXaxis()->SetLimits(time.front(), time.back());
 
     auto legend = new TLegend(0.15, 0.1, 0.43, 0.38);
     legend->AddEntry(gr, "RH Manager", "l");
@@ -359,5 +381,5 @@ int main(int argc, char **argv)
     legend->Draw();
 
     c1->SaveAs(pdf_path.c_str());
-    #endif
+#endif
 }

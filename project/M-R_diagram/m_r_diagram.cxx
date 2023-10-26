@@ -11,6 +11,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <string>
 #include <fstream>
@@ -23,27 +24,37 @@
 #include <TFile.h>
 #endif
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
-    argparse::ArgumentParser parser("m_r_diagram", "Evaluates mass-radius diagram based on EoS", "Argparse powered by SiLeader");
+    argparse::ArgumentParser parser("m_r_diagram", "Maps central densities selection to corresponding mass and radius based on EoS", "Argparse powered by SiLeader");
 
-    parser.addArgument({"--inputfile"}, "json input file path (optional)");
-    #if RHM_HAS_ROOT
+#if RHM_REQUIRES_INPUTFILE
+    parser.addArgument({"--inputfile"}, "json input file path (required)");
+#endif
+#if RHM_HAS_ROOT
     parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: M-R-diagram.pdf)");
     parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
-    #endif
+#endif
+    parser.addArgument({"--left_fraction"}, "least fraction of central density to consider (optional, default: 0.001)");
+    parser.addArgument({"--right_fraction"}, "greatest fraction of central density to consider (optional, default: 0.999)");
+    parser.addArgument({"--selection_size"}, "number of points to discretize density interval (optional, default: 1000)");
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
-    if (args.has("inputfile"))
-        instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#if RHM_REQUIRES_INPUTFILE
+    instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#endif
 
-    #if RHM_HAS_ROOT
+#if RHM_HAS_ROOT
     std::string pdf_path = args.safeGet<std::string>("pdf_path", "M-R-diagram.pdf");
     TFile *rootfile = nullptr;
     if (args.has("rootfile_path"))
         rootfile = new TFile(args.get<std::string>("rootfile_path").c_str(), "RECREATE");
-    #endif
+#endif
+
+    double left_fraction = args.safeGet<double>("left_fraction", 0.001);
+    double right_fraction = args.safeGet<double>("right_fraction", 0.999);
+    size_t selection_size = args.safeGet<size_t>("selection_size", 1000);
 
     // RUN --------------------------------------------------------------------------
 
@@ -53,7 +64,7 @@ int main(int argc, char** argv)
         [&](std::vector<std::vector<double>> &cache, double rho)
         {
             if (rho < edensity_low || rho > edensity_upp)
-                THROW(std::runtime_error, "Data request out of range.");
+                RHM_THROW(std::runtime_error, "Data request out of range.");
             if (cache.empty() || cache[0].size() != discr_size_EoS)
             {                                                                                        // then fill/refill cache
                 cache = std::vector<std::vector<double>>(2, std::vector<double>(discr_size_EoS, 0)); // initialize 2xdiscr_size_EoS matrix
@@ -80,7 +91,7 @@ int main(int argc, char** argv)
     {
         // TOV solver
         auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
-                                                  const std::function<double(double)> &, double, double, double, double, size_t>(tov_solver::tov_solution);
+                                                        const std::function<double(double)> &, double, double, double, double, size_t>(tov_solver::tov_solution);
         auto tov = [&tov_cached, &eos_cached, edensity](double r)
         {
             // TOV solution cached
@@ -95,28 +106,41 @@ int main(int argc, char** argv)
         return std::vector<double>({r_ns, m_ns});
     };
 
-    size_t n = 500;
-    size_t offset = 1;
-    std::vector<double> x, y;
+    size_t indent = 20;
+    std::vector<double> x, y, z;
     // assemble data for different center densities
-    std::cout << "(rho_E - rho_E^min) / (rho_E^max - rho_E^min)\t M [Ms]\t R [km]\n";
-    for(size_t count = offset; count < n - offset + 1; ++count)
+    std::cout << std::left << std::setw(indent) << "rho fraction" << std::setw(indent) << "rho [df. units]" << std::setw(indent) << "M [Ms]" << std::setw(indent) << "R [km]" << '\n';
+    for (size_t count = 0; count < selection_size; ++count)
     {
         using namespace constants::conversion;
-        double edensity = count * (edensity_upp - edensity_low) / n + edensity_low;
+        double frac = left_fraction + count * (right_fraction - left_fraction) / (selection_size - 1);
+        double edensity = frac * (edensity_upp - edensity_low) + edensity_low;
         auto point = get_m_r_at_density(edensity);
         x.push_back(point[0] / km_gev);
         y.push_back(point[1] * gev_over_msol);
-        std::cout << static_cast<double>(count) / n << "\t" << y.back() << "\t" << x.back() << "\n";
+        z.push_back(edensity / energy_density_conversion);
+        std::cout << std::left << std::setw(indent) << frac << std::setw(indent) << edensity / energy_density_conversion << std::setw(indent) << y.back() << std::setw(indent) << x.back() << "\n";
     }
 
-    #if RHM_HAS_ROOT
+#if RHM_HAS_ROOT
     // draw
     TCanvas *c1 = new TCanvas("c1", "c1");
     auto gr = new TGraph(x.size(), x.data(), y.data());
+
+    gr->GetXaxis()->SetTitle("R [km]");
+    gr->GetYaxis()->SetTitle("M [Ms]");
     if (rootfile)
     {
-        gr->Write();
+        auto gr_rho = new TGraph(z.size(), z.data(), x.data());
+        gr_rho->GetXaxis()->SetTitle("#rho [datafile units]");
+        gr_rho->GetYaxis()->SetTitle("R [km]");
+        auto gr_m = new TGraph(z.size(), z.data(), y.data());
+        gr_m->GetXaxis()->SetTitle("#rho [datafile units]");
+        gr_m->GetYaxis()->SetTitle("M [Ms]");
+        rootfile->cd();
+        rootfile->WriteObject(gr, "m_r_diagram");
+        rootfile->WriteObject(gr_rho, "rho_r_diagram");
+        rootfile->WriteObject(gr_m, "m_rho_diagram");
         rootfile->Close();
     }
     gr->SetLineColor(kBlue);
@@ -128,14 +152,11 @@ int main(int argc, char** argv)
     // gPad->SetLogx();
     // gPad->SetLogy();
 
-    gr->GetXaxis()->SetTitle("R [km]");
-    gr->GetYaxis()->SetTitle("M [Ms]");
+    // auto legend = new TLegend(0.1, 0.1, 0.38, 0.38);
+    // legend->AddEntry(gr, "RH Manager", "l");
 
-    //auto legend = new TLegend(0.1, 0.1, 0.38, 0.38);
-    //legend->AddEntry(gr, "RH Manager", "l");
-
-    //legend->Draw();
+    // legend->Draw();
 
     c1->SaveAs(pdf_path.c_str());
-    #endif
+#endif
 }

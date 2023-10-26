@@ -32,7 +32,7 @@ namespace auxiliaries
         /// @brief Note it is not actually enclosed by the namespace!
         /// @param exceptionClass exception class
         /// @param message exception message
-        #define THROW(exceptionClass, message) throw exceptionClass("Encountered in " + std::string(__FILE__) + "//" + std::string(__func__) + ", line " + std::to_string(__LINE__) + " : " + message)
+        #define RHM_THROW(exceptionClass, message) throw exceptionClass("Encountered in " + std::string(__FILE__) + "//" + std::string(__func__) + ", line " + std::to_string(__LINE__) + " : " + message)
     }
 
     /// @brief Math auxiliary functionality.
@@ -189,7 +189,7 @@ namespace auxiliaries
                     return result;
                 }
                 default:
-                    THROW(std::runtime_error, "Unimplemented integration mode.");
+                    RHM_THROW(std::runtime_error, "Unimplemented integration mode.");
                 }
             };
         }
@@ -265,6 +265,11 @@ namespace auxiliaries
             /// @brief matrix inverse
             /// @return matrix inverse
             MatrixD inverse() const;
+
+            /// @brief solve matrix equation M*X = RHS
+            /// @param rhs right hand side (RHS)
+            /// @return solution (X)
+            std::vector<double> solve(const std::vector<double> &rhs) const;
 
             /// @brief tridiagonal matrix inverse (i.e. diagonal and 1-off-diagonal elements only, check is not performed).
             /// @brief Only applicable for tridiagonal matrices with all diagonal elements non-zero.

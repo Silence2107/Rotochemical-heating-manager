@@ -22,14 +22,17 @@ int main(int argc, char **argv)
     // where \omega_K is the Keplerian frequency and i being particle species
     argparse::ArgumentParser parser("estimator_for_I_omegai", "Estimates I_omega quantities (rotochemical heating related) based on EoS", "Argparse powered by SiLeader");
 
-    parser.addArgument({"--inputfile"}, "json input file path (optional)");
+#if RHM_REQUIRES_INPUTFILE
+    parser.addArgument({"--inputfile"}, "json input file path (required)");
+#endif
     parser.addArgument({"--center_density"}, "center energy density linspaced fraction (optional, default: read from inputfile)");
 
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
-    if (args.has("inputfile"))
-        instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#if RHM_REQUIRES_INPUTFILE
+    instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#endif
 
     double center_density = instantiator::center_density;
     if (args.has("center_density"))
@@ -41,7 +44,7 @@ int main(int argc, char **argv)
         [&](std::vector<std::vector<double>> &cache, double rho)
         {
             if (rho < edensity_low || rho > edensity_upp)
-                THROW(std::runtime_error, "Data request out of range.");
+                RHM_THROW(std::runtime_error, "Data request out of range.");
             if (cache.empty() || cache[0].size() != discr_size_EoS)
             {                                                                                        // then fill/refill cache
                 cache = std::vector<std::vector<double>>(2, std::vector<double>(discr_size_EoS, 0)); // initialize 2xdiscr_size_EoS matrix
@@ -108,7 +111,7 @@ int main(int argc, char **argv)
                         else if (right_val * mid_val < 0)
                             nbar_left = nbar_mid;
                         else
-                            THROW(std::runtime_error, "Bisection method failed. Investigate manually or report to the team.");
+                            RHM_THROW(std::runtime_error, "Bisection method failed. Investigate manually or report to the team.");
                     }
                     cache[1].push_back(nbar_mid);
                 }

@@ -15,30 +15,45 @@
 #include <sstream>
 #include <fstream>
 
+#if RHM_HAS_ROOT
 #include <TCanvas.h>
 #include <TGraph.h>
 #include <TMultiGraph.h>
 #include <TAxis.h>
 #include <TLegend.h>
 #include <TFile.h>
+#endif
 
 int main(int argc, char **argv)
 {
-    argparse::ArgumentParser parser("plot_nonequilibrium_time_profiles", "plot_nonequilibrium_time_profiles", "Argparse powered by SiLeader");
+    argparse::ArgumentParser parser("nonequilibrium_profiles", "Evaluates radial temperature profiles with time based on EoS", "Argparse powered by SiLeader");
 
-    parser.addArgument({"--inputfile"}, "json input file path (optional)");
-    parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: Cooling.pdf)");
+#if RHM_REQUIRES_INPUTFILE
+    parser.addArgument({"--inputfile"}, "json input file path (required)");
+#endif
+#if RHM_HAS_ROOT
+    parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: CoolingProfiles.pdf)");
     parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
+#endif
+    parser.addArgument({"--write_exp"}, "multiplier between consecutive write times (optional, default: 10.0)");
+    parser.addArgument({"--no_intermediate_print"}, "whether to print minimal information at each time step (optional, value-free, default: print)", argparse::ArgumentType::StoreTrue);
+
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
-    if (args.has("inputfile"))
-        instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#if RHM_REQUIRES_INPUTFILE
+    instantiator::instantiate_system(args.get<std::string>("inputfile"));
+#endif
 
-    std::string pdf_path = args.safeGet<std::string>("pdf_path", "Cooling.pdf");
+#if RHM_HAS_ROOT
+    std::string pdf_path = args.safeGet<std::string>("pdf_path", "CoolingProfiles.pdf");
     TFile *rootfile = nullptr;
     if (args.has("rootfile_path"))
         rootfile = new TFile(args.get<std::string>("rootfile_path").c_str(), "RECREATE");
+#endif
+
+    double write_time_expansion = args.safeGet<double>("write_exp", 10.0);
+    bool print_all_time = !args.has("no_intermediate_print");
 
     // RUN --------------------------------------------------------------------------
 
@@ -48,7 +63,7 @@ int main(int argc, char **argv)
         [&](std::vector<std::vector<double>> &cache, double rho)
         {
             if (rho < edensity_low || rho > edensity_upp)
-                THROW(std::runtime_error, "Data request out of range.");
+                RHM_THROW(std::runtime_error, "Data request out of range.");
             if (cache.empty() || cache[0].size() != discr_size_EoS)
             {                                                                                        // then fill/refill cache
                 cache = std::vector<std::vector<double>>(2, std::vector<double>(discr_size_EoS, 0)); // initialize 2xdiscr_size_EoS matrix
@@ -115,7 +130,7 @@ int main(int argc, char **argv)
                         else if (right_val * mid_val < 0)
                             nbar_left = nbar_mid;
                         else
-                            THROW(std::runtime_error, "Bisection method failed. Investigate manually or report to the team.");
+                            RHM_THROW(std::runtime_error, "Bisection method failed. Investigate manually or report to the team.");
                     }
                     cache[1].push_back(nbar_mid);
                 }
@@ -165,7 +180,10 @@ int main(int argc, char **argv)
     auto quark_us_durca_emissivity = cooling::predefined::neutrinic::quark_us_durca_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap);
 
-    auto quark_murca_emissivity = cooling::predefined::neutrinic::quark_murca_emissivity(
+    auto quark_ud_murca_emissivity = cooling::predefined::neutrinic::quark_ud_murca_emissivity(
+        k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap);
+
+    auto quark_us_murca_emissivity = cooling::predefined::neutrinic::quark_us_murca_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap);
 
     auto quark_bremsstrahlung_emissivity = cooling::predefined::neutrinic::quark_bremsstrahlung_emissivity(
@@ -193,7 +211,9 @@ int main(int argc, char **argv)
             }
         }
         result += hadron_bremsstrahlung_emissivity(r, t, T);
-        result += quark_ud_durca_emissivity(r, t, T) + quark_us_durca_emissivity(r, t, T) + quark_murca_emissivity(r, t, T) + quark_bremsstrahlung_emissivity(r, t, T);
+        result += quark_ud_durca_emissivity(r, t, T) + quark_us_durca_emissivity(r, t, T) +
+                  quark_ud_murca_emissivity(r, t, T) + quark_us_murca_emissivity(r, t, T) +
+                  quark_bremsstrahlung_emissivity(r, t, T);
         result += electron_bremsstrahlung_emissivity(r, t, T);
         return result * exp_phi(r) * exp_phi(r);
     };
@@ -214,55 +234,54 @@ int main(int argc, char **argv)
     for (double r = cooling_radius_step / 2.0; r < r_ns; r += cooling_radius_step)
     {
         radii.push_back(r);
-        profile.push_back(initial_t_profile_inf(r, exp_phi_at_R));
+        profile.push_back(initial_t_profile_inf(r, r_ns, exp_phi, nbar));
     }
 
-    std::vector<std::vector<double>> xs, ys;
-    std::cout << "M/Msol " << m_ns * constants::conversion::gev_over_msol << std::endl;
+    // solution arrays (in understandable units)
+    std::vector<std::vector<double>> saved_profiles;
+    std::vector<double> saved_times;
+    std::vector<double> saved_radii;
+    for (size_t i = 0; i < radii.size(); ++i)
+    {
+        saved_radii.push_back(radii[i] / constants::conversion::km_gev);
+    }
+
+    size_t indent = 20;
+    std::cout << "M = " << m_ns * constants::conversion::gev_over_msol << " [Ms]\n";
 
     double t_curr = 0, time_step = base_t_step;
     double write_time = base_t_step;
+
+    if (print_all_time)
+    {
+        std::cout << std::left << std::setw(indent) << "t [years]" << std::setw(indent) << "T^inf(r=0) [K]" << std::setw(indent) << "T^inf(r=R) [K]" << std::setw(indent) << "Te^inf [K]" << '\n';
+    }
+
     while (t_curr + time_step < t_end)
     {
         using namespace constants::conversion;
-        std::cout << "t(yr) = " << t_curr * 1E6 / (myr_over_s * gev_s) << ", prof[0](K) = " << profile[0] * gev_over_k << ", prof[-2](K) = " << profile.end()[-2] * gev_over_k << '\n';
 
-        if (t_curr >= write_time)
-        {
-            using namespace constants::conversion;
-            xs.push_back(radii);
-            ys.push_back(profile);
-            for (size_t i = 0; i < radii.size(); ++i)
-            {
-                xs.back()[i] /= km_gev;
-                ys.back()[i] *= gev_over_k;
-            }
-            //std::cout << t_curr << " " << profile[0] << " " << profile.back() << std::endl;
-            write_time *= 10.0;
-        }
-
+        // if exception is met
         bool error = false;
-
         // update
         while (true)
         {
             std::vector<double> new_profile;
-            try{
+            try
+            {
                 new_profile = cooling::solver::nonequilibrium_cooling(
                     t_curr, time_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
                     exp_lambda, exp_phi, radii, profile, te_tb, cooling_newton_step_eps, cooling_newton_max_iter)[0];
             }
-            catch(const std::exception &e)
+            catch (const std::exception &e)
             {
                 std::cout << e.what() << '\n';
                 error = true;
                 using namespace constants::conversion;
-                xs.push_back(radii);
-                ys.push_back(profile);
+                saved_profiles.push_back(profile);
                 for (size_t i = 0; i < radii.size(); ++i)
                 {
-                    xs.back()[i] /= km_gev;
-                    ys.back()[i] *= gev_over_k;
+                    saved_profiles.back()[i] *= gev_over_k;
                 }
                 break;
             }
@@ -270,50 +289,90 @@ int main(int argc, char **argv)
             for (size_t i = 0; i < radii.size() - 1; ++i)
             {
                 // excluding surface point
-                max_diff = std::max(max_diff, fabs(new_profile[i] - profile[i])/profile[i]);
+                max_diff = std::max(max_diff, fabs(new_profile[i] - profile[i]) / profile[i]);
             }
             // std::cout << "max_diff = " << max_diff << '\n';
-            if (max_diff > 0.05)
-                {
-                    time_step /= 2;
-                    //exp_rate_estim = sqrt(exp_rate_estim);
-                    //std::cout << "Adapting time step \n";
-                    continue;
-                }
+            if (max_diff > cooling_max_diff_per_t_step)
+            {
+                time_step /= 2;
+                // exp_rate_estim = sqrt(exp_rate_estim);
+                // std::cout << "Adapting time step \n";
+                continue;
+            }
             profile = new_profile;
             break;
         }
-        
-        if(error)
+
+        if (error)
             break;
 
         t_curr += time_step;
         time_step *= exp_rate_estim;
+
+        if (print_all_time)
+        {
+            std::cout << std::left << std::setw(indent) << t_curr * 1E6 / (myr_over_s * gev_s) << std::setw(indent) << profile[0] * gev_over_k << std::setw(indent) << profile.end()[-2] * gev_over_k << std::setw(indent) << te_tb(profile.end()[-2]) * exp_phi_at_R * gev_over_k << '\n';
+        }
+
+        if (t_curr >= write_time)
+        {
+            using namespace constants::conversion;
+            saved_profiles.push_back(profile);
+            for (size_t i = 0; i < radii.size(); ++i)
+            {
+                saved_profiles.back()[i] *= gev_over_k;
+            }
+            write_time *= write_time_expansion;
+            saved_times.push_back(t_curr * 1E6 / (myr_over_s * gev_s));
+        }
     }
 
+    // print accumulated profiles
+    std::cout << std::left << std::setw(indent) << "r [km]";
+    for (size_t i = 0; i < saved_times.size(); ++i)
+    {
+        std::stringstream ss;
+        ss << saved_times[i] << " [yr]";
+        std::cout << std::setw(indent) << ss.str();
+    }
+    std::cout << '\n';
+    for (size_t i = 0; i < saved_radii.size(); ++i)
+    {
+        std::cout << std::left << std::setw(indent) << saved_radii[i];
+        for (size_t j = 0; j < saved_times.size(); ++j)
+        {
+            std::cout << std::setw(indent) << saved_profiles[j][i];
+        }
+        std::cout << '\n';
+    }
+
+#if RHM_HAS_ROOT
     // draw
     TCanvas *c1 = new TCanvas("c1", "c1");
     TMultiGraph *mg = new TMultiGraph("mg", "mg");
-    for(size_t i = 0; i < xs.size(); ++i)
+
+    mg->GetXaxis()->SetTitle("r [km]");
+    mg->GetYaxis()->SetTitle("T^{#infty} [K]");
+    // title offset
+    mg->GetYaxis()->SetTitleOffset(1.5);
+    mg->GetXaxis()->SetLimits(0, r_ns / constants::conversion::km_gev);
+    mg->GetYaxis()->SetRangeUser(5.5E6, 5.5E9);
+    for (size_t i = 0; i < saved_profiles.size(); ++i)
     {
-        auto gr = new TGraph(xs[i].size(), xs[i].data(), ys[i].data());
+        auto gr = new TGraph(saved_radii.size(), saved_radii.data(), saved_profiles[i].data());
         gr->SetLineColor(i + 1);
         gr->SetLineWidth(2.5);
         mg->Add(gr, "L");
     }
     if (rootfile)
     {
-        mg->Write();
+        rootfile->cd();
+        rootfile->WriteObject(mg, "profiles");
         rootfile->Close();
     }
     mg->Draw("A");
-    // title offset
-    mg->GetYaxis()->SetTitleOffset(1.5);
-    mg->GetYaxis()->SetRangeUser(5.5E6, 5.5E9);
     gPad->SetLogy();
 
-    mg->GetXaxis()->SetTitle("r [km]");
-    mg->GetYaxis()->SetTitle("T^{#infty} [K]");
-
     c1->SaveAs(pdf_path.c_str());
+#endif
 }

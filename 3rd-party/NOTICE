@@ -1,0 +1,8 @@
+Rotochemical heating manager
+2023-current
+
+This software uses json for C++ (https://github.com/nlohmann/json) in mainly untouched form, without several folders. Frozen version is 3.11.2. The software is licensed under MIT license.
+
+This software uses argparse for C++ (https://github.com/SiLeader/argparse) with slight modifications, including
+- additional overload for `argparse::Arguments::get` to allow fetching double precision numbers from command line arguments. 
+Frozen version is latest until 2020. The software is licensed under Apache License 2.0.

@@ -4,7 +4,6 @@
 #include "../include/auxiliaries.h"
 #include "../include/constants.h"
 #include "../include/cooling.h"
-#include "../3rd-party/json/single_include/nlohmann/json.hpp"
 
 #include <fstream>
 #include <functional>
@@ -170,6 +169,9 @@ namespace instantiator
     // maximum number of iterations of the cooling solvers
     size_t cooling_newton_max_iter = 50;
 
+    // desirable relative accuracy of the cooling solvers per time step
+    double cooling_max_diff_per_t_step = 0.05;
+
     // Cooling settings
     double crust_eta = 2.26E-18;
 
@@ -213,15 +215,15 @@ namespace instantiator
 
     // Evolution settings
     double t_init = 0.0 * constants::conversion::myr_over_s * constants::conversion::gev_s,
-           t_end = 6.1E-0 * constants::conversion::myr_over_s * constants::conversion::gev_s,
+           t_end = 1E3 * constants::conversion::myr_over_s * constants::conversion::gev_s,
            base_t_step = 1.0E-18 * constants::conversion::myr_over_s * constants::conversion::gev_s;
     // estimate for the number of time points (is also used for time step expansion, if enabled)
-    double cooling_n_points_estimate = 1000;
+    size_t cooling_n_points_estimate = 1000;
     // initial temperature profile
-    auto initial_t_profile_inf = [](double r, double exp_phi_at_R)
+    auto initial_t_profile_inf = [](double r, double r_ns, const std::function<double(double)> &exp_phi, const std::function<double(double)> &nbar_of_r)
     {
         using namespace constants::conversion;
-        return 5E9 * exp_phi_at_R / gev_over_k;
+        return 5E9 * exp_phi(r_ns) / gev_over_k;
     };
     // cooling grid step
     double cooling_radius_step = 10 * radius_step;
@@ -239,12 +241,30 @@ namespace instantiator
     double exp_rate_estim = pow((t_end - t_init) / base_t_step, 1.0 / cooling_n_points_estimate) *
                             pow((pow((t_end - t_init) / base_t_step, 1.0 / cooling_n_points_estimate) - 1), 1.0 / cooling_n_points_estimate);
 
-    /// @brief instantiate the system from json input
-    /// @param json_input json inputfile path
-    void instantiate_system(const std::string &json_input)
+    // (4) Rotochemical heating setup
+
+    // Bij matrix independent entries density dependence on nbar
+    // ee, emu, eu, es, mumu, ss
+    std::function<double(double)> dne_to_dmue = [](double nbar) { return 0.0; },
+        dne_to_dmum = [](double nbar) { return 0.0; },
+        dnm_to_dmum = [](double nbar) { return 0.0; },
+        dnu_to_dmuu = [](double nbar) { return 0.0; },
+        dnu_to_dmus = [](double nbar) { return 0.0; },
+        dns_to_dmus = [](double nbar) { return 0.0; };
+
+    // rotational 2 omega omega_dot dependency of time
+    std::function<double(double)> omega_sqr_dot = [](double t)
     {
-        return;
-    }
+        size_t braking_index = 3;
+        double p0 = 1 * 1E-3 * constants::conversion::gev_s,
+               p0_dot = 1.0E-20;
+        using constants::scientific::Pi;
+        if (braking_index == 1)
+        {
+            return -8 * Pi * Pi * p0_dot / pow(p0, 3.0) * std::exp(-2 * p0_dot * t / p0);
+        }
+        return -8 * Pi * Pi * p0_dot / pow(p0, 3.0) * pow(1 + (braking_index - 1) * p0_dot * t / p0, (braking_index + 1) / (1 - braking_index));
+    };
 }
 
 #endif

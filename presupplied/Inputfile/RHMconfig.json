@@ -122,12 +122,18 @@
         "TemperatureUnits" : "K",
         "NewtonTolerance" : 1E-5,
         "NewtonMaxIter" : 50,
+        "StepTolerance": 0.05,
         "RadiusStep" : 0.1,
         "TimeInit" : 0.0,
-        "TimeEnd" : 6.1E+6,
+        "TimeEnd" : 1E+9,
         "TimeBaseStep" : 1.0E-12,
         "NumberPointsEstimate" : 1000,
-        "TemperatureProfile" : ["InfiniteFlatSurfaceRedshifted", 5E9],
+        "TemperatureProfile" :
+        {
+            "ProvidedAs" : "SurfaceRedshifted",
+            "Mode" : "Flat",
+            "Parameters" : [5E+9]
+        },
         "EnableEquilibrium" : 
         {
             "Mode" : "Conditional",
@@ -137,5 +143,10 @@
                 "UponProfileFlattening" : 0.01
             }
         }
+    },
+    "RHSolver":
+    {
+        "TimeUnits" : "Ms",
+        "RotationalOmegaSquareDot" : ["BeyondMagneticDipole", 3, 1, 1E-20]
     }
 }

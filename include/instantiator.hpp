@@ -100,6 +100,9 @@ namespace instantiator
     // maximum number of iterations of the cooling solvers
     size_t cooling_newton_max_iter;
 
+    // desirable relative accuracy of the cooling solvers per time step
+    double cooling_max_diff_per_t_step;
+
     // Cooling settings
     double crust_eta;
 
@@ -118,9 +121,9 @@ namespace instantiator
         t_end,
         base_t_step;
     // estimate for the number of time points (is also used for time step expansion, if enabled)
-    double cooling_n_points_estimate;
+    size_t cooling_n_points_estimate;
     // initial temperature profile
-    std::function<double(double, double)> initial_t_profile_inf;
+    std::function<double(double, double, const std::function<double(double)> &, const std::function<double(double)> &)> initial_t_profile_inf;
     // cooling grid step
     double cooling_radius_step;
     // condition on which to switch to equilibrium cooling
@@ -128,6 +131,20 @@ namespace instantiator
 
     // time step expansion rate (set to 1.0 for constant time step)
     double exp_rate_estim;
+
+    // (4) Rotochemical heating setup
+
+    // Bij matrix independent entries density dependence on nbar
+    // ee, emu, eu, es, mumu, ss
+    std::function<double(double)> dne_to_dmue,
+        dne_to_dmum,
+        dnm_to_dmum,
+        dnu_to_dmuu,
+        dnu_to_dmus,
+        dns_to_dmus;
+
+    // rotational 2 omega omega_dot dependency of time
+    std::function<double(double)> omega_sqr_dot;
 
     /// @brief instantiate the system from json input
     /// @param json_input json inputfile path
@@ -145,14 +162,14 @@ namespace instantiator
             else if (mode == "Cubic")
                 return auxiliaries::math::InterpolationMode::kCubic;
             else
-                THROW(std::runtime_error, "UI error: Unparsable interpolation mode provided.");
+                RHM_THROW(std::runtime_error, "UI error: Unparsable interpolation mode provided.");
         };
 
         // read json input
         std::ifstream i(json_input);
         if (!i.is_open())
         {
-            THROW(std::runtime_error, "UI inputfile requested, but the path is invalid.");
+            RHM_THROW(std::runtime_error, "UI inputfile requested, but the path is invalid.");
         }
         json j = json::parse(i);
 
@@ -161,17 +178,17 @@ namespace instantiator
         // filereader
         auto eos_datafile = j["EoSSetup"]["Datafile"]["Path"];
         if (!(eos_datafile.is_string()))
-            THROW(std::runtime_error, "UI error: Datafile path must be provided as a string.");
+            RHM_THROW(std::runtime_error, "UI error: Datafile path must be provided as a string.");
         auto eos_datafile_rows = j["EoSSetup"]["Datafile"]["Rows"];
         if (!(eos_datafile_rows.size() == 2))
         {
             if (eos_datafile_rows.is_null())
                 eos_datafile_rows = {0, 0};
             else
-                THROW(std::runtime_error, "UI error: Datafile rows must be a pair-array.");
+                RHM_THROW(std::runtime_error, "UI error: Datafile rows must be a pair-array.");
         }
         else if (!(eos_datafile_rows[0].is_number_integer() && eos_datafile_rows[1].is_number_integer()))
-            THROW(std::runtime_error, "UI error: Datafile rows must be provided as integers.");
+            RHM_THROW(std::runtime_error, "UI error: Datafile rows must be provided as integers.");
 
         auto eos_datafile_cols = j["EoSSetup"]["Datafile"]["Columns"];
         if (!(eos_datafile_cols.size() == 2))
@@ -179,24 +196,24 @@ namespace instantiator
             if (eos_datafile_cols.is_null())
                 eos_datafile_cols = {0, 0};
             else
-                THROW(std::runtime_error, "UI error: Datafile cols must be a pair-array.");
+                RHM_THROW(std::runtime_error, "UI error: Datafile cols must be a pair-array.");
         }
         else if (!(eos_datafile_cols[0].is_number_integer() && eos_datafile_cols[1].is_number_integer()))
-            THROW(std::runtime_error, "UI error: Datafile cols must be provided as integers.");
+            RHM_THROW(std::runtime_error, "UI error: Datafile cols must be provided as integers.");
 
         auxiliaries::math::InterpolationMode eos_datafile_interp_mode;
         auto eos_datafile_interp_read = j["EoSSetup"]["Datafile"]["Interpolation"];
         if (eos_datafile_interp_read.is_null())
             eos_datafile_interp_mode = auxiliaries::math::InterpolationMode::kLinear;
         else if (!(eos_datafile_interp_read.is_string()))
-            THROW(std::runtime_error, "UI error: Datafile interpolation mode may only be a string.");
+            RHM_THROW(std::runtime_error, "UI error: Datafile interpolation mode may only be a string.");
         else
             eos_datafile_interp_mode = get_interpolation_mode(eos_datafile_interp_read);
 
         auto nbar_index = j["EoSSetup"]["Quantities"]["BarionicDensity"]["Column"];
         auto nbar_conversion_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["Units"];
         if (!(nbar_index.is_number_integer()))
-            THROW(std::runtime_error, "UI error: Barionic density column number must be provided as an integer.");
+            RHM_THROW(std::runtime_error, "UI error: Barionic density column number must be provided as an integer.");
         if (nbar_conversion_read.is_number())
             nbar_conversion = nbar_conversion_read.get<double>();
         else if (nbar_conversion_read.is_string())
@@ -211,11 +228,11 @@ namespace instantiator
             }
             else
             {
-                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for barionic density.");
+                RHM_THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for barionic density.");
             }
         }
         else
-            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for barionic density.");
+            RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for barionic density.");
 
         // read datafile
         static auto table = auxiliaries::io::read_tabulated_file(eos_datafile, eos_datafile_cols, eos_datafile_rows);
@@ -250,15 +267,15 @@ namespace instantiator
                 }
                 catch (std::exception &e)
                 {
-                    THROW(std::runtime_error, "Bad EoS request. " + e.what());
+                    RHM_THROW(std::runtime_error, "Bad EoS request. " + e.what());
                 }
-                        });
+            });
 
         // energy density function of baryonic density (natural units)
         auto energy_density_index = j["EoSSetup"]["Quantities"]["EnergyDensity"]["Column"];
         auto energy_density_conversion_read = j["EoSSetup"]["Quantities"]["EnergyDensity"]["Units"];
         if (!(energy_density_index.is_number_integer()))
-            THROW(std::runtime_error, "UI error: Energy density column number must be provided as an integer.");
+            RHM_THROW(std::runtime_error, "UI error: Energy density column number must be provided as an integer.");
         if (energy_density_conversion_read.is_number())
             energy_density_conversion = energy_density_conversion_read.get<double>();
         else if (energy_density_conversion_read.is_string())
@@ -277,11 +294,11 @@ namespace instantiator
             }
             else
             {
-                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for energy density.");
+                RHM_THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for energy density.");
             }
         }
         else
-            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for energy density.");
+            RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for energy density.");
         energy_density_of_nbar = [energy_density_index](double nbar)
         { return data_reader({nbar}, energy_density_index) * energy_density_conversion; };
 
@@ -289,7 +306,7 @@ namespace instantiator
         auto pressure_index = j["EoSSetup"]["Quantities"]["Pressure"]["Column"];
         auto pressure_conversion_read = j["EoSSetup"]["Quantities"]["Pressure"]["Units"];
         if (!(pressure_index.is_number_integer()))
-            THROW(std::runtime_error, "UI error: Pressure column number must be provided as an integer.");
+            RHM_THROW(std::runtime_error, "UI error: Pressure column number must be provided as an integer.");
         if (pressure_conversion_read.is_number())
             pressure_conversion = pressure_conversion_read.get<double>();
         else if (pressure_conversion_read.is_string())
@@ -308,11 +325,11 @@ namespace instantiator
             }
             else
             {
-                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for pressure.");
+                RHM_THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for pressure.");
             }
         }
         else
-            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for pressure.");
+            RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for pressure.");
         pressure_of_nbar = [pressure_index](double nbar)
         { return data_reader({nbar}, pressure_index) * pressure_conversion; };
 
@@ -323,10 +340,10 @@ namespace instantiator
              nbar_core_limit_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["CoreLimit"],
              nbar_crust_limit_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["CrustLimit"];
         if (!(nbar_low_read.is_number() && nbar_upp_read.is_number() && nbar_core_limit_read.is_number()))
-            THROW(std::runtime_error, "UI error: Barionic density limits must be provided as numbers.");
+            RHM_THROW(std::runtime_error, "UI error: Barionic density limits must be provided as numbers.");
 
         if (!nbar_crust_limit_read.is_number() && !nbar_crust_limit_read.is_null())
-            THROW(std::runtime_error, "UI error: Barionic density crust limit may only be provided as a number.");
+            RHM_THROW(std::runtime_error, "UI error: Barionic density crust limit may only be provided as a number.");
         if (nbar_crust_limit_read.is_null())
             nbar_crust_limit_read = nbar_core_limit_read;
 
@@ -346,21 +363,21 @@ namespace instantiator
         else if (edensity_low_read.is_number())
             edensity_low = edensity_low_read.get<double>() * energy_density_conversion;
         else
-            THROW(std::runtime_error, "UI error: Energy density low limit may only be provided as a number or \"Deduce\".");
+            RHM_THROW(std::runtime_error, "UI error: Energy density low limit may only be provided as a number or \"Deduce\".");
 
         if (edensity_core_limit_read.is_null() || edensity_core_limit_read == "Deduce")
             edensity_core_limit = energy_density_of_nbar(nbar_core_limit);
         else if (edensity_core_limit_read.is_number())
             edensity_core_limit = edensity_core_limit_read.get<double>() * energy_density_conversion;
         else
-            THROW(std::runtime_error, "UI error: Energy density core limit may only be provided as a number or \"Deduce\".");
+            RHM_THROW(std::runtime_error, "UI error: Energy density core limit may only be provided as a number or \"Deduce\".");
 
         if (edensity_upp_read.is_null() || edensity_upp_read == "Deduce")
             edensity_upp = energy_density_of_nbar(nbar_upp);
         else if (edensity_upp_read.is_number())
             edensity_upp = edensity_upp_read.get<double>() * energy_density_conversion;
         else
-            THROW(std::runtime_error, "UI error: Energy density upp limit may only be provided as a number or \"Deduce\".");
+            RHM_THROW(std::runtime_error, "UI error: Energy density upp limit may only be provided as a number or \"Deduce\".");
 
         // pressure limits in natural units. _low and _upp represent limits of EoS itself
         auto pressure_low_read = j["EoSSetup"]["Quantities"]["Pressure"]["Low"],
@@ -371,23 +388,26 @@ namespace instantiator
         else if (pressure_low_read.is_number())
             pressure_low = pressure_low_read.get<double>() * pressure_conversion;
         else
-            THROW(std::runtime_error, "UI error: Pressure low limit may only be provided as a number or \"Deduce\".");
+            RHM_THROW(std::runtime_error, "UI error: Pressure low limit may only be provided as a number or \"Deduce\".");
 
         if (pressure_upp_read.is_null() || pressure_upp_read == "Deduce")
             pressure_upp = pressure_of_nbar(nbar_upp);
         else if (pressure_upp_read.is_number())
             pressure_upp = pressure_upp_read.get<double>() * pressure_conversion;
         else
-            THROW(std::runtime_error, "UI error: Pressure upp limit may only be provided as a number or \"Deduce\".");
+            RHM_THROW(std::runtime_error, "UI error: Pressure upp limit may only be provided as a number or \"Deduce\".");
 
         // (2) TOV solver setup
+
+        if (j["TOVSolver"].is_null())
+            RHM_THROW(std::runtime_error, "UI error: TOV solver setup is essential for any simulation and must be provided.");
 
         auxiliaries::math::InterpolationMode eos_interp_mode;
         auto eos_interp_mode_read = j["TOVSolver"]["EoSInterpolation"];
         if (eos_interp_mode_read.is_null())
             eos_interp_mode = auxiliaries::math::InterpolationMode::kLinear;
         else if (!(eos_interp_mode_read.is_string()))
-            THROW(std::runtime_error, "UI error: EoS interpolation mode must be a string.");
+            RHM_THROW(std::runtime_error, "UI error: EoS interpolation mode must be a string.");
         else
             eos_interp_mode = get_interpolation_mode(eos_interp_mode_read);
 
@@ -402,7 +422,7 @@ namespace instantiator
         if (nbar_interp_mode_read.is_null())
             nbar_interp_mode = auxiliaries::math::InterpolationMode::kLinear;
         else if (!(nbar_interp_mode_read.is_string()))
-            THROW(std::runtime_error, "UI error: nbar interpolation mode must be a string.");
+            RHM_THROW(std::runtime_error, "UI error: nbar interpolation mode must be a string.");
         else
             nbar_interp_mode = get_interpolation_mode(nbar_interp_mode_read);
 
@@ -417,7 +437,7 @@ namespace instantiator
         if (discr_size_EoS_read.is_null())
             discr_size_EoS = 1000;
         else if (!(discr_size_EoS_read.is_number_integer()))
-            THROW(std::runtime_error, "UI error: EoS discretization must be provided as an integer.");
+            RHM_THROW(std::runtime_error, "UI error: EoS discretization must be provided as an integer.");
         else
             discr_size_EoS = discr_size_EoS_read.get<size_t>();
 
@@ -426,7 +446,7 @@ namespace instantiator
         if (tov_adapt_limit_read.is_null())
             tov_adapt_limit = 20;
         else if (!(tov_adapt_limit_read.is_number_integer()))
-            THROW(std::runtime_error, "UI error: TOV adaption limit must be provided as an integer.");
+            RHM_THROW(std::runtime_error, "UI error: TOV adaption limit must be provided as an integer.");
         else
             tov_adapt_limit = tov_adapt_limit_read.get<size_t>();
 
@@ -456,13 +476,13 @@ namespace instantiator
             }
             else
             {
-                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for TOV length.");
+                RHM_THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for TOV length.");
             }
         }
         else
-            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for TOV length.");
+            RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for TOV length.");
         if (!(radius_step_read.is_number()))
-            THROW(std::runtime_error, "UI error: TOV solver radius step must be provided as a number.");
+            RHM_THROW(std::runtime_error, "UI error: TOV solver radius step must be provided as a number.");
         else
             radius_step = radius_step_read.get<double>() * tov_length_conversion;
 
@@ -470,7 +490,7 @@ namespace instantiator
         auto tov_surface_pressure_provided_as_read = j["TOVSolver"]["SurfacePressure"]["ProvidedAs"];
         auto tov_surface_pressure_read = j["TOVSolver"]["SurfacePressure"]["Value"];
         if (!(tov_surface_pressure_read.is_number()))
-            THROW(std::runtime_error, "UI error: TOV surface pressure must be provided as a number.");
+            RHM_THROW(std::runtime_error, "UI error: TOV surface pressure must be provided as a number.");
 
         if (tov_surface_pressure_provided_as_read == "LinspacedMinToMax")
         {
@@ -482,13 +502,13 @@ namespace instantiator
         }
         else
         {
-            THROW(std::runtime_error, "UI error: TOV surface pressure may only be provided in \"LinspacedMinToMax\" or \"Same\" modes.");
+            RHM_THROW(std::runtime_error, "UI error: TOV surface pressure may only be provided in \"LinspacedMinToMax\" or \"Same\" modes.");
         }
 
         auto center_density_read = j["TOVSolver"]["CenterDensity"]["Value"];
         auto tov_density_provided_as_read = j["TOVSolver"]["CenterDensity"]["ProvidedAs"];
         if (!(center_density_read.is_number()))
-            THROW(std::runtime_error, "UI error: TOV solver center density must be provided as a number.");
+            RHM_THROW(std::runtime_error, "UI error: TOV solver center density must be provided as a number.");
 
         if (tov_density_provided_as_read == "LinspacedMinToMax")
         {
@@ -500,16 +520,18 @@ namespace instantiator
         }
         else
         {
-            THROW(std::runtime_error, "UI error: TOV center density may only be provided in \"LinspacedMinToMax\" or \"Same\" modes.");
+            RHM_THROW(std::runtime_error, "UI error: TOV center density may only be provided in \"LinspacedMinToMax\" or \"Same\" modes.");
         }
-        
+
         // (->1) EoS Setup
+
+        if (j["CoolingSolver"].is_null())
+            return; // user presents no interest in cooling
+
         // provided particles
         auto particles_read = j["EoSSetup"]["Particles"];
-        if (particles_read.size() < 1)
-            return; // no particles provided -> user expresses no interest in cooling
         if (!particles_read.is_array())
-            THROW(std::runtime_error, "UI error: Particle types must be provided as an array.");
+            RHM_THROW(std::runtime_error, "UI error: Particle types must be provided as an array.");
 
         std::vector<auxiliaries::phys::Species> particles;
         for (auto particle_name : particles_read)
@@ -531,10 +553,10 @@ namespace instantiator
                     }
                 }
                 if (!identified)
-                    THROW(std::runtime_error, "UI error: " + particle_name.get<std::string>().c_str() + " is not a recognized particle.");
+                    RHM_THROW(std::runtime_error, "UI error: " + particle_name.get<std::string>().c_str() + " is not a recognized particle.");
             }
             else
-                THROW(std::runtime_error, "UI error: Particle type must be provided as a string.");
+                RHM_THROW(std::runtime_error, "UI error: Particle type must be provided as a string.");
         }
 
         // number density functions of baryonic density (natural units) &&
@@ -546,11 +568,11 @@ namespace instantiator
             auto particle_density_read = j["EoSSetup"]["Quantities"]["NumberDensities"][particle_name];
 
             if (particle_density_read.is_null())
-                THROW(std::runtime_error, "UI error: Particle density info is not provided for " + particle.name() + ".");
+                RHM_THROW(std::runtime_error, "UI error: Particle density info is not provided for " + particle.name() + ".");
 
             auto particle_density_column_read = particle_density_read["Column"];
             if (!(particle_density_column_read.is_number_integer()))
-                THROW(std::runtime_error, "UI error: " + particle.name() + " density column number must be provided as an integer.");
+                RHM_THROW(std::runtime_error, "UI error: " + particle.name() + " density column number must be provided as an integer.");
 
             auto particle_density_conversion_read = particle_density_read["Units"];
             double particle_density_conversion;
@@ -587,11 +609,11 @@ namespace instantiator
                 }
                 else
                 {
-                    THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for " + particle_name + " density.");
+                    RHM_THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for " + particle_name + " density.");
                 }
             }
             else
-                THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for " + particle_name + " density.");
+                RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for " + particle_name + " density.");
 
             auto particle_density_provided_as_read = particle_density_read["ProvidedAs"];
             if (particle_density_provided_as_read.is_null())
@@ -623,15 +645,15 @@ namespace instantiator
                      }});
             }
             else
-                THROW(std::runtime_error, "UI error: Particle density may only be provided in \"Density\", \"DensityFraction\" or \"KFermi\" modes.");
+                RHM_THROW(std::runtime_error, "UI error: Particle density may only be provided in \"Density\", \"DensityFraction\" or \"KFermi\" modes.");
             // assemble fermi momentum functions for fermions
             if (particle.classify() != auxiliaries::phys::Species::ParticleClassification::kMeson)
                 k_fermi_of_nbar.insert(
                     {particle, [particle](double nbar)
-                    {
-                        using constants::scientific::Pi;
-                        return pow(3.0 * Pi * Pi * number_densities_of_nbar[particle](nbar), 1.0 / 3.0);
-                    }});
+                     {
+                         using constants::scientific::Pi;
+                         return pow(3.0 * Pi * Pi * number_densities_of_nbar[particle](nbar), 1.0 / 3.0);
+                     }});
         }
 
         // effective mass functions of baryonic density (natural units)
@@ -642,25 +664,25 @@ namespace instantiator
             auto particle_mst_read = j["EoSSetup"]["Quantities"]["EffectiveMasses"][particle_name];
 
             if (particle.classify() == auxiliaries::phys::Species::ParticleClassification::kMeson)
-            {   
+            {
                 if (!particle_mst_read.is_null())
-                    THROW(std::runtime_error, "UI error: Effective mass is not expected for " + particle.name() + ".");
+                    RHM_THROW(std::runtime_error, "UI error: Effective mass is not expected for " + particle.name() + ".");
                 continue; // mesons have no effective mass
             }
 
             if (particle_mst_read.is_null())
-                THROW(std::runtime_error, "UI error: Effective mass info is not provided for " + particle.name() + ".");
+                RHM_THROW(std::runtime_error, "UI error: Effective mass info is not provided for " + particle.name() + ".");
             auto particle_mst_column_read = particle_mst_read["Column"];
             auto particle_mst_provided_as_read = particle_mst_read["ProvidedAs"];
             if (!(particle_mst_column_read.is_number_integer()) && particle_mst_provided_as_read != "FermiEnergy")
-                THROW(std::runtime_error, "UI error: " + particle.name() + " effective mass column number must be provided as an integer.");
+                RHM_THROW(std::runtime_error, "UI error: " + particle.name() + " effective mass column number must be provided as an integer.");
 
             auto particle_mst_conversion_read = particle_mst_read["Units"];
             double particle_mst_conversion;
             if (particle_mst_conversion_read.is_null())
             {
                 if (particle_mst_provided_as_read != "FermiEnergy")
-                    THROW(std::runtime_error, "UI error: Effective mass units must be provided for " + particle.name() + ".");
+                    RHM_THROW(std::runtime_error, "UI error: Effective mass units must be provided for " + particle.name() + ".");
             }
             else if (particle_mst_conversion_read.is_number())
             {
@@ -682,11 +704,11 @@ namespace instantiator
                 }
                 else
                 {
-                    THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for " + particle.name() + " effective mass.");
+                    RHM_THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for " + particle.name() + " effective mass.");
                 }
             }
             else
-                THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for " + particle.name() + " effective mass.");
+                RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for " + particle.name() + " effective mass.");
             if (particle_mst_provided_as_read == "FermiEnergy")
             {
                 m_stars_of_nbar.insert(
@@ -704,7 +726,7 @@ namespace instantiator
                      }});
             }
             else
-                THROW(std::runtime_error, "UI error: Particle effective mass may only be provided in \"FermiEnergy\" or \"EffectiveMass\" modes.");
+                RHM_THROW(std::runtime_error, "UI error: Particle effective mass may only be provided in \"FermiEnergy\" or \"EffectiveMass\" modes.");
         }
 
         // ion volume fraction function of baryonic density (natural units)
@@ -729,14 +751,14 @@ namespace instantiator
         {
             auto ion_volume_column_read = ion_volume_fr_read["Column"];
             if (!(ion_volume_column_read.is_number_integer()))
-                THROW(std::runtime_error, "UI error: Ion volume fraction column number must be provided as an integer.");
+                RHM_THROW(std::runtime_error, "UI error: Ion volume fraction column number must be provided as an integer.");
             ion_volume_fr = [ion_volume_column_read](double nbar)
             {
                 return data_reader({nbar}, ion_volume_column_read);
             };
         }
         else
-            THROW(std::runtime_error, "UI error: Ion volume fraction may only be provided in \"Absent\", \"ExcludedVolume\" or \"IonVolumeFraction\" modes.");
+            RHM_THROW(std::runtime_error, "UI error: Ion volume fraction may only be provided in \"Absent\", \"ExcludedVolume\" or \"IonVolumeFraction\" modes.");
 
         // (3) Cooling solver
 
@@ -747,7 +769,7 @@ namespace instantiator
         if (cooling_newton_step_eps_read.is_null())
             cooling_newton_step_eps = 1E-5;
         else if (!(cooling_newton_step_eps_read.is_number()))
-            THROW(std::runtime_error, "UI error: Cooling solver Newton relative tolerance must be provided as a number.");
+            RHM_THROW(std::runtime_error, "UI error: Cooling solver Newton relative tolerance must be provided as a number.");
         else
             cooling_newton_step_eps = cooling_newton_step_eps_read.get<double>();
 
@@ -756,9 +778,18 @@ namespace instantiator
         if (cooling_newton_max_iter_read.is_null())
             cooling_newton_max_iter = 50;
         else if (!(cooling_newton_max_iter_read.is_number_integer()))
-            THROW(std::runtime_error, "UI error: Cooling solver Newton max iter must be provided as an integer.");
+            RHM_THROW(std::runtime_error, "UI error: Cooling solver Newton max iter must be provided as an integer.");
         else
             cooling_newton_max_iter = cooling_newton_max_iter_read.get<size_t>();
+
+        // desirable relative accuracy of the cooling solvers per time step
+        auto cooling_max_diff_per_t_step_read = j["CoolingSolver"]["StepTolerance"];
+        if (cooling_max_diff_per_t_step_read.is_null())
+            cooling_max_diff_per_t_step = 0.05;
+        else if (!(cooling_max_diff_per_t_step_read.is_number()))
+            RHM_THROW(std::runtime_error, "UI error: Cooling solver relative tolerance per step must be provided as a number.");
+        else
+            cooling_max_diff_per_t_step = cooling_max_diff_per_t_step_read.get<double>();
 
         // initial temperature profile
         auto initial_t_profile_read = j["CoolingSolver"]["TemperatureProfile"];
@@ -782,48 +813,83 @@ namespace instantiator
             }
             else
             {
-                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for temperature.");
+                RHM_THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for temperature.");
             }
         }
         else
-            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for temperature.");
-        if (!initial_t_profile_read.is_array())
-            THROW(std::runtime_error, "UI error: Initial temperature profile settings must be provided as an array.");
-        else
-        {
-            auto initial_t_profile_provided_as_read = initial_t_profile_read[0];
-            if (initial_t_profile_provided_as_read == "InfiniteFlat")
-            {
-                auto initial_t_profile_T_read = initial_t_profile_read[1];
-                if (!(initial_t_profile_T_read.is_number()))
-                    THROW(std::runtime_error, "UI error: Initial temperature profile temperature must be provided as a number.");
-                else
-                {
-                    double temp = initial_t_profile_T_read.get<double>() * cooling_temp_conversion;
-                    initial_t_profile_inf = [temp](double r, double exp_phi_at_R)
-                    {
-                        return temp;
-                    };
-                }
-            }
-            else if (initial_t_profile_provided_as_read == "InfiniteFlatSurfaceRedshifted")
-            {
-                auto initial_t_profile_T_read = initial_t_profile_read[1];
-                if (!(initial_t_profile_T_read.is_number()))
-                    THROW(std::runtime_error, "UI error: Initial temperature profile temperature must be provided as a number.");
-                else
-                {
-                    double temp = initial_t_profile_T_read.get<double>() * cooling_temp_conversion;
-                    initial_t_profile_inf = [temp](double r, double exp_phi_at_R)
-                    {
-                        return temp * exp_phi_at_R;
-                    };
-                }
-            }
-            else
-                THROW(std::runtime_error, "UI error: Initial temperature profile must be provided in \"InfiniteFlat\" or \"InfiniteFlatSurfaceRedshifted\" modes.");
-        }
+            RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for temperature.");
 
+        auto initial_t_profile_provided_as_read = initial_t_profile_read["ProvidedAs"];
+        std::function<double(double, double, const std::function<double(double)> &)> redshift_factor;
+        if (initial_t_profile_provided_as_read == "Redshifted")
+        {
+            redshift_factor = [](double r, double r_ns, const std::function<double(double)> &exp_phi)
+            {
+                return 1;
+            };
+        }
+        else if (initial_t_profile_provided_as_read == "SurfaceRedshifted")
+        {
+            redshift_factor = [](double r, double r_ns, const std::function<double(double)> &exp_phi)
+            {
+                return exp_phi(r_ns);
+            };
+        }
+        else if (initial_t_profile_provided_as_read == "Local")
+        {
+            redshift_factor = [](double r, double r_ns, const std::function<double(double)> &exp_phi)
+            {
+                return exp_phi(r);
+            };
+        }
+        else
+            RHM_THROW(std::runtime_error, "UI error: Initial temperature profile must be provided as \"Redshifted\", \"SurfaceRedshifted\" or \"Local\" .");
+
+        auto initial_t_profile_mode_read = initial_t_profile_read["Mode"];
+        auto initial_t_profile_params_read = initial_t_profile_read["Parameters"];
+        if (!initial_t_profile_params_read.is_array())
+            RHM_THROW(std::runtime_error, "UI error: Initial temperature profile parameters must be provided as an array.");
+
+        if (initial_t_profile_mode_read == "Flat")
+        {
+            // expected parameters: [T]
+            if (initial_t_profile_params_read.size() != 1)
+                RHM_THROW(std::runtime_error, "UI error: Initial temperature profile parameters must be of size 1 for the \"Flat\" mode.");
+            auto temp_init_read = initial_t_profile_params_read[0];
+            double temp_init;
+            if (!(temp_init_read.is_number()))
+                RHM_THROW(std::runtime_error, "UI error: Initial temperature must be provided as a number.");
+            else
+                temp_init = temp_init_read.get<double>() * cooling_temp_conversion;
+            initial_t_profile_inf = [temp_init, redshift_factor](double r, double r_ns, const std::function<double(double)> &exp_phi, const std::function<double(double)> &nbar_of_r)
+            {
+                return temp_init * redshift_factor(r, r_ns, exp_phi);
+            };
+        }
+        else if (initial_t_profile_mode_read == "CoreJump")
+        {
+            // expected parameters: [T_core, T_crust]
+            if (initial_t_profile_params_read.size() != 2)
+                RHM_THROW(std::runtime_error, "UI error: Initial temperature profile parameters must be of size 2 for the \"CoreJump\" mode.");
+            auto temp_core_read = initial_t_profile_params_read[0];
+            auto temp_crust_read = initial_t_profile_params_read[1];
+            double temp_core, temp_crust;
+            if (!(temp_core_read.is_number()))
+                RHM_THROW(std::runtime_error, "UI error: Initial temperature in the core must be provided as a number.");
+            else
+                temp_core = temp_core_read.get<double>() * cooling_temp_conversion;
+            if (!(temp_crust_read.is_number()))
+                RHM_THROW(std::runtime_error, "UI error: Initial temperature in the crust must be provided as a number.");
+            else
+                temp_crust = temp_crust_read.get<double>() * cooling_temp_conversion;
+
+            initial_t_profile_inf = [temp_core, temp_crust, redshift_factor](double r, double r_ns, const std::function<double(double)> &exp_phi, const std::function<double(double)> &nbar_of_r)
+            {
+                return (nbar_of_r(r) > nbar_core_limit ? temp_core : temp_crust) * redshift_factor(r, r_ns, exp_phi);
+            };
+        }
+        else
+            RHM_THROW(std::runtime_error, "UI error: Initial temperature profile must be provided in \"Flat\" or \"CoreJump\" mode .");
         // Evolution settings
         auto time_conversion_read = j["CoolingSolver"]["TimeUnits"];
         double time_conversion;
@@ -849,35 +915,35 @@ namespace instantiator
             }
             else
             {
-                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for time.");
+                RHM_THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for time.");
             }
         }
         else
-            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for time.");
+            RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for time.");
         auto time_init_read = j["CoolingSolver"]["TimeInit"];
         if (time_init_read.is_null())
             t_init = 0.0 * time_conversion;
         else if (!(time_init_read.is_number()))
-            THROW(std::runtime_error, "UI error: Initial time may only be provided as a number.");
+            RHM_THROW(std::runtime_error, "UI error: Initial time may only be provided as a number.");
         else
             t_init = time_init_read.get<double>() * time_conversion;
 
         auto time_end_read = j["CoolingSolver"]["TimeEnd"];
         if (!(time_end_read.is_number()))
-            THROW(std::runtime_error, "UI error: Final time must be provided as a number.");
+            RHM_THROW(std::runtime_error, "UI error: Final time must be provided as a number.");
         else
             t_end = time_end_read.get<double>() * time_conversion;
 
         auto base_time_step_read = j["CoolingSolver"]["TimeBaseStep"];
         if (!(base_time_step_read.is_number()))
-            THROW(std::runtime_error, "UI error: Base time step must be provided as a number.");
+            RHM_THROW(std::runtime_error, "UI error: Base time step must be provided as a number.");
         else
             base_t_step = base_time_step_read.get<double>() * time_conversion;
 
         // estimate for the number of time points (is also used for time step expansion, if enabled)
         auto n_points_estimate_read = j["CoolingSolver"]["NumberPointsEstimate"];
         if (!(n_points_estimate_read.is_number_integer()))
-            THROW(std::runtime_error, "UI error: Estimate of number of cooling time stamps must be provided as an integer.");
+            RHM_THROW(std::runtime_error, "UI error: Estimate of number of cooling time stamps must be provided as an integer.");
         else
             cooling_n_points_estimate = n_points_estimate_read.get<size_t>();
 
@@ -887,7 +953,7 @@ namespace instantiator
             exp_rate_estim = pow((t_end - t_init) / base_t_step, 1.0 / cooling_n_points_estimate) *
                              pow((pow((t_end - t_init) / base_t_step, 1.0 / cooling_n_points_estimate) - 1), 1.0 / cooling_n_points_estimate);
         else if (!(time_step_expansion_factor_read.is_number()))
-            THROW(std::runtime_error, "UI error: Time step expansion factor may only be provided as a number or \"Deduce\".");
+            RHM_THROW(std::runtime_error, "UI error: Time step expansion factor may only be provided as a number or \"Deduce\".");
         else
             exp_rate_estim = time_step_expansion_factor_read.get<double>();
 
@@ -917,13 +983,13 @@ namespace instantiator
             }
             else
             {
-                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for cooling length.");
+                RHM_THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for cooling length.");
             }
         }
         else
-            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for cooling length.");
+            RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for cooling length.");
         if (!(cooling_radius_step_read.is_number()))
-            THROW(std::runtime_error, "UI error: Cooling solver radius step must be provided as a number.");
+            RHM_THROW(std::runtime_error, "UI error: Cooling solver radius step must be provided as a number.");
         else
             cooling_radius_step = cooling_radius_step_read.get<double>() * cooling_length_conversion;
 
@@ -953,14 +1019,14 @@ namespace instantiator
                     if (!cooling_enable_equilibrium_condition1_read.is_null())
                     {
                         if (!(cooling_enable_equilibrium_condition1_read.is_number()))
-                            THROW(std::runtime_error, "UI error: Time for switching to equilibrium may only be provided as a number.");
+                            RHM_THROW(std::runtime_error, "UI error: Time for switching to equilibrium may only be provided as a number.");
                         else if (t_curr < cooling_enable_equilibrium_condition1_read.get<double>() * time_conversion)
                             return false;
                     }
                     if (!cooling_enable_equilibrium_condition2_read.is_null())
                     {
                         if (!(cooling_enable_equilibrium_condition2_read.is_number()))
-                            THROW(std::runtime_error, "UI error: Profile flattening ratio for switching to equilibrium may only be provided as a number.");
+                            RHM_THROW(std::runtime_error, "UI error: Profile flattening ratio for switching to equilibrium may only be provided as a number.");
                         else if (std::abs(t_profile.end()[-2] - t_profile.front()) / t_profile.end()[-2] > cooling_enable_equilibrium_condition2_read.get<double>())
                             return false;
                     }
@@ -968,13 +1034,13 @@ namespace instantiator
                 };
             }
             else
-                THROW(std::runtime_error, "UI error: Equilibrium condition may only be provided in \"Immediately\", \"Never\" or \"Conditional\" modes.");
+                RHM_THROW(std::runtime_error, "UI error: Equilibrium condition may only be provided in \"Immediately\", \"Never\" or \"Conditional\" modes.");
         }
 
         // Cooling settings
         auto crust_eta_read = j["EoSSetup"]["Misc"]["CrustalEta"];
         if (crust_eta_read.is_null() || !(crust_eta_read.is_number()))
-            THROW(std::runtime_error, "UI error: Light element share (crustal #eta) must be provided as a number.");
+            RHM_THROW(std::runtime_error, "UI error: Light element share (crustal #eta) must be provided as a number.");
         else
             crust_eta = crust_eta_read.get<double>();
 
@@ -1012,15 +1078,15 @@ namespace instantiator
             else if (model_name == "HadronToQGP")
                 return CriticalTemperatureModel::kHadronToQGP;
             else
-                THROW(std::runtime_error, "UI error: Critical temperature model must be provided as a string among \"AO\", \"CCDK\", \"A\", \"B\", \"C\", \"A2\" or \"HadronToQGP\".");
+                RHM_THROW(std::runtime_error, "UI error: Critical temperature model must be provided as a string among \"AO\", \"CCDK\", \"A\", \"B\", \"C\", \"A2\" or \"HadronToQGP\".");
         };
 
         if (!superfluid_p_1s0_read.is_string() && superfluid_p_1s0)
-            THROW(std::runtime_error, "UI error: Proton superfluidity may only be provided as a string (namely model name).");
+            RHM_THROW(std::runtime_error, "UI error: Proton superfluidity may only be provided as a string (namely model name).");
         if (!superfluid_n_3p2_read.is_string() && superfluid_n_3p2)
-            THROW(std::runtime_error, "UI error: Neutron superfluidity may only be provided as a string (namely model name).");
+            RHM_THROW(std::runtime_error, "UI error: Neutron superfluidity may only be provided as a string (namely model name).");
         if (!superfluid_n_1s0_read.is_string() && superfluid_n_1s0)
-            THROW(std::runtime_error, "UI error: Neutron superfluidity may only be provided as a string (namely model name).");
+            RHM_THROW(std::runtime_error, "UI error: Neutron superfluidity may only be provided as a string (namely model name).");
 
         superfluid_p_temp = [select_crit_temp_model, superfluid_p_1s0_read](double k_fermi)
         {
@@ -1054,7 +1120,7 @@ namespace instantiator
         auto superconduct_gap_conversion_read = j["EoSSetup"]["Quantities"]["QuarkSuperconductingGap"]["Units"];
         auto superconduct_gap_column_read = j["EoSSetup"]["Quantities"]["QuarkSuperconductingGap"]["Column"];
         if (!superconduct_gap_column_read.is_null() && !superconduct_gap_column_read.is_number_integer())
-            THROW(std::runtime_error, "UI error: Quark superconducting gap column number may only be provided as an integer.");
+            RHM_THROW(std::runtime_error, "UI error: Quark superconducting gap column number may only be provided as an integer.");
 
         double superconduct_gap_conversion;
         if (superconduct_gap_conversion_read.is_number())
@@ -1077,11 +1143,11 @@ namespace instantiator
             }
             else
             {
-                THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for quark superconducting gap.");
+                RHM_THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for quark superconducting gap.");
             }
         }
         else if (!superconduct_gap_column_read.is_null())
-            THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for quark superconducting gap.");
+            RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for quark superconducting gap.");
 
         if (!superconduct_gap_column_read.is_null())
         {
@@ -1096,6 +1162,147 @@ namespace instantiator
             {
                 return 0.0;
             };
+        }
+
+        // (4) Rotochemical heating setup
+
+        if (j["RHSolver"].is_null())
+            return; // user does not want rotochemical heating
+
+        auto bij_density_read = j["EoSSetup"]["Quantities"]["DensityChemPotentialDerivatives"];
+
+        // we expect npemuds (H{npem} + Q{udse}) matter at most.
+        using namespace constants::species;
+
+        // we first see which entries are provided by the user
+
+        auto bee_density_read = bij_density_read["Electron"]["Electron"],
+             bem_density_read = bij_density_read["Electron"]["Muon"],
+             bmm_density_read = bij_density_read["Muon"]["Muon"],
+             buu_density_read = bij_density_read["Uquark"]["Uquark"],
+             bus_density_read = bij_density_read["Uquark"]["Squark"],
+             bss_density_read = bij_density_read["Squark"]["Squark"];
+        bem_density_read = (bem_density_read.is_null() ? bij_density_read["Muon"]["Electron"] : bem_density_read);
+        bus_density_read = (bus_density_read.is_null() ? bij_density_read["Squark"]["Uquark"] : bus_density_read);
+
+        // if all npemuds matter plays role in rotochemical heating,
+        // the number of rows is reduced to 4 (via conservation laws),
+        // namely, (dNe, dNm, dNu, dNs), with 6 independent entries within the matrix.
+
+        // all checks reflecting whether the user provided any good info will be done in the main program
+
+        auto bij_vars = std::vector<std::reference_wrapper<decltype(dne_to_dmue)>>({dne_to_dmue, dne_to_dmum, dnm_to_dmum, dnu_to_dmuu, dnu_to_dmus, dns_to_dmus});
+        auto bij_reads = std::vector<decltype(bee_density_read)>({bee_density_read, bem_density_read, bmm_density_read, buu_density_read, bus_density_read, bss_density_read});
+
+        for (size_t entry_num = 0; entry_num < bij_vars.size(); ++entry_num)
+        {
+            auto read = bij_reads[entry_num];
+            auto &entry = bij_vars[entry_num];
+            if (!read.is_null())
+            {
+                auto column_read = read["Column"];
+                auto conversion_read = read["Units"];
+                double conversion;
+                if (conversion_read.is_null())
+                    RHM_THROW(std::runtime_error, "UI error: Units must be provided for each \"DensityChemPotentialDerivatives\" entry.");
+                else if (conversion_read.is_number())
+                    conversion = conversion_read.get<double>();
+                else if (conversion_read.is_string())
+                {
+                    if (conversion_read == "Gev2")
+                    {
+                        conversion = 1.0;
+                    }
+                    else if (conversion_read == "Mev-1Fm-3")
+                    {
+                        conversion = constants::conversion::gev_over_mev / constants::conversion::fm3_gev3;
+                    }
+                    else
+                    {
+                        RHM_THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for an \"DensityChemPotentialDerivatives\" entry.");
+                    }
+                }
+                else
+                    RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for an \"DensityChemPotentialDerivatives\" entry.");
+                if (!column_read.is_number_integer())
+                    RHM_THROW(std::runtime_error, "UI error: Column number must be provided as an integer for an \"DensityChemPotentialDerivatives\" entry.");
+                entry.get() = [column_read, conversion](double nbar)
+                {
+                    return data_reader({nbar}, column_read) * conversion;
+                };
+            }
+            else
+                entry.get() = [](double)
+                {
+                    return 0.0;
+                };
+        }
+        auto roto_time_units = j["RHSolver"]["TimeUnits"];
+        double roto_time_conversion;
+        if (roto_time_units.is_null())
+            RHM_THROW(std::runtime_error, "UI error: Time units must be provided for rotochemical heating.");
+        else if (roto_time_units.is_number())
+            roto_time_conversion = roto_time_units.get<double>();
+        else if (roto_time_units.is_string())
+        {
+            if (roto_time_units == "Gev-1")
+            {
+                roto_time_conversion = 1.0;
+            }
+            else if (roto_time_units == "Yr")
+            {
+                roto_time_conversion = 1E-6 * constants::conversion::myr_over_s * constants::conversion::gev_s;
+            }
+            else if (roto_time_units == "S")
+            {
+                roto_time_conversion = constants::conversion::gev_s;
+            }
+            else if (roto_time_units == "Ms")
+            {
+                roto_time_conversion = 1E-3 * constants::conversion::gev_s;
+            }
+            else
+            {
+                RHM_THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for rotochemical heating time.");
+            }
+        }
+        else
+            RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for rotochemical heating time.");
+        // rotational 2 omega omega_dot dependency of time
+        auto roto_omega_sqr_dot_read = j["RHSolver"]["RotationalOmegaSquareDot"];
+        if (!roto_omega_sqr_dot_read.is_array())
+            RHM_THROW(std::runtime_error, "UI error: Rotational law and related settings must be provided as an array.");
+        else
+        {
+            auto roto_omega_sqr_dot_provided_as_read = roto_omega_sqr_dot_read[0];
+            if (roto_omega_sqr_dot_provided_as_read == "BeyondMagneticDipole")
+            {
+                auto braking_index_read = roto_omega_sqr_dot_read[1];
+                auto p0_read = roto_omega_sqr_dot_read[2],
+                     p0_dot_read = roto_omega_sqr_dot_read[3];
+                if (!(braking_index_read.is_number()))
+                    RHM_THROW(std::runtime_error, "UI error: Braking index for rotational law must be provided as a number.");
+                if (!(p0_read.is_number()))
+                    RHM_THROW(std::runtime_error, "UI error: Initial rotational period must be provided as a number.");
+                if (!(p0_dot_read.is_number()))
+                    RHM_THROW(std::runtime_error, "UI error: Initial rotational period derivative must be provided as a number.");
+
+                auto braking_index = braking_index_read.get<double>(),
+                     p0 = roto_time_conversion * p0_read.get<double>(),
+                     p0_dot = p0_dot_read.get<double>();
+
+                omega_sqr_dot = [braking_index, p0, p0_dot](double t)
+                {
+                    using constants::scientific::Pi;
+                    if (braking_index == 1)
+                    {
+                        return -8 * Pi * Pi * p0_dot / pow(p0, 3.0) * std::exp(-2 * p0_dot * t / p0);
+                    }
+                    return -8 * Pi * Pi * p0_dot / pow(p0, 3.0) * pow(1 + (braking_index - 1) * p0_dot * t / p0, (braking_index + 1) / (1 - braking_index));
+                };
+            }
+            else
+                RHM_THROW(std::runtime_error, "UI error: Rotational law and related settings must be provided in \"BeyondMagneticDipole\" mode.");
         }
     }
 }
