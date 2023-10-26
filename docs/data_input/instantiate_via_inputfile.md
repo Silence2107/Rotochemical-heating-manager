@@ -11,7 +11,7 @@ This approach, which must be prevailed unless you feel experienced and in need, 
 - Least flexible (only a fixed set of choices)
 - May not instantiate in the most efficient manner
 
-An example of such predefined instantiator is provided under <span style="color:blue">_presupplied/Instantiators/instantiator.hpp_</span>, and an example of inputfile lies under <span style="color:blue">_presupplied/Inputfile/RHMconfig.json_</span>.
+Such predefined instantiator is uniquely provided under <span style="color:blue">_include/instantiator.hpp_</span>, and an example of inputfile lies under <span style="color:blue">_presupplied/Inputfile/RHMconfig.json_</span>.
 
 The inputfile is formed in [JSON](https://github.com/nlohmann/json) format, namely it has nested dictionary structure. An entry in this dictionary is considered commented if there is a hash key in front of its name. Names follow camel-case convention, except for "EoS" abbreviation.
 
@@ -25,4 +25,4 @@ Using this method imposes several restrictions on your modelling. Some of the re
 
 See <span style="color:blue">_presupplied/EoS/APR_EOS_Acc_Fe_RHMstandard.dat_</span> for a reference.
 
-In what follows we discuss all the possible settings available in the predefined instantiator.
+In what follows we discuss all the possible settings available in the predefined instantiator. We mark recipients of each setting with <span style="color:red">red</span> color. If a given setting is not mandatory to set, it is explicitly marked as such.

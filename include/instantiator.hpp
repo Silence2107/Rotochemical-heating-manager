@@ -785,7 +785,7 @@ namespace instantiator
         // desirable relative accuracy of the cooling solvers per time step
         auto cooling_newton_step_eps_per_step_read = j["CoolingSolver"]["StepTolerance"];
         if (cooling_newton_step_eps_per_step_read.is_null())
-            cooling_newton_step_eps = 1E-5;
+            cooling_newton_step_eps = 0.05;
         else if (!(cooling_newton_step_eps_per_step_read.is_number()))
             RHM_THROW(std::runtime_error, "UI error: Cooling solver relative tolerance per step must be provided as a number.");
         else
