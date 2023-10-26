@@ -177,6 +177,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="data_input/inputfile_structure/eos_setup.html">EoSSetup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="data_input/inputfile_structure/tov_solver.html">TOVSolver</a></li>
 <li class="toctree-l2"><a class="reference internal" href="data_input/inputfile_structure/cooling_solver.html">CoolingSolver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data_input/inputfile_structure/rh_solver.html">RHSolver</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="data_input/instantiate_manually.html">Instantiate manually (advanced)</a></li>
@@ -386,19 +387,25 @@ document.write(`
 <li><p>constructing mass-radius diagram</p></li>
 <li><p>constructing surface temperature-time cooling curve</p>
 <ul>
-<li><p>Supports non-equilibrium cooling</p></li>
-<li><p>Supports equilibrium cooling</p></li>
+<li><p>Wide selection of neutrino-emitting processes</p></li>
+<li><p>Supports disequilibrium/equilibrium cooling</p></li>
+<li><p>Quark matter is seamlessly supported</p></li>
 </ul>
 </li>
-<li><p>constructing non-equilibrium temperature profiles (ROOT only)</p></li>
+<li><p>constructing non-equilibrium temperature profiles</p></li>
 <li><p>various easy-to-setup functionality (may or may not be implemented)</p>
 <ul>
 <li><p>Tabulate/plot any EoS function as a radial dependence</p></li>
 <li><p>Investigate sophisticated quantities based on these radial dependencies</p></li>
-<li><p>Compare against other simulators</p></li>
+<li><p>Compare against other simulator</p></li>
 </ul>
 </li>
-<li><p>Limited support for taking rotochemical heating effect into account (electron-related only yet)</p></li>
+<li><p>Extensive support for taking rotochemical heating effect into account</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">npemuds</span></code> matter is supported, allowed in various combinations</p></li>
+<li><p>Baryon and electric charge conservation is enforced</p></li>
+</ul>
+</li>
 </ul>
 <p>This webpage is dedicated to the documentation of RHM. The page is under construction and will evolve alongside with the development of RHM.</p>
 <div class="toctree-wrapper compound">

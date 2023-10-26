@@ -69,7 +69,7 @@ const thebe_selector_output = ".output, .cell_output"
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Bibliography" href="../appendix/bibliography.html" />
-    <link rel="prev" title="CoolingSolver" href="inputfile_structure/cooling_solver.html" />
+    <link rel="prev" title="RHSolver" href="inputfile_structure/rh_solver.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -180,6 +180,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l2"><a class="reference internal" href="inputfile_structure/eos_setup.html">EoSSetup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="inputfile_structure/tov_solver.html">TOVSolver</a></li>
 <li class="toctree-l2"><a class="reference internal" href="inputfile_structure/cooling_solver.html">CoolingSolver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inputfile_structure/rh_solver.html">RHSolver</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Instantiate manually (advanced)</a></li>
@@ -384,6 +385,7 @@ document.write(`
                   
   <section class="tex2jax_ignore mathjax_ignore" id="instantiate-manually-advanced">
 <h1>Instantiate manually (advanced)<a class="headerlink" href="#instantiate-manually-advanced" title="Permalink to this heading">#</a></h1>
+<p><span style="color:green"><em>This section is essentially useless unless you develop your own contribution to the code.</em></span></p>
 <p>Manual instantiating implies directly putting global data into an instantiator, without relying on the external inputfile. An example is given under <span style="color:blue"><em>presupplied/EoS/instantiator_apr4.hpp</em></span>.</p>
 <p><strong>Pros:</strong></p>
 <ul class="simple">
@@ -397,6 +399,16 @@ document.write(`
 <li><p>Requires knowledge regarding what variables are essential and how they must be supplied</p></li>
 <li><p>Requires language skills</p></li>
 </ul>
+<p>In case you for any reason prefer to store all the data purely within the instantiator, there is no requirement neither for inputfile nor for <code class="docutils literal notranslate"><span class="pre">instantiator::instantiate_system</span></code> implementation. Such a program may be built with</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span><span class="nv">app</span><span class="o">=</span>any/app/path<span class="w"> </span><span class="nv">RHM_REQUIRES_INPUTFILE</span><span class="o">=</span><span class="m">0</span>
+</pre></div>
+</div>
+<p>and then ran normally without <code class="docutils literal notranslate"><span class="pre">--inputfile</span></code> key.</p>
+<p>To get the best of both worlds, however, you may prefer to rely on manual instantiation only <em>partially</em>, still relying on inputfile with most variables, while some high-level ones are explicitly hard-coded within the instantiator.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We do not provide an explicit algorithm for manual instantiation as of now. This essentially dublicates the <a class="reference internal" href="instantiate_via_inputfile.html"><span class="doc std std-doc">Inputfile Structure</span></a> section in a less front-end way, so our best advice is to compare the inputfile entries with instantiator variables.</p>
+</div>
 </section>
 
     <script type="text/x-thebe-config">
@@ -430,12 +442,12 @@ document.write(`
                   <!-- Previous / next buttons -->
 <div class="prev-next-area">
     <a class="left-prev"
-       href="inputfile_structure/cooling_solver.html"
+       href="inputfile_structure/rh_solver.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">CoolingSolver</p>
+        <p class="prev-next-title">RHSolver</p>
       </div>
     </a>
     <a class="right-next"

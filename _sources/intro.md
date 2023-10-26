@@ -4,13 +4,16 @@ Rotochemical Heating Manager (RHM) is a simulation toolset for compact star matt
 
 - constructing mass-radius diagram
 - constructing surface temperature-time cooling curve
-    - Supports non-equilibrium cooling
-    - Supports equilibrium cooling
-- constructing non-equilibrium temperature profiles (ROOT only)
+    - Wide selection of neutrino-emitting processes
+    - Supports disequilibrium/equilibrium cooling
+    - Quark matter is seamlessly supported
+- constructing non-equilibrium temperature profiles
 - various easy-to-setup functionality (may or may not be implemented)
     - Tabulate/plot any EoS function as a radial dependence 
     - Investigate sophisticated quantities based on these radial dependencies 
-    - Compare against other simulators
-- Limited support for taking rotochemical heating effect into account (electron-related only yet)
+    - Compare against other simulator
+- Extensive support for taking rotochemical heating effect into account
+    - `npemuds` matter is supported, allowed in various combinations
+    - Baryon and electric charge conservation is enforced
 
 This webpage is dedicated to the documentation of RHM. The page is under construction and will evolve alongside with the development of RHM.

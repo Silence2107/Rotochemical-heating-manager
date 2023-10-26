@@ -384,19 +384,19 @@ document.write(`
                   
   <section class="tex2jax_ignore mathjax_ignore" id="root-support">
 <h1>ROOT support<a class="headerlink" href="#root-support" title="Permalink to this heading">#</a></h1>
-<p>There is a seamless integration of CERN ROOT libraries, used for graphics purposes only. Make automatically deduces, whether your system carries ROOT, and thereafter makes sure most programs will run regardless, though with different functionality.</p>
+<p>There is a seamless integration of <a class="reference external" href="https://root.cern/">CERN ROOT</a> libraries, used for graphics/I/O inessential purposes only. Make automatically deduces, whether your system carries ROOT, and thereafter makes sure most programs will run regardless, though with different functionality.</p>
 <p>For example, on a system with ROOT installed, cooling curve executable gives more extensive choice of console options:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="nb">bin</span><span class="o">/</span><span class="n">project</span><span class="o">/</span><span class="n">Cooling</span><span class="o">/</span><span class="n">cooling_curve</span><span class="o">.</span><span class="n">out</span> <span class="o">--</span><span class="n">help</span>
 <span class="n">usage</span><span class="p">:</span> <span class="n">cooling_curve</span> <span class="p">[</span><span class="n">OPTIONS</span><span class="p">]</span><span class="o">...</span>
 
-<span class="n">Evaluates</span> <span class="n">temperature</span><span class="o">-</span><span class="n">time</span> <span class="n">dependency</span> <span class="n">based</span> <span class="n">on</span> <span class="n">EoS</span>
+<span class="n">Evaluates</span> <span class="n">surface</span> <span class="n">temperature</span> <span class="n">time</span> <span class="n">dependency</span> <span class="n">based</span> <span class="n">on</span> <span class="n">EoS</span>
 
 <span class="n">keyword</span> <span class="n">arguments</span><span class="p">:</span>
   <span class="o">--</span><span class="n">help</span><span class="p">,</span> <span class="o">-</span><span class="n">h</span>            <span class="p">:</span> <span class="n">show</span> <span class="n">this</span> <span class="n">help</span>
-  <span class="o">--</span><span class="n">inputfile</span> <span class="n">VALUE</span>     <span class="p">:</span> <span class="n">json</span> <span class="nb">input</span> <span class="n">file</span> <span class="n">path</span> <span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+  <span class="o">--</span><span class="n">inputfile</span> <span class="n">VALUE</span>     <span class="p">:</span> <span class="n">json</span> <span class="nb">input</span> <span class="n">file</span> <span class="n">path</span> <span class="p">(</span><span class="n">required</span><span class="p">)</span>
   <span class="o">--</span><span class="n">pdf_path</span> <span class="n">VALUE</span>      <span class="p">:</span> <span class="n">pdf</span> <span class="n">output</span> <span class="n">file</span> <span class="n">path</span> <span class="p">(</span><span class="n">optional</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="n">Cooling</span><span class="o">.</span><span class="n">pdf</span><span class="p">)</span>
   <span class="o">--</span><span class="n">rootfile_path</span> <span class="n">VALUE</span> <span class="p">:</span> <span class="n">root</span> <span class="n">output</span> <span class="n">file</span> <span class="n">path</span> <span class="p">(</span><span class="n">optional</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
-  
+
 <span class="n">Argparse</span> <span class="n">powered</span> <span class="n">by</span> <span class="n">SiLeader</span>
 </pre></div>
 </div>
@@ -411,13 +411,22 @@ document.write(`
 <p><span class="caption-number">Fig. 1 </span><span class="caption-text">Cooling curve from RHM with presupplied settings. <span class="math notranslate nohighlight">\(2M_{\odot}\)</span>, APR4 EoS</span><a class="headerlink" href="#apr-example-cooling" title="Permalink to this image">#</a></p>
 </figcaption>
 </figure>
-<p>Some programs may not have ROOT-free executable available. For example, for the time being, <span style="color:blue"><em>project/Cooling/plot_nonequilibrium_time_profiles.cxx</em></span> only runs with ROOT, as its only purpose yet is to produce a meaningful profiles preview <a class="reference internal" href="#apr-example-profile"><span class="std std-numref">Fig. 2</span></a>.</p>
+<p>Another advantage is that ROOT allows for quick I/O with high-level graphic objects, like <code class="docutils literal notranslate"><span class="pre">TGraph</span></code>. If you provide <span style="color:blue"><em>project/Cooling/nonequilibrium_profiles.cxx</em></span> with <code class="docutils literal notranslate"><span class="pre">--rootfile_path</span></code> value, not only will it produce a preview <a class="reference internal" href="#apr-example-profile"><span class="std std-numref">Fig. 2</span></a>,</p>
 <figure class="align-default" id="apr-example-profile">
 <a class="reference internal image-reference" href="../_images/apr_example_profiles.jpg"><img alt="../_images/apr_example_profiles.jpg" src="../_images/apr_example_profiles.jpg" style="width: 354.59999999999997px; height: 240.0px;" /></a>
 <figcaption>
 <p><span class="caption-number">Fig. 2 </span><span class="caption-text">Cooling profile evolving with time from RHM with presupplied settings. <span class="math notranslate nohighlight">\(2M_{\odot}\)</span>, APR4 EoS</span><a class="headerlink" href="#apr-example-profile" title="Permalink to this image">#</a></p>
 </figcaption>
 </figure>
+<p>but this same preview will be saved to a ROOT file, which can be later opened and manipulated <a class="reference internal" href="#apr-example-rootfile"><span class="std std-numref">Fig. 3</span></a>.</p>
+<figure class="align-default" id="apr-example-rootfile">
+<a class="reference internal image-reference" href="../_images/apr_example_rootfile.jpg"><img alt="../_images/apr_example_rootfile.jpg" src="../_images/apr_example_rootfile.jpg" style="width: 415.5px; height: 199.5px;" /></a>
+<figcaption>
+<p><span class="caption-number">Fig. 3 </span><span class="caption-text">ROOT file preview for nonequilibrium profile with same settings.</span><a class="headerlink" href="#apr-example-rootfile" title="Permalink to this image">#</a></p>
+</figcaption>
+</figure>
+<p>Contents of ROOT files vary between programs and occasionally running options, but never exceed the maximum verbosity of the console output.</p>
+<p>Be advised that some programs may not have ROOT-free executable available, however we make sure that key functionality is there regardless. In case you attempt to compile such a program without ROOT, <code class="docutils literal notranslate"><span class="pre">make</span></code> will explicitly notify you about it.</p>
 </section>
 
     <script type="text/x-thebe-config">

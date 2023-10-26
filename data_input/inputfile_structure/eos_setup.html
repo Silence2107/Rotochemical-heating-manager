@@ -405,10 +405,10 @@ document.write(`
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;Datafile&quot;</span></code> <strong>:</strong> Contains all relevant knowledge regarding EoS datafile structure.</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Path&quot;</span></code> (string, required) <strong>:</strong> valid path to the EoS datafile.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Rows&quot;</span></code> (uint pair) <strong>:</strong> [first, last) row in the inputfile to consider (counting from 0th). Assumes whole file, if not specified. Last row may be specified as 0 to indicate the last row in the file.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Columns&quot;</span></code> (uint pair) <strong>:</strong> [first, last) row in the inputfile to consider (counting from 0th). Deduces from the first row, if not specified. Last column may be specified as 0 to indicate the last column in the file.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Interpolation&quot;</span></code> (string) <strong>:</strong> Interpolation kind to be used across all columns. Choose from [“Linear”, “Cubic”], with “Linear” being default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Path&quot;</span></code> (string, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> valid path to the EoS datafile.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Rows&quot;</span></code> (uint pair, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> [first, last) row in the inputfile to consider (counting from 0th). Assumes whole file, if not specified. Last row may be specified as 0 to indicate the last row in the file.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Columns&quot;</span></code> (uint pair, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> [first, last) row in the inputfile to consider (counting from 0th). Deduces from the first row, if not specified. Last column may be specified as 0 to indicate the last column in the file.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Interpolation&quot;</span></code> (string, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Interpolation kind to be used across all columns. Choose from [“Linear”, “Cubic”], with “Linear” being default.</p></li>
 </ul>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
@@ -419,49 +419,49 @@ document.write(`
 <p>Be advised that any uint entry (a.k.a. <code class="docutils literal notranslate"><span class="pre">size_t</span></code> in C++) will happily consume negative values(causing overflow), if supplied as such. Since it is usually not the intended behavior, though silently allowed, make sure you supply meaningful values. This applies to <strong>all uint entries</strong> in the inputfile, as well as within the instantiator.</p>
 </div>
 </li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Particles&quot;</span></code> (string array, required*) <strong>:</strong> Names for the particles, available in the EoS. Must strictly match with predefined list [“Neutron”, “Proton”, “Electron”, “Muon”, “Tau”, “Uquark”, “Dquark”, “Squark”]. If provided, the instantiator assumes user would like to invoke cooling functionality, hence it requires more provided variables to run.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Particles&quot;</span></code> (string array, [<span style="color:red">COOL, RH</span>]) <strong>:</strong> Names for the particles, available in the EoS. Must strictly match with predefined list [“Neutron”, “Proton”, “Electron”, “Muon”, “Tau”, “Uquark”, “Dquark”, “Squark”].</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;Quantities&quot;</span></code> <strong>:</strong> A linker between EoS columns and the way the supply data to RHM.</p>
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;BaryonicDensity&quot;</span></code> <strong>:</strong> total baryonic density at the point.</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Units&quot;</span></code> (string/double, required) <strong>:</strong> Conversion factor to natural units (GeV powers). It must either be supplied as a choice from [“Gev3”, “Fm-3”], or as an actual multiplier.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Units&quot;</span></code> (string/double, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Conversion factor to natural units (GeV powers). It must either be supplied as a choice from [“Gev3”, “Fm-3”], or as an actual multiplier.</p></li>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Example : if your units are <span class="math notranslate nohighlight">\(m^{-3}\)</span>, the factor must be set to <span class="math notranslate nohighlight">\(\frac{1}{\text{m}^3\cdot \text{GeV}^3} \approx 7.72\text{E-}48\)</span>, since <span class="math notranslate nohighlight">\(n_b[\text{GeV}^3] = \dfrac{n_b[\text{m}^{-3}] \cdot \text{m}^{-3}}{\text{GeV}^3} = n_b[\text{m}^{-3}] \cdot \frac{1}{\text{m}^3\cdot \text{GeV}^3}\)</span></p>
 </div>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint, required) <strong>:</strong> Column number with baryonic density, counting from 0th.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Low&quot;</span></code> (double, required) <strong>:</strong> Smallest accessible <span class="math notranslate nohighlight">\(n_b\)</span> within the datafile.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Upp&quot;</span></code> (double, required) <strong>:</strong> Biggest accessible <span class="math notranslate nohighlight">\(n_b\)</span> within the datafile.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;CoreLimit&quot;</span></code> (double, required) <strong>:</strong> First <span class="math notranslate nohighlight">\(n_b\)</span> upon entering core.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;CrustLimit&quot;</span></code> (double) <strong>:</strong> Last <span class="math notranslate nohighlight">\(n_b\)</span> upon leaving crust. If not supplied, “CoreLimit” value is substituted.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Column number with baryonic density, counting from 0th.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Low&quot;</span></code> (double, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Smallest accessible <span class="math notranslate nohighlight">\(n_b\)</span> within the datafile.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Upp&quot;</span></code> (double, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Biggest accessible <span class="math notranslate nohighlight">\(n_b\)</span> within the datafile.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;CoreLimit&quot;</span></code> (double, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> First <span class="math notranslate nohighlight">\(n_b\)</span> upon entering core.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;CrustLimit&quot;</span></code> (double, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Last <span class="math notranslate nohighlight">\(n_b\)</span> upon leaving crust. If not supplied, “CoreLimit” value is substituted.</p></li>
 </ul>
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;EnergyDensity&quot;</span></code> <strong>:</strong> Total energy density at the point.</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Units&quot;</span></code> (string/double, required) <strong>:</strong> Conversion factor to natural units (GeV powers). Choose from [“Gev4”, “MevFm-3”, “GCm-3”], or specify an actual multiplier.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint, required) <strong>:</strong> Column number with energy density, counting from 0th.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Low&quot;</span></code> (double/string) <strong>:</strong> Smallest accessible <span class="math notranslate nohighlight">\(\rho_E\)</span> within the datafile. Deduced automatically if specified as “Deduce” or if left blank.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Upp&quot;</span></code> (double/string) <strong>:</strong> Biggest accessible <span class="math notranslate nohighlight">\(\rho_E\)</span> within the datafile. Deduced automatically if specified as “Deduce” or if left blank.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;CoreLimit&quot;</span></code> (double/string) <strong>:</strong> First <span class="math notranslate nohighlight">\(\rho_E\)</span> upon entering core. Deduced automatically if specified as “Deduce” or if left blank.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Units&quot;</span></code> (string/double, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Conversion factor to natural units (GeV powers). Choose from [“Gev4”, “MevFm-3”, “GCm-3”], or specify an actual multiplier.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Column number with energy density, counting from 0th.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Low&quot;</span></code> (double/string, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Smallest accessible <span class="math notranslate nohighlight">\(\rho_E\)</span> within the datafile. Deduced automatically if specified as “Deduce” or if left blank.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Upp&quot;</span></code> (double/string, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Biggest accessible <span class="math notranslate nohighlight">\(\rho_E\)</span> within the datafile. Deduced automatically if specified as “Deduce” or if left blank.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;CoreLimit&quot;</span></code> (double/string, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> First <span class="math notranslate nohighlight">\(\rho_E\)</span> upon entering core. Deduced automatically if specified as “Deduce” or if left blank.</p></li>
 </ul>
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;Pressure&quot;</span></code> <strong>:</strong> Total pressure at the point.</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Units&quot;</span></code> (string/double, required) <strong>:</strong> Conversion factor to natural units (GeV powers). Choose from [“Gev4”, “MevFm-3”, “DyneCm-2”], or specify an actual multiplier.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint, required) <strong>:</strong> Column number with pressure, counting from 0th.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Low&quot;</span></code> (double/string) <strong>:</strong> Smallest accessible <span class="math notranslate nohighlight">\(P\)</span> within the datafile. Deduced automatically if specified as “Deduce” or if left blank.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Upp&quot;</span></code> (double/string) <strong>:</strong> Biggest accessible <span class="math notranslate nohighlight">\(P\)</span> within the datafile. Deduced automatically if specified as “Deduce” or if left blank.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Units&quot;</span></code> (string/double, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Conversion factor to natural units (GeV powers). Choose from [“Gev4”, “MevFm-3”, “DyneCm-2”], or specify an actual multiplier.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Column number with pressure, counting from 0th.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Low&quot;</span></code> (double/string, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Smallest accessible <span class="math notranslate nohighlight">\(P\)</span> within the datafile. Deduced automatically if specified as “Deduce” or if left blank.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Upp&quot;</span></code> (double/string, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Biggest accessible <span class="math notranslate nohighlight">\(P\)</span> within the datafile. Deduced automatically if specified as “Deduce” or if left blank.</p></li>
 </ul>
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;NumberDensities&quot;</span></code> <strong>:</strong> Number densities per each particle at the point.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;$PARTICLE_NAME&quot;</span></code> <strong>:</strong> Properties, related to a specific particle. <strong>Substitute</strong> the entry name with actual species among provided in “Particles” array one by one.</p>
 <ul>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint, required*) <strong>:</strong> Column number with number density for given particle, counting from 0th.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;ProvidedAs</span></code> (string) <strong>:</strong> The way the number density is provided. Choose from [“Density”, “DensityFraction”, “KFermi”]. “Density” mode expects actual number density, “DensityFraction” mode expects ratio of the number density to the total baryonic density, “KFermi” mode expects Fermi momentum of the particle. Defaults to “Density”.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Units&quot;</span></code> (string/double) <strong>:</strong> Conversion factor to natural units (GeV powers). Choose from [“Gev3”, “Fm-3”, “DimLess”, “Gev”, “Fm-1”], or specify an actual multiplier. Defaults to the “Units” entry of “BaryonicDensity”.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint, [<span style="color:red">COOL, RH</span>]) <strong>:</strong> Column number with number density for given particle, counting from 0th.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;ProvidedAs</span></code> (string, [<span style="color:red">COOL, RH</span>]) <strong>:</strong> The way the number density is provided. Choose from [“Density”, “DensityFraction”, “KFermi”]. “Density” mode expects actual number density, “DensityFraction” mode expects ratio of the number density to the total baryonic density, “KFermi” mode expects Fermi momentum of the particle. Defaults to “Density”.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Units&quot;</span></code> (string/double, [<span style="color:red">COOL, RH</span>]) <strong>:</strong> Conversion factor to natural units (GeV powers). Choose from [“Gev3”, “Fm-3”, “DimLess”, “Gev”, “Fm-1”], or specify an actual multiplier. Defaults to the “Units” entry of “BaryonicDensity”.</p></li>
 </ul>
 </li>
 </ul>
@@ -474,17 +474,17 @@ document.write(`
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;$PARTICLE_NAME&quot;</span></code> <strong>:</strong> Properties, related to a specific particle. <strong>Substitute</strong> the entry name with actual (fermion) species among provided in “Particles” array one by one.</p>
 <ul>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint) <strong>:</strong> Column number with effective mass for given particle, counting from 0th.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;ProvidedAs&quot;</span></code> (string, required*) <strong>:</strong> The way the effective mass is provided. Choose from [“FermiEnergy”, “EffectiveMass”]. “FermiEnergy” mode incurs the effective mass via relativistic formula with Fermi momentum (occasionally applicable for light particles) and “EffectiveMass” mode expects actual effective mass. If “FermiEnergy” mode is chosen, the “Column” and “Units” entries are ignored.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Units&quot;</span></code> (string/double, required*) <strong>:</strong> Conversion factor to natural units (GeV powers). Choose from [“Gev”, “MeV”, “NucleonMass”], or specify an actual multiplier. If “FermiEnergy” mode is chosen, “Units” are disregarded.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint, [<span style="color:red">COOL, RH</span>]) <strong>:</strong> Column number with effective mass for given particle, counting from 0th.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;ProvidedAs&quot;</span></code> (string, [<span style="color:red">COOL, RH</span>]) <strong>:</strong> The way the effective mass is provided. Choose from [“FermiEnergy”, “EffectiveMass”]. “FermiEnergy” mode incurs the effective mass via relativistic formula with Fermi momentum (occasionally applicable for light particles) and “EffectiveMass” mode expects actual effective mass. If “FermiEnergy” mode is chosen, the “Column” and “Units” entries are ignored.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Units&quot;</span></code> (string/double, [<span style="color:red">COOL, RH</span>]) <strong>:</strong> Conversion factor to natural units (GeV powers). Choose from [“Gev”, “MeV”, “NucleonMass”], or specify an actual multiplier. If “FermiEnergy” mode is chosen, “Units” are disregarded.</p></li>
 </ul>
 </li>
 </ul>
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;IonVolumeFraction&quot;</span></code> : Ion volume fraction in the crust at the point. Affects neutrino bremsstrahlung in the crust.</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint) <strong>:</strong> Column number with ion volume fraction, counting from 0th.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;ProvidedAs&quot;</span></code> (string, required*) <strong>:</strong> The way the ion volume fraction is provided. Choose from [“IonVolumeFraction”, “Absent”, “ExcludedVolume”]. “IonVolumeFraction” mode expects actual ion volume fraction, “Absent” mode renders the ratio zero and “ExcludedVolume” mode performs calculation in the crust
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint, [<span style="color:red">COOL, RH</span>]) <strong>:</strong> Column number with ion volume fraction, counting from 0th.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;ProvidedAs&quot;</span></code> (string, [<span style="color:red">COOL, RH</span>]) <strong>:</strong> The way the ion volume fraction is provided. Choose from [“IonVolumeFraction”, “Absent”, “ExcludedVolume”]. “IonVolumeFraction” mode expects actual ion volume fraction, “Absent” mode renders the ratio zero and “ExcludedVolume” mode performs calculation in the crust
 <span class="math notranslate nohighlight">\(\eta = \text{min}\left[\dfrac{4}{3}\pi (1.1 \text{fm})^3 \dfrac{\rho_E}{m_{\text{nucleon}}}, 1.0\right]\)</span>. Defaults to “Absent”. “Column” entry is only used in “IonVolumeFraction” mode.</p></li>
 </ul>
 <div class="admonition note">
@@ -496,24 +496,42 @@ document.write(`
 <p>This quantity could use some citation and explanation.</p>
 </div>
 </li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;QuarkSuperconductingGap&quot;</span></code> : Superconductive gap for quarks at the point. Noticeably affects all quark cooling channels as <span class="math notranslate nohighlight">\(\sim \exp{\left[-\frac{\Delta}{T}\right]}\)</span>, with <span class="math notranslate nohighlight">\(\Delta\)</span> being the gap and <span class="math notranslate nohighlight">\(T\)</span> being local temperature.</p>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;QuarkSuperconductingGap&quot;</span></code> : Superconductive gap for quarks at the point. Noticeably affects all quark cooling channels as <span class="math notranslate nohighlight">\(\sim \exp{\left[-\frac{\Delta}{T}\right]}\)</span>, with <span class="math notranslate nohighlight">\(\Delta\)</span> being the gap and <span class="math notranslate nohighlight">\(T\)</span> being local temperature. Assumed to be zero, if not specified.</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint) <strong>:</strong> Column number with quark superconducting gap, counting from 0th. If not specified, the gap is assumed to be absent for all quarks.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Units&quot;</span></code> (string/double) <strong>:</strong> Conversion factor to natural units (GeV powers). Choose from [“Gev”, “MeV”, “Fm-1”], or specify an actual multiplier.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint, [<span style="color:red">COOL, RH</span>]) <strong>:</strong> Column number with quark superconducting gap, counting from 0th. If not specified, the gap is assumed to be absent for all quarks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Units&quot;</span></code> (string/double, [<span style="color:red">COOL, RH</span>]) <strong>:</strong> Conversion factor to natural units (GeV powers). Choose from [“Gev”, “MeV”, “Fm-1”], or specify an actual multiplier.</p></li>
 </ul>
 <div class="admonition-devnote admonition">
 <p class="admonition-title">devnote</p>
 <p>This quantity could use some variety in provision modes.</p>
 </div>
 </li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;DensityChemPotentialDerivatives&quot;</span></code> : <span class="math notranslate nohighlight">\(b_{ij} = \frac{\partial n_i}{\partial \mu_j}\Bigg{|}_{\mu_{\ne j}}\)</span> matrix, necessary for rotochemical heating simulation <span id="id1">[<a class="reference internal" href="../../appendix/bibliography.html#id6" title="Rodrigo Fernandez and Andreas Reisenegger. Rotochemical heating in millisecond pulsars. Formalism and non-superfluid case. Astrophys. J., 625:291–306, 2005. arXiv:astro-ph/0502116, doi:10.1086/429551.">FR05</a>]</span>.</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;$PARTICLE_NAME_1&quot;</span></code> <strong>:</strong> Column particle.  <strong>Substitute</strong> the entry name with actual species.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;$PARTICLE_NAME_2&quot;</span></code> <strong>:</strong> Row particle.  <strong>Substitute</strong> the entry name with actual species. In total, you may supply <span class="math notranslate nohighlight">\(b_{ee}, b_{e\mu}, b_{\mu\mu}, b_{uu}, b_{us}, b_{ss}\)</span>, while unsupplemented quantities are assumed zero.</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Column&quot;</span></code> (uint, [<span style="color:red">RH</span>]) <strong>:</strong> Column number with <span class="math notranslate nohighlight">\(b_{ij}\)</span>. If not specified, the derivative is assumed to be absent for all particles.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Units&quot;</span></code> (string/double, [<span style="color:red">RH</span>]) <strong>:</strong> Conversion factor to natural units (GeV powers). Choose from [“Gev2”, “Mev-1Fm-3”], or specify an actual multiplier.</p></li>
+</ul>
+</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The matrix is presumed to be symmetric, so please refrain from supplying both <span class="math notranslate nohighlight">\(b_{ij}\)</span> and <span class="math notranslate nohighlight">\(b_{ji}\)</span>, as one of them will be ignored.</p>
+</div>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;Misc&quot;</span></code> : Miscellaneous EoS settings, unfit under entries above.</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;CrustalEta&quot;</span></code> (double, required*) <strong>:</strong> Light element share in the atmosphere <span id="id1">[<a class="reference internal" href="../../appendix/bibliography.html#id3" title="A. Y. Potekhin, G. Chabrier, and D. G. Yakovlev. Internal temperatures and cooling of neutron stars with accreted envelopes. 1997. arXiv:astro-ph/9706148.">PCY97</a>]</span>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;ProtonSuperfluidity1S0&quot;</span></code> (string) <strong>:</strong> Critical temperature model for protons in 1S0 superfluid state. Choose from [“AO”, “CCDK”, “A”, “B”, “C”, “A2”, “HadronToQGP”], with normal fluidity being default.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;NeutronSuperfluidity1S0&quot;</span></code> (string) <strong>:</strong> Critical temperature model for neutrons in 1S0 superfluid state. Choose from [“AO”, “CCDK”, “A”, “B”, “C”, “A2”, “HadronToQGP”], with normal fluidity being default.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;NeutronSuperfluidity3P2&quot;</span></code> (string) <strong>:</strong> Critical temperature model for neutrons in 3P2 superfluid state. Choose from [“AO”, “CCDK”, “A”, “B”, “C”, “A2”, “HadronToQGP”], with normal fluidity being default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;CrustalEta&quot;</span></code> (double, [<span style="color:red">COOL, RH</span>]) <strong>:</strong> Light element share in the atmosphere <span id="id2">[<a class="reference internal" href="../../appendix/bibliography.html#id3" title="A. Y. Potekhin, G. Chabrier, and D. G. Yakovlev. Internal temperatures and cooling of neutron stars with accreted envelopes. 1997. arXiv:astro-ph/9706148.">PCY97</a>]</span>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;ProtonSuperfluidity1S0&quot;</span></code> (string, [<span style="color:red">COOL, RH</span>]) <strong>:</strong> Critical temperature model for protons in 1S0 superfluid state. Choose from [“AO”, “CCDK”, “A”, “B”, “C”, “A2”, “HadronToQGP”], with normal fluidity being default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;NeutronSuperfluidity1S0&quot;</span></code> (string, [<span style="color:red">COOL, RH</span>]) <strong>:</strong> Critical temperature model for neutrons in 1S0 superfluid state. Choose from [“AO”, “CCDK”, “A”, “B”, “C”, “A2”, “HadronToQGP”], with normal fluidity being default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;NeutronSuperfluidity3P2&quot;</span></code> (string, [<span style="color:red">COOL, RH</span>]) <strong>:</strong> Critical temperature model for neutrons in 3P2 superfluid state. Choose from [“AO”, “CCDK”, “A”, “B”, “C”, “A2”, “HadronToQGP”], with normal fluidity being default.</p></li>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>

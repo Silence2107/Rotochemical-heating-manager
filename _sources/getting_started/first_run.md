@@ -22,7 +22,7 @@ bin/project/M-R_diagram/m_r_diagram.out --help
 
 `--help` invokes manual message for all standardized RHM programs.
 
-To finally see whether physics is in order on your machine, this binary (at least the way it is provided) must be supplied with inputfile. Let's run it by providing the one under <span style="color:blue">_presupplied/Inputfile/RHMconfig.json_</span>:
+To finally see whether physics is in order on your machine, this binary (most of the time) must be supplemented with inputfile. Let's run it by providing the one under <span style="color:blue">_presupplied/Inputfile/RHMconfig.json_</span>:
 
 ```bash
 bin/project/M-R_diagram/m_r_diagram.out --inputfile presupplied/Inputfile/RHMconfig.json

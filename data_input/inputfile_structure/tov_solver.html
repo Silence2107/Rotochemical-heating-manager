@@ -399,33 +399,34 @@ document.write(`
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading">#</a></h2>
 <p>This entry contains all relevant information regarding Tolman-Oppenheimer-Volkov (TOV, <span id="id1">[<a class="reference internal" href="../../appendix/bibliography.html#id4" title="Richard C. Tolman. Static solutions of einstein's field equations for spheres of fluid. Phys. Rev., 55:364–373, Feb 1939. URL: https://link.aps.org/doi/10.1103/PhysRev.55.364, doi:10.1103/PhysRev.55.364.">Tol39</a>]</span>) system of PDEs. In particular, one specifies here radius discretization, central energy density for IVP, <span class="math notranslate nohighlight">\(P(\rho)\)</span> EoS function discretization etc.
 In what follows we discuss all the possible settings under this entry.</p>
+<p>This section is essential for any simulation and is therefore mandatory to include.</p>
 <p>In order to refer to an example, see <span style="color:blue"><em>presupplied/Inputfile/RHMconfig.json</em></span> and <span style="color:blue"><em>presupplied/EoS/APR_EOS_Acc_Fe_RHMstandard.dat</em></span>.</p>
 </section>
 <section id="description">
 <h2>Description<a class="headerlink" href="#description" title="Permalink to this heading">#</a></h2>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;EoSDiscretization&quot;</span></code> (uint) <strong>:</strong> Defines discretization step for <span class="math notranslate nohighlight">\(P(\rho)\)</span> dependence. Defaults to 1000.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;AdaptionLimit&quot;</span></code> (uint) <strong>:</strong> Defines how many times TOV solver will try to adapt the radial step before concluding early termination. Defaults to 20.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;EoSDiscretization&quot;</span></code> (uint, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Defines discretization step for <span class="math notranslate nohighlight">\(P(\rho)\)</span> dependence. Defaults to 1000.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;AdaptionLimit&quot;</span></code> (uint, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Defines how many times TOV solver will try to adapt the radial step before concluding early termination. Defaults to 20.</p></li>
 </ul>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>Early termination happens silently and is only well noticeable if the final star’s radius is very low.</p>
 </div>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;EoSInterpolation</span></code> (string) <strong>:</strong> Interpolation kind to be used for discretized <span class="math notranslate nohighlight">\(P(\rho)\)</span> dependence. Choose from [“Linear”, “Cubic”], with “Linear” being default.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;BarionicDensityInterpolation&quot;</span></code> (string) <strong>:</strong> Interpolation kind to be used for discretized <span class="math notranslate nohighlight">\(n_b(r)\)</span> dependence. Choose from [“Linear”, “Cubic”], with “Linear” being default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;EoSInterpolation</span></code> (string, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Interpolation kind to be used for discretized <span class="math notranslate nohighlight">\(P(\rho)\)</span> dependence. Choose from [“Linear”, “Cubic”], with “Linear” being default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;BarionicDensityInterpolation&quot;</span></code> (string, [<span style="color:red">COOL, RH</span>]) <strong>:</strong> Interpolation kind to be used for discretized <span class="math notranslate nohighlight">\(n_b(r)\)</span> dependence. Choose from [“Linear”, “Cubic”], with “Linear” being default.</p></li>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This setting is not used by TOV solver itself (rather for cooling functionality), but since it originates from TOV solver, it is placed here. Something to consider moving.</p>
 </div>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;LengthUnits&quot;</span></code> (string/double, required) <strong>:</strong> Conversion factor from length to natural units (GeV powers). It must either be supplied as a choice from [“Gev-1”, “Km”, “M”, “Cm”], or as an actual multiplier. Used for “RadiusStep”</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;RadiusStep&quot;</span></code> (double, required) <strong>:</strong> Defines radius discretization step. Units are defined by “LengthUnits” entry.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;LengthUnits&quot;</span></code> (string/double, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Conversion factor from length to natural units (GeV powers). It must either be supplied as a choice from [“Gev-1”, “Km”, “M”, “Cm”], or as an actual multiplier. Used for “RadiusStep”</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;RadiusStep&quot;</span></code> (double, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Defines radius discretization step. Units are defined by “LengthUnits” entry.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;CenterDensity&quot;</span></code> <strong>:</strong> Defines central energy density for initial value problem.</p>
 <ul>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;ProvidedAs&quot;</span></code> (string, required) <strong>:</strong> The way the “CenterDensity” is provided. Choose from [“Same”, “LinspacedMinToMax”]. “LinspacedMinToMax” linearly maps <span class="math notranslate nohighlight">\([0,1] \rightarrow [\rho_{min}, \rho_{max}]\)</span>, while “Same” assumes same units as for “EnergyDensity”.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Value&quot;</span></code> (double, required) <strong>:</strong> Value of central energy density. Interpretation depends on “ProvidedAs” entry.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;ProvidedAs&quot;</span></code> (string, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> The way the “CenterDensity” is provided. Choose from [“Same”, “LinspacedMinToMax”]. “LinspacedMinToMax” linearly maps <span class="math notranslate nohighlight">\([0,1] \rightarrow [\rho_{min}, \rho_{max}]\)</span>, while “Same” assumes same units as for “EnergyDensity”.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Value&quot;</span></code> (double, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Value of central energy density. Interpretation depends on “ProvidedAs” entry.</p></li>
 </ul>
 </li>
 </ul>
@@ -436,8 +437,8 @@ In what follows we discuss all the possible settings under this entry.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;SurfacePressure&quot;</span></code> <strong>:</strong> Defines surface pressure as an ultimate exit condition for TOV.</p>
 <ul>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;ProvidedAs&quot;</span></code> (string, required) <strong>:</strong> The way the “SurfacePressure” is provided. Choose from [“Same”, “LinspacedMinToMax”]. “LinspacedMinToMax” linearly maps <span class="math notranslate nohighlight">\([0,1] \rightarrow [P_{min}, P_{max}]\)</span>, while “Same” assumes same units as for “Pressure”.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Value&quot;</span></code> (double, required) <strong>:</strong> Value of surface pressure. Interpretation depends on “ProvidedAs” entry.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;ProvidedAs&quot;</span></code> (string, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> The way the “SurfacePressure” is provided. Choose from [“Same”, “LinspacedMinToMax”]. “LinspacedMinToMax” linearly maps <span class="math notranslate nohighlight">\([0,1] \rightarrow [P_{min}, P_{max}]\)</span>, while “Same” assumes same units as for “Pressure”.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Value&quot;</span></code> (double, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Value of surface pressure. Interpretation depends on “ProvidedAs” entry.</p></li>
 </ul>
 </li>
 </ul>
