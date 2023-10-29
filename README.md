@@ -8,7 +8,7 @@ Toolset for simulating compact star matter with provided nuclear equations of st
 
 ## License
 
-RHM is under construction and, until release, is **read-only**.
+RHM is under construction and, until release, is **read-only**, unless given explicit permission.
 
 ## Getting started
 
