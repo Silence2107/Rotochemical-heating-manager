@@ -420,7 +420,13 @@ document.write(`
 <p>Be advised that any uint entry (a.k.a. <code class="docutils literal notranslate"><span class="pre">size_t</span></code> in C++) will happily consume negative values(causing overflow), if supplied as such. Since it is usually not the intended behavior, though silently allowed, make sure you supply meaningful values. This applies to <strong>all uint entries</strong> in the inputfile, as well as within the instantiator.</p>
 </div>
 </li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Particles&quot;</span></code> (string array, [<span style="color:red">COOL, RH</span>]) <strong>:</strong> Names for the particles, available in the EoS. Must strictly match with predefined list [“Neutron”, “Proton”, “Electron”, “Muon”, “Tau”, “Uquark”, “Dquark”, “Squark”].</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Particles&quot;</span></code> (string array, [<span style="color:red">COOL, RH</span>]) <strong>:</strong> Names for the particles, available in the EoS. Must strictly <strong>and uniquely</strong> match with predefined list [“Neutron”, “Proton”, “Electron”, “Muon”, “Tau”, “Uquark”, “Dquark”, “Squark”].</p></li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Be adviced that for each particle there is an expected mandatory list of properties (see below), so refrain from adding particles, which are not present in the EoS.</p>
+</div>
+<ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;Quantities&quot;</span></code> <strong>:</strong> A linker between EoS columns and the way the supply data to RHM.</p>
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;BaryonicDensity&quot;</span></code> <strong>:</strong> total baryonic density at the point.</p>

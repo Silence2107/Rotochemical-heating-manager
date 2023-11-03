@@ -19,7 +19,10 @@ In order to refer to an example, see <span style="color:blue">_presupplied/Input
     ```{warning}
     Be advised that any uint entry (a.k.a. `size_t` in C++) will happily consume negative values(causing overflow), if supplied as such. Since it is usually not the intended behavior, though silently allowed, make sure you supply meaningful values. This applies to **all uint entries** in the inputfile, as well as within the instantiator.
     ```
-- `"Particles"` (string array, [<span style="color:red">COOL, RH</span>]) **:** Names for the particles, available in the EoS. Must strictly match with predefined list ["Neutron", "Proton", "Electron", "Muon", "Tau", "Uquark", "Dquark", "Squark"].
+- `"Particles"` (string array, [<span style="color:red">COOL, RH</span>]) **:** Names for the particles, available in the EoS. Must strictly **and uniquely** match with predefined list ["Neutron", "Proton", "Electron", "Muon", "Tau", "Uquark", "Dquark", "Squark"].
+```{warning}
+Be adviced that for each particle there is an expected mandatory list of properties (see below), so refrain from adding particles, which are not present in the EoS.
+```
 - `"Quantities"` **:** A linker between EoS columns and the way the supply data to RHM.
     - `"BaryonicDensity"` **:** total baryonic density at the point.
         - `"Units"` (string/double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Conversion factor to natural units (GeV powers). It must either be supplied as a choice from ["Gev3", "Fm-3"], or as an actual multiplier.
