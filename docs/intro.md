@@ -13,7 +13,7 @@ Rotochemical Heating Manager (RHM) is a simulation toolset for compact star matt
     - Investigate sophisticated quantities based on these radial dependencies 
     - Compare against other simulator
 - Extensive support for taking rotochemical heating effect into account
-    - `npemuds` matter is supported, allowed in various combinations
+    - {math}`npe\mu uds` matter is supported, allowed in various combinations
     - Baryon and electric charge conservation is enforced
 
 This webpage is dedicated to the documentation of RHM. The page is under construction and will evolve alongside with the development of RHM.
