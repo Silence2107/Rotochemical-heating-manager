@@ -34,7 +34,7 @@ int main(int argc, char **argv)
     parser.addArgument({"--inputfile"}, "json input file path (required)");
 #endif
 #if RHM_HAS_ROOT
-    parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: Cooling.pdf)");
+    parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: Cooling-with-RH.pdf)");
     parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
 #endif
     parser.addArgument({"--save_chemical_imbalances"}, "print & write chemical imbalances (optional, value-free, default: false)", argparse::ArgumentType::StoreTrue);
@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 #endif
 
 #if RHM_HAS_ROOT
-    std::string pdf_path = args.safeGet<std::string>("pdf_path", "Cooling.pdf");
+    std::string pdf_path = args.safeGet<std::string>("pdf_path", "Cooling-with-RH.pdf");
     TFile *rootfile = nullptr;
     if (args.has("rootfile_path"))
         rootfile = new TFile(args.get<std::string>("rootfile_path").c_str(), "RECREATE");
