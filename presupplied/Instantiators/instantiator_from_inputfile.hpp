@@ -62,16 +62,12 @@ namespace instantiator
     // (2) TOV solver setup
 
     // Cached EoS interpolator. Only use it if you want to erase cache
-    auto eos_interpolator_cached = auxiliaries::math::CachedFunc<std::function<double(double)>,
-                                                                 double, const std::vector<double> &, const std::vector<double> &,
-                                                                 auxiliaries::math::InterpolationMode, double, bool, bool>(auxiliaries::math::interpolate_cached);
+    auto eos_interpolator_cached = auxiliaries::math::CachedInterpolatorWrap(auxiliaries::math::interpolate_cached);
     // Interpolator used for EoS P(rho)
     std::function<double(const std::vector<double> &, const std::vector<double> &, double)> eos_interpolator;
 
     // nbar(r) cached interpolator. Only use it if you want to erase cache
-    auto nbar_interpolator_cached = auxiliaries::math::CachedFunc<std::function<double(double)>,
-                                                                  double, const std::vector<double> &, const std::vector<double> &,
-                                                                  auxiliaries::math::InterpolationMode, double, bool, bool>(auxiliaries::math::interpolate_cached);
+    auto nbar_interpolator_cached = auxiliaries::math::CachedInterpolatorWrap(auxiliaries::math::interpolate_cached);
     // Interpolator used for nbar(r)
     std::function<double(const std::vector<double> &, const std::vector<double> &, double)> nbar_interpolator;
 
@@ -238,23 +234,16 @@ namespace instantiator
         static auto table = auxiliaries::io::read_tabulated_file(eos_datafile, eos_datafile_cols, eos_datafile_rows);
 
         // data_reader takes input vector and outputs vector of outputs from EoS datafile
-        static auto data_reader = auxiliaries::math::CachedFunc<std::vector<auxiliaries::math::CachedFunc<std::function<double(double)>,
-                                                                                                          double, const std::vector<double> &, const std::vector<double> &,
-                                                                                                          auxiliaries::math::InterpolationMode, double, bool, bool>>,
+        static auto data_reader = auxiliaries::math::CachedFunc<std::vector<auxiliaries::math::CachedInterpolatorWrap>,
                                                                 double, const std::vector<double> &, size_t>(
-            [nbar_index, eos_datafile_interp_mode](std::vector<auxiliaries::math::CachedFunc<std::function<double(double)>,
-                                                                                             double, const std::vector<double> &, const std::vector<double> &,
-                                                                                             auxiliaries::math::InterpolationMode, double, bool, bool>> &cache,
-                                                   const std::vector<double> &input, size_t index)
+            [nbar_index, eos_datafile_interp_mode](std::vector<auxiliaries::math::CachedInterpolatorWrap> &cache, const std::vector<double> &input, size_t index)
             {
                 if (cache.empty())
                 {
                     // fill cache with cached interpolation functions for each column
                     for (size_t i = 0; i < table.size(); ++i)
                     {
-                        auto interpolator_cached = auxiliaries::math::CachedFunc<std::function<double(double)>,
-                                                                                 double, const std::vector<double> &, const std::vector<double> &,
-                                                                                 auxiliaries::math::InterpolationMode, double, bool, bool>(auxiliaries::math::interpolate_cached);
+                        auto interpolator_cached = auxiliaries::math::CachedInterpolatorWrap(auxiliaries::math::interpolate_cached);
                         cache.push_back(interpolator_cached);
                     }
                 }
@@ -268,8 +257,7 @@ namespace instantiator
                 catch (std::exception &e)
                 {
                     RHM_THROW(std::runtime_error, "Bad EoS request. " + e.what());
-                }
-            });
+                } });
 
         // energy density function of baryonic density (natural units)
         auto energy_density_index = j["EoSSetup"]["Quantities"]["EnergyDensity"]["Column"];

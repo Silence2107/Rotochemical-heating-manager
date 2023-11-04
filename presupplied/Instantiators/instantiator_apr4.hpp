@@ -27,13 +27,9 @@ namespace instantiator
     auto table = auxiliaries::io::read_tabulated_file("presupplied/EoS/APR_EOS_Acc_Fe_RHMstandard.dat", {0, 0}, {7, 237});
 
     // data_reader takes input vector and outputs vector of outputs from EoS datafile
-    auto data_reader = auxiliaries::math::CachedFunc<std::vector<auxiliaries::math::CachedFunc<std::function<double(double)>,
-                                                                                               double, const std::vector<double> &, const std::vector<double> &,
-                                                                                               auxiliaries::math::InterpolationMode, double, bool, bool>>,
+    auto data_reader = auxiliaries::math::CachedFunc<std::vector<auxiliaries::math::CachedInterpolatorWrap>,
                                                      double, const std::vector<double> &, size_t>(
-        [](std::vector<auxiliaries::math::CachedFunc<std::function<double(double)>,
-                                                     double, const std::vector<double> &, const std::vector<double> &,
-                                                     auxiliaries::math::InterpolationMode, double, bool, bool>> &cache,
+        [](std::vector<auxiliaries::math::CachedInterpolatorWrap> &cache,
            const std::vector<double> &input, size_t index)
         {
             if (cache.empty())
@@ -41,9 +37,7 @@ namespace instantiator
                 // fill cache with cached interpolation functions for each column
                 for (size_t i = 0; i < table.size(); ++i)
                 {
-                    auto interpolator_cached = auxiliaries::math::CachedFunc<std::function<double(double)>,
-                                                                             double, const std::vector<double> &, const std::vector<double> &,
-                                                                             auxiliaries::math::InterpolationMode, double, bool, bool>(auxiliaries::math::interpolate_cached);
+                    auto interpolator_cached = auxiliaries::math::CachedInterpolatorWrap(auxiliaries::math::interpolate_cached);
                     cache.push_back(interpolator_cached);
                 }
             }
@@ -125,9 +119,7 @@ namespace instantiator
     // (2) TOV solver setup
 
     // Cached EoS interpolator. Only use it if you want to erase cache
-    auto eos_interpolator_cached = auxiliaries::math::CachedFunc<std::function<double(double)>,
-                                                                 double, const std::vector<double> &, const std::vector<double> &,
-                                                                 auxiliaries::math::InterpolationMode, double, bool, bool>(auxiliaries::math::interpolate_cached);
+    auto eos_interpolator_cached = auxiliaries::math::CachedInterpolatorWrap(auxiliaries::math::interpolate_cached);
     // Interpolator used for EoS P(rho)
     auto eos_interpolator = [](const std::vector<double> &input, const std::vector<double> &output, double val)
     {
@@ -135,9 +127,7 @@ namespace instantiator
     };
 
     // nbar(r) cached interpolator. Only use it if you want to erase cache
-    auto nbar_interpolator_cached = auxiliaries::math::CachedFunc<std::function<double(double)>,
-                                                                  double, const std::vector<double> &, const std::vector<double> &,
-                                                                  auxiliaries::math::InterpolationMode, double, bool, bool>(auxiliaries::math::interpolate_cached);
+    auto nbar_interpolator_cached = auxiliaries::math::CachedInterpolatorWrap(auxiliaries::math::interpolate_cached);
     // Interpolator used for nbar(r)
     auto nbar_interpolator = [](const std::vector<double> &input, const std::vector<double> &output, double val)
     {

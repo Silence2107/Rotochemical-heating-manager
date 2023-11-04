@@ -121,6 +121,9 @@ namespace auxiliaries
         /// @return interpolated value
         double interpolate_cached(std::function<double(double)> &cache, const std::vector<double> &input, const std::vector<double> &output, InterpolationMode mode, double x, bool extrapolate = false, bool enable_checks = true);
 
+        /// @brief Prototype for cached interpolator
+        using CachedInterpolatorWrap = CachedFunc<std::function<double(double)>, double, const std::vector<double> &, const std::vector<double> &, InterpolationMode, double, bool, bool>;
+
         /// @brief Integration modes
         enum class IntegrationMode
         {
