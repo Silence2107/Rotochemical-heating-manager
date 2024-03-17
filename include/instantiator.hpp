@@ -506,7 +506,7 @@ namespace instantiator
         {
             center_density = center_density_read.get<double>() * energy_density_conversion;
         }
-        else if (tov_density_provided_as_read == "MassCachedRead")
+        else if (tov_density_provided_as_read == "MassCached")
         {
             double desired_mass = center_density_read.get<double>(); // expect in m_solar
             auto cache_path_read = j["TOVSolver"]["CenterDensity"]["CachePath"];
