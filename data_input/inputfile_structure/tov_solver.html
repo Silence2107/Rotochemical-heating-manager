@@ -430,14 +430,14 @@ In what follows we discuss all the possible settings under this entry.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;Value&quot;</span></code> (double, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Value of central energy density. Interpretation depends on “ProvidedAs” entry.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;CachePath&quot;</span></code> (string, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Path to the cached TOV output. Only used if “ProvidedAs” is set to “MassCached”. In order to produce cache, run</p></li>
 </ul>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./bin/project/M-R_diagram/m_r_diagram.out<span class="w"> </span>--inputfile<span class="w"> </span>&lt;path_to_inputfile&gt;<span class="w"> </span>&gt;<span class="w"> </span>&lt;path_to_cache&gt;<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./bin/project/M-R_diagram/m_r_diagram.out<span class="w"> </span>--inputfile<span class="w"> </span>&lt;path_to_inputfile&gt;<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>&gt;<span class="w"> </span>&lt;path_to_cache&gt;
 </pre></div>
 </div>
 <p>, where options are inspectable via <code class="docutils literal notranslate"><span class="pre">--help</span></code> flag.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <ol class="arabic simple">
-<li><p>For any run, a value of “CenterDensity” is mandatory. Therefore most of the times creating a cache should be done with a dummy option, like <code class="docutils literal notranslate"><span class="pre">Same</span></code>.</p></li>
+<li><p>For any run, a value of “CenterDensity” is mandatory. Therefore most of the times creating a cache should be done with a dummy option, like “Same”.</p></li>
 <li><p>One is not enforced to have TOV output ordered by mass, since this may be complicated to achieve. Because of this, the code looks for the first interval containing the desired mass. To limit the possible range, use <code class="docutils literal notranslate"><span class="pre">--left_fraction</span></code> and <code class="docutils literal notranslate"><span class="pre">--right_fraction</span></code> flags during cache creation.</p></li>
 <li><p>The resulting mass is not guaranteed to coincide with the desired mass, since the value is linearly interpolated. Pass a bigger <code class="docutils literal notranslate"><span class="pre">--selection_size</span></code> to increase precision.</p></li>
 <li><p>Avoid mixing different EoSs with the same cache. This can either lead to out-of-range errors or to wrong mass values.</p></li>

@@ -30,11 +30,11 @@ This setting is not used by TOV solver itself (rather for cooling functionality)
     - `"Value"` (double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Value of central energy density. Interpretation depends on "ProvidedAs" entry.
     - `"CachePath"` (string, [<span style="color:red">TOV, COOL, RH</span>]) **:** Path to the cached TOV output. Only used if "ProvidedAs" is set to "MassCached". In order to produce cache, run
     ```bash
-    ./bin/project/M-R_diagram/m_r_diagram.out --inputfile <path_to_inputfile> > <path_to_cache> [OPTIONS]
+    ./bin/project/M-R_diagram/m_r_diagram.out --inputfile <path_to_inputfile> [OPTIONS] > <path_to_cache>
     ```
     , where options are inspectable via `--help` flag.
     ```{warning}
-    1) For any run, a value of "CenterDensity" is mandatory. Therefore most of the times creating a cache should be done with a dummy option, like `Same`.
+    1) For any run, a value of "CenterDensity" is mandatory. Therefore most of the times creating a cache should be done with a dummy option, like "Same".
     2) One is not enforced to have TOV output ordered by mass, since this may be complicated to achieve. Because of this, the code looks for the first interval containing the desired mass. To limit the possible range, use `--left_fraction` and `--right_fraction` flags during cache creation.
     3) The resulting mass is not guaranteed to coincide with the desired mass, since the value is linearly interpolated. Pass a bigger `--selection_size` to increase precision.
     4) Avoid mixing different EoSs with the same cache. This can either lead to out-of-range errors or to wrong mass values.
