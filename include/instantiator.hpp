@@ -529,7 +529,7 @@ namespace instantiator
         }
         else
         {
-            RHM_THROW(std::runtime_error, "UI error: TOV center density may only be provided in \"LinspacedMinToMax\" or \"Same\" modes.");
+            RHM_THROW(std::runtime_error, "UI error: TOV center density may only be provided in \"LinspacedMinToMax\", \"Same\" or \"MassCached\" modes.");
         }
 
         // (->1) EoS Setup
