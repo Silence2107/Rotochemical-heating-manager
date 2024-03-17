@@ -506,9 +506,30 @@ namespace instantiator
         {
             center_density = center_density_read.get<double>() * energy_density_conversion;
         }
+        else if (tov_density_provided_as_read == "MassCached")
+        {
+            double desired_mass = center_density_read.get<double>(); // expect in m_solar
+            auto cache_path_read = j["TOVSolver"]["CenterDensity"]["CachePath"];
+            if (!(cache_path_read.is_string()))
+                RHM_THROW(std::runtime_error, "UI error: TOV solver center density cache path must be provided as a string, if cached mass is requested.");
+            // use tabulated function
+            auto tov_table = auxiliaries::io::read_tabulated_file(cache_path_read.get<std::string>(), {1, 3}, {1, 0});
+            // locate the two consecutive masses that the desired mass lies between
+            auto mass_vect = tov_table.at(1);
+            auto density_vect = tov_table.at(0);
+            size_t first_index = 0;
+            for (first_index = 0; first_index < mass_vect.size() - 1; ++first_index)
+                if (mass_vect[first_index] <= desired_mass && mass_vect[first_index + 1] > desired_mass)
+                    break;
+            if (first_index == mass_vect.size() - 1)
+                RHM_THROW(std::runtime_error, "UI error: Desired mass is out of range of the provided TOV cache.");
+            // interpolate the density manually
+            center_density = density_vect[first_index] + (desired_mass - mass_vect[first_index]) * (density_vect[first_index + 1] - density_vect[first_index]) / (mass_vect[first_index + 1] - mass_vect[first_index]);
+            center_density *= energy_density_conversion;
+        }
         else
         {
-            RHM_THROW(std::runtime_error, "UI error: TOV center density may only be provided in \"LinspacedMinToMax\" or \"Same\" modes.");
+            RHM_THROW(std::runtime_error, "UI error: TOV center density may only be provided in \"LinspacedMinToMax\", \"Same\" or \"MassCached\" modes.");
         }
 
         // (->1) EoS Setup

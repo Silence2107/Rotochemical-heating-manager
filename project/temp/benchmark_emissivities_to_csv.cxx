@@ -87,9 +87,9 @@ int main()
                         double left_val = energy_density_of_nbar(nbar_left) - density_at_r,
                                right_val = energy_density_of_nbar(nbar_right) - density_at_r,
                                mid_val = energy_density_of_nbar(nbar_mid) - density_at_r;
-                        if (left_val * mid_val < 0)
+                        if (left_val * mid_val <= 0)
                             nbar_right = nbar_mid;
-                        else if (right_val * mid_val < 0)
+                        else if (right_val * mid_val <= 0)
                             nbar_left = nbar_mid;
                         else
                             RHM_THROW(std::runtime_error, "Bisection method failed. Investigate manually or report to the team.");

@@ -32,7 +32,7 @@ std::vector<std::vector<double>> auxiliaries::io::read_tabulated_file(const std:
             ++columns.second;
     }
     if (rows.second <= rows.first || columns.second <= columns.first)
-        RHM_THROW(std::runtime_error, "Invalid rows or columns count extracted from input file.");
+        RHM_THROW(std::runtime_error, "Invalid rows or columns count extracted from input file at " + path + ".");
     std::vector<std::vector<std::string>> str_data(rows.second - rows.first, std::vector<std::string>(columns.second - columns.first));
     for (size_t i = rows.first; i < rows.second; ++i)
     {
