@@ -424,10 +424,10 @@ In what follows we discuss all the possible settings under this entry.</p>
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;LengthUnits&quot;</span></code> (string/double, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Conversion factor from length to natural units (GeV powers). It must either be supplied as a choice from [“Gev-1”, “Km”, “M”, “Cm”], or as an actual multiplier. Used for “RadiusStep”</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;RadiusStep&quot;</span></code> (double, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Defines radius discretization step. Units are defined by “LengthUnits” entry.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;CenterDensity&quot;</span></code> <strong>:</strong> Defines central energy density for initial value problem.</p>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;CenterPressure&quot;</span></code> <strong>:</strong> Defines central pressure for initial value problem.</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;ProvidedAs&quot;</span></code> (string, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> The way the “CenterDensity” is provided. Choose from [“Same”, “LinspacedMinToMax”, “MassCached”]. “LinspacedMinToMax” linearly maps <span class="math notranslate nohighlight">\([0,1] \rightarrow [\rho_{min}, \rho_{max}]\)</span>, while “Same” assumes same units as for “EnergyDensity”. “MassCached” instead is fed with a star’s desired mass (solar mass units) and the corresponding central density is calculated from cached TOV output.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Value&quot;</span></code> (double, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Value of central energy density. Interpretation depends on “ProvidedAs” entry.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;ProvidedAs&quot;</span></code> (string, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> The way the “CenterPressure” is provided. Choose from [“Same”, “LinspacedMinToMax”, “MassCached”]. “LinspacedMinToMax” linearly maps <span class="math notranslate nohighlight">\([0,1] \rightarrow [p_{min}, p_{max}]\)</span>, while “Same” assumes same units as for “Pressure”. “MassCached” instead is fed with a star’s desired mass (solar mass units) and the corresponding pressure is calculated from cached TOV output.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Value&quot;</span></code> (double, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Value of central pressure. Interpretation depends on “ProvidedAs” entry.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;CachePath&quot;</span></code> (string, [<span style="color:red">TOV, COOL, RH</span>]) <strong>:</strong> Path to the cached TOV output. Only used if “ProvidedAs” is set to “MassCached”. In order to produce cache, run</p></li>
 </ul>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./bin/project/M-R_diagram/m_r_diagram.out<span class="w"> </span>--inputfile<span class="w"> </span>&lt;path_to_inputfile&gt;<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>&gt;<span class="w"> </span>&lt;path_to_cache&gt;
@@ -437,7 +437,7 @@ In what follows we discuss all the possible settings under this entry.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <ol class="arabic simple">
-<li><p>For any run, a value of “CenterDensity” is mandatory. Therefore most of the times creating a cache should be done with a dummy option, like “Same”.</p></li>
+<li><p>For any run, a value of “CenterPressure” is mandatory. Therefore most of the times creating a cache should be done with a dummy option, like “Same”.</p></li>
 <li><p>One is not enforced to have TOV output ordered by mass, since this may be complicated to achieve. Because of this, the code looks for the first interval containing the desired mass. To limit the possible range, use <code class="docutils literal notranslate"><span class="pre">--left_fraction</span></code> and <code class="docutils literal notranslate"><span class="pre">--right_fraction</span></code> flags during cache creation.</p></li>
 <li><p>The resulting mass is not guaranteed to coincide with the desired mass, since the value is linearly interpolated. Pass a bigger <code class="docutils literal notranslate"><span class="pre">--selection_size</span></code> to increase precision.</p></li>
 <li><p>Avoid mixing different EoSs with the same cache. This can either lead to out-of-range errors or to wrong mass values.</p></li>
@@ -447,7 +447,7 @@ In what follows we discuss all the possible settings under this entry.</p>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Though this setting is a key value for TOV solver, it is not used for producing M-R curves, since M-R curves are <em>parametrized</em> by central density. It, of course, does not undermine its importance during any simulation on a given central density.</p>
+<p>Though this setting is a key value for TOV solver, it is not used for producing M-R curves, since M-R curves are <em>parametrized</em> by pressure. It, of course, does not undermine its importance during any simulation on a given pressure.</p>
 </div>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">&quot;SurfacePressure&quot;</span></code> <strong>:</strong> Defines surface pressure as an ultimate exit condition for TOV.</p>
