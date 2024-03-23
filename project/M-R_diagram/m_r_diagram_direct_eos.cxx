@@ -91,7 +91,7 @@ int main(int argc, char **argv)
     {
         // TOV solver
         auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
-                                                        const std::function<double(double)> &, double, double, double, double, size_t>(tov_solver::tov_solution);
+                                                        const std::function<double(double)> &, double, double, double, double, size_t>(tov_solver::tov_solution_direct_eos);
         auto tov = [&tov_cached, &eos_cached, edensity](double r)
         {
             // TOV solution cached

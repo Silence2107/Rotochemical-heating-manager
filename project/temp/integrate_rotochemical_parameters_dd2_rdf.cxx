@@ -37,7 +37,7 @@ int main(int argc, char **argv)
     parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: Cooling.pdf)");
     parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
 #endif
-    parser.addArgument({"--center_density"}, "override for center density fraction (optional, default: fetched from inputfile)");
+    parser.addArgument({"--center_pressure"}, "override for center pressure fraction (optional, default: fetched from inputfile)");
 
     auto args = parser.parseArgs(argc, argv);
 
@@ -53,20 +53,20 @@ int main(int argc, char **argv)
         rootfile = new TFile(args.get<std::string>("rootfile_path").c_str(), "RECREATE");
 #endif
 
-    double center_density;
-    if (!args.has("center_density"))
-        center_density = instantiator::center_density;
+    double center_pressure;
+    if (!args.has("center_pressure"))
+        center_pressure = instantiator::center_pressure;
     else
-        center_density = args.get<double>("center_density") * (instantiator::edensity_upp - instantiator::edensity_low) + instantiator::edensity_low;
+        center_pressure = args.get<double>("center_pressure") * (instantiator::pressure_upp - instantiator::pressure_low) + instantiator::pressure_low;
 
     // RUN --------------------------------------------------------------------------
 
     // EoS definition
 
-    auto eos_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double>(
-        [&](std::vector<std::vector<double>> &cache, double rho)
+    auto eos_inv_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double>(
+        [&](std::vector<std::vector<double>> &cache, double p)
         {
-            if (rho < edensity_low || rho > edensity_upp)
+            if (p < pressure_low || p > pressure_upp)
                 RHM_THROW(std::runtime_error, "Data request out of range.");
             if (cache.empty() || cache[0].size() != discr_size_EoS)
             {                                                                                        // then fill/refill cache
@@ -75,28 +75,28 @@ int main(int argc, char **argv)
                 for (int i = 1; i < discr_size_EoS - 1; ++i)
                 { // cache EoS for further efficiency
                     x[i] = i * (nbar_upp - nbar_low) / discr_size_EoS + nbar_low;
-                    cache[0][i] = energy_density_of_nbar(x[i]);
-                    cache[1][i] = pressure_of_nbar(x[i]);
+                    cache[0][i] = pressure_of_nbar(x[i]);
+                    cache[1][i] = energy_density_of_nbar(x[i]);
                 }
                 x[0] = nbar_low;
                 x[x.size() - 1] = nbar_upp;
-                cache[0][0] = edensity_low;
-                cache[0][cache[0].size() - 1] = edensity_upp;
-                cache[1][0] = pressure_low;
-                cache[1][cache[1].size() - 1] = pressure_upp;
+                cache[0][0] = pressure_low;
+                cache[0][cache[1].size() - 1] = pressure_upp;
+                cache[1][0] = edensity_low;
+                cache[1][cache[0].size() - 1] = edensity_upp;
                 eos_interpolator_cached.erase(); // clean up cached interpolator
             }
-            return eos_interpolator(cache[0], cache[1], rho);
+            return eos_interpolator(cache[0], cache[1], p);
         });
 
     // TOV solver
 
     auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
                                                     const std::function<double(double)> &, double, double, double, double, size_t>(tov_solver::tov_solution);
-    auto tov = [&tov_cached, &eos_cached, &center_density](double r)
+    auto tov = [&tov_cached, &eos_inv_cached, center_pressure](double r)
     {
         // TOV solution cached
-        return tov_cached(eos_cached, r, center_density, radius_step, surface_pressure, tov_adapt_limit);
+        return tov_cached(eos_inv_cached, r, center_pressure, radius_step, surface_pressure, tov_adapt_limit);
     };
 
     auto nbar = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double>(

@@ -7,7 +7,7 @@
 #include <limits>
 #include <cmath>
 
-std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &cache, const std::function<double(double)> &eos, double r, double center_density, double radius_step, double surface_pressure, size_t adaption_limit)
+std::vector<double> tov_solver::tov_solution_direct_eos(std::vector<std::vector<double>> &cache, const std::function<double(double)> &eos, double r, double center_density, double radius_step, double surface_pressure, size_t adaption_limit)
 {
 	using constants::scientific::G;
 	using constants::scientific::Pi;
@@ -131,7 +131,7 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &c
 	return std::vector<double>({mass, density, phi, eos(density), cache[0].back()});
 }
 
-std::vector<double> tov_solver::tov_solution_inverse_eos(std::vector<std::vector<double>> &cache, const std::function<double(double)> &eos_inv, double r, double center_pressure, double radius_step, double surface_pressure, size_t adaption_limit)
+std::vector<double> tov_solver::tov_solution(std::vector<std::vector<double>> &cache, const std::function<double(double)> &eos_inv, double r, double center_pressure, double radius_step, double surface_pressure, size_t adaption_limit)
 {
 	using constants::scientific::G;
 	using constants::scientific::Pi;
@@ -143,7 +143,7 @@ std::vector<double> tov_solver::tov_solution_inverse_eos(std::vector<std::vector
 	{
 		double rho = eos_inv(p);
 		if (rho < 0)
-			RHM_THROW(std::runtime_error, "Negative pressure encountered.");
+			RHM_THROW(std::runtime_error, "Negative density encountered.");
 		return 4 * Pi * r * r * rho;
 	};
 
@@ -151,7 +151,7 @@ std::vector<double> tov_solver::tov_solution_inverse_eos(std::vector<std::vector
 	{
 		double rho = eos_inv(p);
 		if (rho < 0)
-			RHM_THROW(std::runtime_error, "Negative pressure encountered.");
+			RHM_THROW(std::runtime_error, "Negative density encountered.");
 		// zero radius approx -- explicitly get rid of singularity
 		if (r < radius_step / 2)
 			return -(4 * Pi * G * r) * (rho + p) * (rho / 3 + p);

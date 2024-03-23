@@ -4,7 +4,7 @@
 #include <functional>
 #include <vector>
 
-/// @brief contains: function tov_solution
+/// @brief contains: TOV solvers
 namespace tov_solver
 {
 	/// @brief Solves TOV system of equations based on eos and distance from centre of NS r (GeV^-1);
@@ -20,7 +20,7 @@ namespace tov_solver
 	/// @param adaption_limit maximum number of adaption cuts of radius_step. If is exceeded, the algorithm will conclude the simulation immediately
 	/// @return [0] -> mass in given point r, [1] -> density -//-, [2] -> phi metric function -//-, [3] -> pressure -//-, [4] -> additionals(radius of NS)
 	/// @cite TOV - Oppenheimer, Volkoff, 1939
-	std::vector<double> tov_solution(std::vector<std::vector<double>> &cache, const std::function<double(double)> &eos, double r, double center_density, double radius_step, double surface_pressure, size_t adaption_limit);
+	std::vector<double> tov_solution_direct_eos(std::vector<std::vector<double>> &cache, const std::function<double(double)> &eos, double r, double center_density, double radius_step, double surface_pressure, size_t adaption_limit);
 
 	/// @brief Solves TOV system of equations based on eos and distance from centre of NS r (GeV^-1);
 	/// TOV system reduces to m'(r) = 4pir^2 rho(P(r)); P'(r) = -G/r^2 * (rho(P(r))+P(r)) * (m(r)+4pir^3 P(r))/(1-2Gm(r)/r),
@@ -35,7 +35,7 @@ namespace tov_solver
 	/// @param adaption_limit maximum number of adaption cuts of radius_step. If is exceeded, the algorithm will conclude the simulation immediately
 	/// @return [0] -> mass in given point r, [1] -> density -//-, [2] -> phi metric function -//-, [3] -> pressure -//-, [4] -> additionals(radius of NS)
 	/// @cite TOV - Oppenheimer, Volkoff, 1939
-	std::vector<double> tov_solution_inverse_eos(std::vector<std::vector<double>> &cache, const std::function<double(double)> &eos_inv, double r, double center_pressure, double radius_step, double surface_pressure, size_t adaption_limit);
+	std::vector<double> tov_solution(std::vector<std::vector<double>> &cache, const std::function<double(double)> &eos_inv, double r, double center_pressure, double radius_step, double surface_pressure, size_t adaption_limit);
 }
 
 #endif
