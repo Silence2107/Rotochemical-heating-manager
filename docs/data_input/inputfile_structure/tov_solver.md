@@ -16,7 +16,7 @@ In order to refer to an example, see <span style="color:blue">_presupplied/Input
 ```{warning}
 Early termination happens silently and is only well noticeable if the final star's radius is very low.
 ```
-- `"EoSInterpolation` (string, [<span style="color:red">TOV, COOL, RH</span>]) **:** Interpolation kind to be used for discretized $P(\rho)$ dependence. Choose from ["Linear", "Cubic"], with "Linear" being default. 
+- `"EoSInterpolation"` (string, [<span style="color:red">TOV, COOL, RH</span>]) **:** Interpolation kind to be used for discretized $P(\rho)$ dependence. Choose from ["Linear", "Cubic"], with "Linear" being default. 
 - `"BarionicDensityInterpolation"` (string, [<span style="color:red">COOL, RH</span>]) **:** Interpolation kind to be used for discretized $n_b(r)$ dependence. Choose from ["Linear", "Cubic"], with "Linear" being default. 
 ```{note}
 This setting is not used by TOV solver itself (rather for cooling functionality), but since it originates from TOV solver, it is placed here. Something to consider moving.
@@ -25,23 +25,23 @@ This setting is not used by TOV solver itself (rather for cooling functionality)
 
 - `"RadiusStep"` (double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Defines radius discretization step. Units are defined by "LengthUnits" entry.
 
-- `"CenterDensity"` **:** Defines central energy density for initial value problem.
-    - `"ProvidedAs"` (string, [<span style="color:red">TOV, COOL, RH</span>]) **:** The way the "CenterDensity" is provided. Choose from ["Same", "LinspacedMinToMax", "MassCached"]. "LinspacedMinToMax" linearly maps $[0,1] \rightarrow [\rho_{min}, \rho_{max}]$, while "Same" assumes same units as for "EnergyDensity". "MassCached" instead is fed with a star's desired mass (solar mass units) and the corresponding central density is calculated from cached TOV output.
-    - `"Value"` (double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Value of central energy density. Interpretation depends on "ProvidedAs" entry.
+- `"CenterPressure"` **:** Defines central pressure for initial value problem.
+    - `"ProvidedAs"` (string, [<span style="color:red">TOV, COOL, RH</span>]) **:** The way the "CenterPressure" is provided. Choose from ["Same", "LinspacedMinToMax", "MassCached"]. "LinspacedMinToMax" linearly maps $[0,1] \rightarrow [P_{min}, P_{max}]$, while "Same" assumes same units as for "Pressure". "MassCached" instead is fed with a star's desired mass (solar mass units) and the corresponding pressure is calculated from cached TOV output.
+    - `"Value"` (double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Value of central pressure. Interpretation depends on "ProvidedAs" entry.
     - `"CachePath"` (string, [<span style="color:red">TOV, COOL, RH</span>]) **:** Path to the cached TOV output. Only used if "ProvidedAs" is set to "MassCached". In order to produce cache, run
     ```bash
     ./bin/project/M-R_diagram/m_r_diagram.out --inputfile <path_to_inputfile> [OPTIONS] > <path_to_cache>
     ```
     , where options are inspectable via `--help` flag.
     ```{warning}
-    1) For any run, a value of "CenterDensity" is mandatory. Therefore most of the times creating a cache should be done with a dummy option, like "Same".
+    1) For any run, a value of "CenterPressure" is mandatory. Therefore most of the times creating a cache should be done with a dummy option, like "Same".
     2) One is not enforced to have TOV output ordered by mass, since this may be complicated to achieve. Because of this, the code looks for the first interval containing the desired mass. To limit the possible range, use `--left_fraction` and `--right_fraction` flags during cache creation.
     3) The resulting mass is not guaranteed to coincide with the desired mass, since the value is linearly interpolated. Pass a bigger `--selection_size` to increase precision.
     4) Avoid mixing different EoSs with the same cache. This can either lead to out-of-range errors or to wrong mass values.
     ```
 
 ```{note}
-Though this setting is a key value for TOV solver, it is not used for producing M-R curves, since M-R curves are _parametrized_ by central density. It, of course, does not undermine its importance during any simulation on a given central density.
+Though this setting is a key value for TOV solver, it is not used for producing M-R curves, since M-R curves are _parametrized_ by pressure. It, of course, does not undermine its importance during any simulation on a given pressure.
 ```
 - `"SurfacePressure"` **:** Defines surface pressure as an ultimate exit condition for TOV.
     - `"ProvidedAs"` (string, [<span style="color:red">TOV, COOL, RH</span>]) **:** The way the "SurfacePressure" is provided. Choose from ["Same", "LinspacedMinToMax"]. "LinspacedMinToMax" linearly maps $[0,1] \rightarrow [P_{min}, P_{max}]$, while "Same" assumes same units as for "Pressure".

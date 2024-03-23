@@ -120,7 +120,7 @@ namespace instantiator
 
     // Cached EoS interpolator. Only use it if you want to erase cache
     auto eos_interpolator_cached = auxiliaries::math::CachedInterpolatorWrap(auxiliaries::math::interpolate_cached);
-    // Interpolator used for EoS P(rho)
+    // Interpolator used for EoS P/rho
     auto eos_interpolator = [](const std::vector<double> &input, const std::vector<double> &output, double val)
     {
         return eos_interpolator_cached(input, output, auxiliaries::math::InterpolationMode::kLinear, val, false, true);
@@ -146,8 +146,8 @@ namespace instantiator
     // TOV solver surface pressure in GeV^4
     double surface_pressure = 1E-8 * pressure_upp;
 
-    // TOV solver center density in GeV^4
-    double center_density = 0.2166 * edensity_upp;
+    // TOV solver center pressure in GeV^4
+    double center_pressure = 0.2166 * pressure_upp;
 
     // (3) Cooling solver
 
