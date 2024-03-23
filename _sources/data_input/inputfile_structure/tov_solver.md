@@ -16,7 +16,7 @@ In order to refer to an example, see <span style="color:blue">_presupplied/Input
 ```{warning}
 Early termination happens silently and is only well noticeable if the final star's radius is very low.
 ```
-- `"EoSInterpolation` (string, [<span style="color:red">TOV, COOL, RH</span>]) **:** Interpolation kind to be used for discretized $P(\rho)$ dependence. Choose from ["Linear", "Cubic"], with "Linear" being default. 
+- `"EoSInterpolation"` (string, [<span style="color:red">TOV, COOL, RH</span>]) **:** Interpolation kind to be used for discretized $P(\rho)$ dependence. Choose from ["Linear", "Cubic"], with "Linear" being default. 
 - `"BarionicDensityInterpolation"` (string, [<span style="color:red">COOL, RH</span>]) **:** Interpolation kind to be used for discretized $n_b(r)$ dependence. Choose from ["Linear", "Cubic"], with "Linear" being default. 
 ```{note}
 This setting is not used by TOV solver itself (rather for cooling functionality), but since it originates from TOV solver, it is placed here. Something to consider moving.
@@ -26,7 +26,7 @@ This setting is not used by TOV solver itself (rather for cooling functionality)
 - `"RadiusStep"` (double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Defines radius discretization step. Units are defined by "LengthUnits" entry.
 
 - `"CenterPressure"` **:** Defines central pressure for initial value problem.
-    - `"ProvidedAs"` (string, [<span style="color:red">TOV, COOL, RH</span>]) **:** The way the "CenterPressure" is provided. Choose from ["Same", "LinspacedMinToMax", "MassCached"]. "LinspacedMinToMax" linearly maps $[0,1] \rightarrow [p_{min}, p_{max}]$, while "Same" assumes same units as for "Pressure". "MassCached" instead is fed with a star's desired mass (solar mass units) and the corresponding pressure is calculated from cached TOV output.
+    - `"ProvidedAs"` (string, [<span style="color:red">TOV, COOL, RH</span>]) **:** The way the "CenterPressure" is provided. Choose from ["Same", "LinspacedMinToMax", "MassCached"]. "LinspacedMinToMax" linearly maps $[0,1] \rightarrow [P_{min}, P_{max}]$, while "Same" assumes same units as for "Pressure". "MassCached" instead is fed with a star's desired mass (solar mass units) and the corresponding pressure is calculated from cached TOV output.
     - `"Value"` (double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Value of central pressure. Interpretation depends on "ProvidedAs" entry.
     - `"CachePath"` (string, [<span style="color:red">TOV, COOL, RH</span>]) **:** Path to the cached TOV output. Only used if "ProvidedAs" is set to "MassCached". In order to produce cache, run
     ```bash
