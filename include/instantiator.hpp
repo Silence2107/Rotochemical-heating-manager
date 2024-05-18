@@ -150,7 +150,7 @@ namespace instantiator
         using json = nlohmann::json;
 
         // bunch of simplifying definitions
-        using keys = std::vector<std::string>;
+        // using keys = std::vector<std::string>;
         auto get_interpolation_mode = [](const std::string &mode)
         {
             if (mode == "Linear")
@@ -427,7 +427,11 @@ namespace instantiator
         else if (!(discr_size_EoS_read.is_number_integer()))
             RHM_THROW(std::runtime_error, "UI error: EoS discretization must be provided as an integer.");
         else
+        {
             discr_size_EoS = discr_size_EoS_read.get<size_t>();
+            if (discr_size_EoS <= 2)
+                RHM_THROW(std::runtime_error, "UI error: EoS discretization must be much larger than 2.");
+        }
 
         // TOV adaption limit
         auto tov_adapt_limit_read = j["TOVSolver"]["AdaptionLimit"];
@@ -687,7 +691,7 @@ namespace instantiator
                 RHM_THROW(std::runtime_error, "UI error: " + particle.name() + " effective mass column number must be provided as an integer.");
 
             auto particle_mst_conversion_read = particle_mst_read["Units"];
-            double particle_mst_conversion;
+            double particle_mst_conversion = 0;
             if (particle_mst_conversion_read.is_null())
             {
                 if (particle_mst_provided_as_read != "FermiEnergy")
@@ -745,7 +749,10 @@ namespace instantiator
         auto ion_volume_provided_as_read = ion_volume_fr_read["ProvidedAs"];
         if (ion_volume_provided_as_read.is_null() || ion_volume_provided_as_read == "Absent")
             ion_volume_fr = [](double nbar)
-            { return 0.0; };
+            { 
+                (void)nbar;
+                return 0.0; 
+            };
         else if (ion_volume_provided_as_read == "ExcludedVolume")
             ion_volume_fr = [](double nbar)
             {
@@ -834,6 +841,9 @@ namespace instantiator
         {
             redshift_factor = [](double r, double r_ns, const std::function<double(double)> &exp_phi)
             {
+                (void)r_ns;
+                (void)exp_phi;
+                (void)r;
                 return 1;
             };
         }
@@ -841,6 +851,8 @@ namespace instantiator
         {
             redshift_factor = [](double r, double r_ns, const std::function<double(double)> &exp_phi)
             {
+                (void)r_ns;
+                (void)r;
                 return exp_phi(r_ns);
             };
         }
@@ -848,6 +860,7 @@ namespace instantiator
         {
             redshift_factor = [](double r, double r_ns, const std::function<double(double)> &exp_phi)
             {
+                (void)r_ns;
                 return exp_phi(r);
             };
         }
@@ -872,6 +885,7 @@ namespace instantiator
                 temp_init = temp_init_read.get<double>() * cooling_temp_conversion;
             initial_t_profile_inf = [temp_init, redshift_factor](double r, double r_ns, const std::function<double(double)> &exp_phi, const std::function<double(double)> &nbar_of_r)
             {
+                (void)nbar_of_r;
                 return temp_init * redshift_factor(r, r_ns, exp_phi);
             };
         }
@@ -1169,6 +1183,7 @@ namespace instantiator
         {
             superconduct_q_gap = [](double nbar)
             {
+                (void)nbar;
                 return 0.0;
             };
         }

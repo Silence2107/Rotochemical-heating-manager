@@ -49,7 +49,7 @@ int main(int argc, char **argv)
             {                                                                                        // then fill/refill cache
                 cache = std::vector<std::vector<double>>(2, std::vector<double>(discr_size_EoS, 0)); // initialize 2xdiscr_size_EoS matrix
                 std::vector<double> x(discr_size_EoS, 0);
-                for (int i = 1; i < discr_size_EoS - 1; ++i)
+                for (size_t i = 1; i < discr_size_EoS - 1; ++i)
                 { // cache EoS for further efficiency
                     x[i] = i * (nbar_upp - nbar_low) / discr_size_EoS + nbar_low;
                     cache[0][i] = pressure_of_nbar(x[i]);
