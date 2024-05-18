@@ -18,7 +18,7 @@ Here follows a short reference guide:
 
 ### Input
 
-In order to setup the RHM to work with your EoS, one must supply the program with global data under include/instantiator.hpp . We provide [example inputfile](https://github.com/Silence2107/Rotochemical-heating-manager/blob/main/presupplied/Inputfile/RHMconfig.json) for [presupplied APR4 EoS](https://github.com/Silence2107/Rotochemical-heating-manager/blob/main/presupplied/EoS/APR_EOS_Acc_Fe_RHMstandard.dat), alongside providing users with [inputfile manual](https://silence2107.github.io/Rotochemical-heating-manager/data_input/what_data_program_need.html).
+In order to setup the RHM to work with your EoS, one must supply the program with global data under include/instantiator.hpp . We provide [example inputfile](https://github.com/Silence2107/Rotochemical-heating-manager/blob/main/presupplied/APR4/RHMconfig.json) for [presupplied APR4 EoS](https://github.com/Silence2107/Rotochemical-heating-manager/blob/main/presupplied/APR4/APR_EOS_Acc_Fe_RHMstandard.dat), alongside providing users with [inputfile manual](https://silence2107.github.io/Rotochemical-heating-manager/data_input/what_data_program_need.html).
 
 ### Compilation
 

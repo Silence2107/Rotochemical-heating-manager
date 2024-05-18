@@ -2,7 +2,7 @@
 
 <span style="color:green">_This section is essentially useless unless you develop your own contribution to the code._</span>
 
-Manual instantiating implies directly putting global data into an instantiator, without relying on the external inputfile. An example is given under <span style="color:blue">_presupplied/EoS/instantiator\_apr4.hpp_</span>.
+Manual instantiating implies directly putting global data into an instantiator, without relying on the external inputfile. An example is given under <span style="color:blue">_presupplied/APR4/instantiator\_apr4.hpp_</span>.
 
 **Pros:**
 - Most comfortable when adding new features

@@ -20,7 +20,7 @@ Argparse powered by SiLeader
 
 Therefore, even running the executable as is
 ```bash
-bin/project/Cooling/cooling_curve.out --inputfile presupplied/Inputfile/RHMconfig.json
+bin/project/Cooling/cooling_curve.out --inputfile presupplied/APR4/RHMconfig.json
 ```
 will not only produce the console tabulation, but also a pdf preview {numref}`apr-example-cooling`.
 ```{figure} ../plots/apr_example_cooling.jpg

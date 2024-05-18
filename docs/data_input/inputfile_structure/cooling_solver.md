@@ -6,7 +6,7 @@ This entry contains all relevant information regarding star's cooling PDE {cite}
 
 This section is optional, but is requested for any cooling simulation.
 
-In order to refer to an example, see <span style="color:blue">_presupplied/Inputfile/RHMconfig.json_</span> and <span style="color:blue">_presupplied/EoS/APR_EOS_Acc_Fe_RHMstandard.dat_</span>.
+In order to refer to an example, see <span style="color:blue">_presupplied/APR4/RHMconfig.json_</span> and <span style="color:blue">_presupplied/APR4/APR_EOS_Acc_Fe_RHMstandard.dat_</span>.
 
 ## Description
 

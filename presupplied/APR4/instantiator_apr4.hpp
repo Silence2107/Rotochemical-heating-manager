@@ -24,7 +24,7 @@ namespace instantiator
            nbar_conversion = 1.0 / constants::conversion::fm3_gev3;
 
     // read datafile
-    auto table = auxiliaries::io::read_tabulated_file("presupplied/EoS/APR_EOS_Acc_Fe_RHMstandard.dat", {0, 0}, {7, 237});
+    auto table = auxiliaries::io::read_tabulated_file("presupplied/APR4/APR_EOS_Acc_Fe_RHMstandard.dat", {0, 0}, {7, 237});
 
     // data_reader takes input vector and outputs vector of outputs from EoS datafile
     auto data_reader = auxiliaries::math::CachedFunc<std::vector<auxiliaries::math::CachedInterpolatorWrap>,
