@@ -16,6 +16,9 @@
 /// @brief global data powering RHM
 namespace instantiator
 {
+    // (0) System setup
+    auxiliaries::io::LogLevel log_level = auxiliaries::io::kError;
+
     // (1) EoS setup
 
     // conversion factors from datafile units to natural units

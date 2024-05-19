@@ -33,6 +33,14 @@ namespace auxiliaries
         /// @param exceptionClass exception class
         /// @param message exception message
         #define RHM_THROW(exceptionClass, message) throw exceptionClass("Encountered in " + std::string(__FILE__) + "//" + std::string(__func__) + ", line " + std::to_string(__LINE__) + " : " + message)
+    
+        /// @brief Logging levels
+        enum LogLevel
+        {
+            kError,
+            kVerbose,
+            kTrace
+        };
     }
 
     /// @brief Math auxiliary functionality.

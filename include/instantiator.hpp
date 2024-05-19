@@ -17,6 +17,9 @@
 /// @brief global data powering RHM
 namespace instantiator
 {
+    // (0) System setup
+    auxiliaries::io::LogLevel log_level;
+
     // (1) EoS setup
 
     // conversion factors from datafile units to natural units
@@ -168,6 +171,24 @@ namespace instantiator
             RHM_THROW(std::runtime_error, "UI inputfile requested, but the path is invalid.");
         }
         json j = json::parse(i);
+
+        // (0) System setuo
+        auto log_level_read = j["System"]["LogLevel"];
+        if (log_level_read.is_null())
+            log_level = auxiliaries::io::LogLevel::kError;
+        else if (!(log_level_read.is_string()))
+            RHM_THROW(std::runtime_error, "UI error: Log level must be provided as a string.");
+        else
+        {
+            if (log_level_read == "Error")
+                log_level = auxiliaries::io::LogLevel::kError;
+            else if (log_level_read == "Verbose")
+                log_level = auxiliaries::io::LogLevel::kVerbose;
+            else if (log_level_read == "Trace")
+                log_level = auxiliaries::io::LogLevel::kTrace;
+            else
+                RHM_THROW(std::runtime_error, "UI error: Log level may only be provided as a string of \"Error\", \"Verbose\" or \"Trace\".");
+        }
 
         // (1) EoS setup
 
