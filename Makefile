@@ -1,27 +1,28 @@
 CXX:=g++
 
-CXX_FLAGS_SHARED:=-Wall -Wextra 
-CXX_FLAGS_RELEASE:=-O3
-CXX_FLAGS_DEBUG:=-g
+CXXFLAGS:=-Wall -Wextra 
+all: CXXFLAGS +=-O3
+release: CXXFLAGS +=-O3
+debug: CXXFLAGS +=-g
 
 # ROOT dependency
 ifeq (1, $(shell echo ${RHM_HAS_ROOT}))
-	CXX_FLAGS_SHARED:=$(CXX_FLAGS_SHARED) `root-config --cflags --glibs`
+	CXXFLAGS += `root-config --cflags --glibs`
 else ifeq (, $(shell echo ${RHM_HAS_ROOT}))
 	ifneq (, $(shell echo ${ROOTSYS}))
-		CXX_FLAGS_SHARED:=$(CXX_FLAGS_SHARED) `root-config --cflags --glibs`
+		CXXFLAGS += `root-config --cflags --glibs`
 		RHM_HAS_ROOT:=1
 	else
 		RHM_HAS_ROOT:=0
 	endif
 endif
 
-CXX_FLAGS_SHARED:=$(CXX_FLAGS_SHARED) -DRHM_HAS_ROOT=$(RHM_HAS_ROOT)
+CXXFLAGS += -DRHM_HAS_ROOT=$(RHM_HAS_ROOT)
 
 # Whether inputfile is expected
 RHM_REQUIRES_INPUTFILE:=1
 
-CXX_FLAGS_SHARED:=$(CXX_FLAGS_SHARED) -DRHM_REQUIRES_INPUTFILE=$(RHM_REQUIRES_INPUTFILE)
+CXXFLAGS += -DRHM_REQUIRES_INPUTFILE=$(RHM_REQUIRES_INPUTFILE)
 
 # Compile
 
@@ -38,15 +39,15 @@ all : $(PROGRAMS)
 
 $(PROGRAMS) : $(OBJECTS)
 	@mkdir -p $(dir bin/${@:.cxx=.out})
-	$(CXX) $@ $^ -o bin/${@:.cxx=.out} $(CXX_FLAGS_RELEASE) $(CXX_FLAGS_SHARED)
+	$(CXX) $@ $^ -o bin/${@:.cxx=.out} $(CXXFLAGS)
 
 release : $(OBJECTS)
 	@mkdir -p $(dir bin/$(APP_NAME))
-	$(CXX) $(APP_NAME).cxx $^ -o bin/$(APP_NAME).out $(CXX_FLAGS_RELEASE) $(CXX_FLAGS_SHARED)
+	$(CXX) $(APP_NAME).cxx $^ -o bin/$(APP_NAME).out $(CXXFLAGS)
 
 debug : $(OBJECTS)
 	@mkdir -p $(dir bin/$(APP_NAME))
-	$(CXX) $(APP_NAME).cxx $^ -o bin/$(APP_NAME).out $(CXX_FLAGS_DEBUG) $(CXX_FLAGS_SHARED)
+	$(CXX) $(APP_NAME).cxx $^ -o bin/$(APP_NAME).out $(CXXFLAGS)
 
 %.o : %.cxx 
 	$(CXX) -MMD -c $< -o $@
