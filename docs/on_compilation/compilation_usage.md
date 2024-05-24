@@ -2,7 +2,7 @@
 
 Make is used to compile any program that uses RHM library. Example in [Getting Started](../getting_started/first_run.md) is rather generic and, in general, executes as follows
 ```bash
-make release/debug/clean app=path_to_cxx_no_extension
+make release/debug app=path_to_cxx_no_extension
 ```
 
 Release mode is default and it shall prevail in all cases except debugging. If executed as above, the executable lands into
@@ -10,11 +10,16 @@ Release mode is default and it shall prevail in all cases except debugging. If e
 bin/path_to_cxx_no_extension.out
 ```
 
+To compile all the stable programs in release mode, type
+```bash
+make all -j$(nproc)
+```
+
 ## Example
 
 Imagine we would like to compile a main program under <span style="color:blue">_project/Cooling/cooling_curve.cxx_</span> and execute it. The following commands will do the job
 ```bash
-make app=project/Cooling/cooling_curve
+make release app=project/Cooling/cooling_curve
 bin/project/Cooling/cooling_curve.out --help
 bin/project/Cooling/cooling_curve.out --inputfile=whatever/input/file/path.json
 ```

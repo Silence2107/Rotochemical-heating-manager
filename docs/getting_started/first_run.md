@@ -22,10 +22,10 @@ bin/project/M-R_diagram/m_r_diagram.out --help
 
 `--help` invokes manual message for all standardized RHM programs.
 
-To finally see whether physics is in order on your machine, this binary (most of the time) must be supplemented with inputfile. Let's run it by providing the one under <span style="color:blue">_presupplied/Inputfile/RHMconfig.json_</span>:
+To finally see whether physics is in order on your machine, this binary (most of the time) must be supplemented with inputfile. Let's run it by providing the one under <span style="color:blue">_presupplied/APR4/RHMconfig.json_</span>:
 
 ```bash
-bin/project/M-R_diagram/m_r_diagram.out --inputfile presupplied/Inputfile/RHMconfig.json
+bin/project/M-R_diagram/m_r_diagram.out --inputfile presupplied/APR4/RHMconfig.json
 ```
 
 **Expected output :**
@@ -37,9 +37,9 @@ bin/project/M-R_diagram/m_r_diagram.out --inputfile presupplied/Inputfile/RHMcon
     - inputfile is not supplied
 - "(..) Cannot open file (..)"
     - inputfile path is supplied, but is not recognized as valid
-    - Check path's spelling against <span style="color:blue">_presupplied/Inputfile/RHMconfig.json_</span>
-    - If correct, make sure there exists a valid file under <span style="color:blue">_presupplied/EoS/APR\_EOS\_Acc\_Fe\_RHMstandard.dat_</span>
-    - If exists, make sure there's an entry in <span style="color:blue">_presupplied/Inputfile/RHMconfig.json_</span> `["EoSSetup"]["Datafile"]["Path"]` that leads to the file above. Specify absolute path if in doubts.
+    - Check path's spelling against <span style="color:blue">_presupplied/APR4/RHMconfig.json_</span>
+    - If correct, make sure there exists a valid file under <span style="color:blue">_presupplied/APR4/APR\_EOS\_Acc\_Fe\_RHMstandard.dat_</span>
+    - If exists, make sure there's an entry in <span style="color:blue">_presupplied/APR4/RHMconfig.json_</span> `["EoSSetup"]["Datafile"]["Path"]` that leads to the file above. Specify absolute path if in doubts.
 - "keyword argument (..) must have value."
     - program's key is supplied, but actual value to it is not
 - Whatever else happened
