@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 
     using namespace instantiator;
 #if RHM_REQUIRES_INPUTFILE
-    instantiator::instantiate_system(args.get<std::string>("inputfile"));
+    instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV"});
 #endif
 
     // RUN --------------------------------------------------------------------------
