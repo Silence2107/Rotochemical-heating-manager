@@ -525,7 +525,7 @@ namespace instantiator
 
         if (tov_pressure_provided_as_read == "LinspacedMinToMax")
         {
-            center_pressure = center_pressure_read.get<double>() * (edensity_upp - edensity_low) + edensity_low;
+            center_pressure = center_pressure_read.get<double>() * (pressure_upp - pressure_low) + pressure_low;
         }
         else if (tov_pressure_provided_as_read == "Same")
         {
