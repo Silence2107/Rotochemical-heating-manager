@@ -115,7 +115,7 @@
         "CenterPressure" : 
         {
             "ProvidedAs" : "LinspacedMinToMax",
-            "Value" : 0.2166
+            "Value" : 0.0176975
         },
         "AdaptionLimit" : 20
     },

@@ -13,6 +13,7 @@
 #include <cmath>
 #include <string>
 #include <sstream>
+#include <algorithm>
 
 /// @brief global data powering RHM
 namespace instantiator
@@ -147,7 +148,7 @@ namespace instantiator
 
     /// @brief instantiate the system from json input
     /// @param json_input json inputfile path
-    void instantiate_system(const std::string &json_input)
+    void instantiate_system(const std::string &json_input, const std::vector<std::string>& modules)
     {
         using namespace instantiator;
         using json = nlohmann::json;
@@ -164,6 +165,11 @@ namespace instantiator
                 RHM_THROW(std::runtime_error, "UI error: Unparsable interpolation mode provided.");
         };
 
+        auto modules_has = [&modules](const std::string &module)
+        {
+            return std::find(modules.begin(), modules.end(), module) != modules.end();
+        };
+
         // read json input
         std::ifstream i(json_input);
         if (!i.is_open())
@@ -172,7 +178,7 @@ namespace instantiator
         }
         json j = json::parse(i);
 
-        // (0) System setuo
+        // (0) System setup
         auto log_level_read = j["System"]["LogLevel"];
         if (log_level_read.is_null())
             log_level = auxiliaries::io::LogLevel::kError;
@@ -518,48 +524,53 @@ namespace instantiator
             RHM_THROW(std::runtime_error, "UI error: TOV surface pressure may only be provided in \"LinspacedMinToMax\" or \"Same\" modes.");
         }
 
-        auto center_pressure_read = j["TOVSolver"]["CenterPressure"]["Value"];
-        auto tov_pressure_provided_as_read = j["TOVSolver"]["CenterPressure"]["ProvidedAs"];
-        if (!(center_pressure_read.is_number()))
-            RHM_THROW(std::runtime_error, "UI error: TOV solver center pressure must be provided as a number.");
+        // Only read center pressure, if we simulate COOL or RH
+        if (modules_has("TOV"))
+        {
+            auto center_pressure_read = j["TOVSolver"]["CenterPressure"]["Value"];
+            auto tov_pressure_provided_as_read = j["TOVSolver"]["CenterPressure"]["ProvidedAs"];
+            if (!(center_pressure_read.is_number()))
+                RHM_THROW(std::runtime_error, "UI error: TOV solver center pressure must be provided as a number.");
 
-        if (tov_pressure_provided_as_read == "LinspacedMinToMax")
-        {
-            center_pressure = center_pressure_read.get<double>() * (edensity_upp - edensity_low) + edensity_low;
+            if (tov_pressure_provided_as_read == "LinspacedMinToMax")
+            {
+                center_pressure = center_pressure_read.get<double>() * (pressure_upp - pressure_low) + pressure_low;
+            }
+            else if (tov_pressure_provided_as_read == "Same")
+            {
+                center_pressure = center_pressure_read.get<double>() * pressure_conversion;
+            }
+            else if (tov_pressure_provided_as_read == "MassCached")
+            {
+                double desired_mass = center_pressure_read.get<double>(); // expect in m_solar
+                auto cache_path_read = j["TOVSolver"]["CenterPressure"]["CachePath"];
+                if (!(cache_path_read.is_string()))
+                    RHM_THROW(std::runtime_error, "UI error: TOV solver center pressure cache path must be provided as a string, if cached mass is requested.");
+                // use tabulated function
+                auto tov_table = auxiliaries::io::read_tabulated_file(cache_path_read.get<std::string>(), {1, 3}, {1, 0});
+                // locate the two consecutive masses that the desired mass lies between
+                auto mass_vect = tov_table.at(1);
+                auto p_vect = tov_table.at(0);
+                size_t first_index = 0;
+                for (first_index = 0; first_index < mass_vect.size() - 1; ++first_index)
+                    if (mass_vect[first_index] <= desired_mass && mass_vect[first_index + 1] > desired_mass)
+                        break;
+                if (first_index == mass_vect.size() - 1)
+                    RHM_THROW(std::runtime_error, "UI error: Desired mass is out of range of the provided TOV cache.");
+                // interpolate the density manually
+                center_pressure = p_vect[first_index] + (desired_mass - mass_vect[first_index]) * (p_vect[first_index + 1] - p_vect[first_index]) / (mass_vect[first_index + 1] - mass_vect[first_index]);
+                center_pressure *= pressure_conversion;
+            }
+            else
+            {
+                RHM_THROW(std::runtime_error, "UI error: TOV center pressure may only be provided in \"LinspacedMinToMax\", \"Same\" or \"MassCached\" modes.");
+            }
         }
-        else if (tov_pressure_provided_as_read == "Same")
-        {
-            center_pressure = center_pressure_read.get<double>() * pressure_conversion;
-        }
-        else if (tov_pressure_provided_as_read == "MassCached")
-        {
-            double desired_mass = center_pressure_read.get<double>(); // expect in m_solar
-            auto cache_path_read = j["TOVSolver"]["CenterPressure"]["CachePath"];
-            if (!(cache_path_read.is_string()))
-                RHM_THROW(std::runtime_error, "UI error: TOV solver center pressure cache path must be provided as a string, if cached mass is requested.");
-            // use tabulated function
-            auto tov_table = auxiliaries::io::read_tabulated_file(cache_path_read.get<std::string>(), {1, 3}, {1, 0});
-            // locate the two consecutive masses that the desired mass lies between
-            auto mass_vect = tov_table.at(1);
-            auto p_vect = tov_table.at(0);
-            size_t first_index = 0;
-            for (first_index = 0; first_index < mass_vect.size() - 1; ++first_index)
-                if (mass_vect[first_index] <= desired_mass && mass_vect[first_index + 1] > desired_mass)
-                    break;
-            if (first_index == mass_vect.size() - 1)
-                RHM_THROW(std::runtime_error, "UI error: Desired mass is out of range of the provided TOV cache.");
-            // interpolate the density manually
-            center_pressure = p_vect[first_index] + (desired_mass - mass_vect[first_index]) * (p_vect[first_index + 1] - p_vect[first_index]) / (mass_vect[first_index + 1] - mass_vect[first_index]);
-            center_pressure *= pressure_conversion;
-        }
-        else
-        {
-            RHM_THROW(std::runtime_error, "UI error: TOV center pressure may only be provided in \"LinspacedMinToMax\", \"Same\" or \"MassCached\" modes.");
-        }
+        
 
         // (->1) EoS Setup
 
-        if (j["CoolingSolver"].is_null())
+        if (!modules_has("COOL"))
             return; // user presents no interest in cooling
 
         // provided particles
@@ -1211,7 +1222,7 @@ namespace instantiator
 
         // (4) Rotochemical heating setup
 
-        if (j["RHSolver"].is_null())
+        if (!modules_has("RH"))
             return; // user does not want rotochemical heating
 
         auto bij_density_read = j["EoSSetup"]["Quantities"]["DensityChemPotentialDerivatives"];
