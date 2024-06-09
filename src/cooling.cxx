@@ -454,6 +454,8 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         {
             return 0.0;
         }
+        if (pf_l == 0)
+            return 0.0;
         double T_loc = T / exp_phi(r);
         double k0 = pow(3 * Pi * Pi * N_sat, 1.0 / 3);
         // alpha >= 0 is to extend the validity of the formula to very low densities
@@ -817,6 +819,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         {
             return 0.0;
         }
+        if (pf_s == 0)
+            return 0.0;
         // placeholders for future use
         double pf_l_mult_onemincos = 0.0;
         // rough estimates for the strong coupling and squark mass (natural units)
@@ -913,6 +917,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         {
             return 0.0;
         }
+        if (pf_s == 0)
+            return 0.0;
         double alpha_c = 1.0;
         double T_loc = T / exp_phi(r);
 
