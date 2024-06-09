@@ -42,7 +42,7 @@ int main(int argc, char **argv)
 
     using namespace instantiator;
 #if RHM_REQUIRES_INPUTFILE
-    instantiator::instantiate_system(args.get<std::string>("inputfile"), , {"TOV", "COOL", "RH"});
+    instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV", "COOL", "RH"});
 #endif
 
 #if RHM_HAS_ROOT
@@ -275,7 +275,7 @@ int main(int argc, char **argv)
         };
         i_omegas[species->first] = auxiliaries::math::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_ns - radius_step, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)();
     }
-    for (auto rh_species = supported_rh_particles.begin(); rh_species != supported_rh_particles.end(); ++rh_species)
+    for (auto rh_species = constants::species::known_particles.begin(); rh_species != constants::species::known_particles.end(); ++rh_species)
     {
         if (i_omegas.find(*rh_species) == i_omegas.end())
         {
@@ -361,7 +361,7 @@ int main(int argc, char **argv)
         // rotochemical heating in npemuds
         auto diff_npl_inf = [&](double r, const auxiliaries::phys::Species &lepton)
         {
-            return exp_phi(r) * (number_densities_of_nbar[constants::species::neutron] != 0) *
+            return exp_phi(r) * (number_densities_of_nbar[constants::species::neutron](nbar(r)) != 0) *
                    (hadron_durca_rate_difference(r, lepton, t, T, etas.at(lepton)) +
                     hadron_murca_rate_difference(r, lepton, t, T, etas.at(lepton)));
         };
@@ -464,7 +464,7 @@ int main(int argc, char **argv)
         double max_diff = 0;
         for (size_t i = 0; i < values.size(); ++i)
         {
-            max_diff = (previous_values[i] != 0) ? std::max(max_diff, std::abs((values[i] - previous_values[i]) / previous_values[i])) : max_diff;
+            max_diff = (previous_values[i] != 0) ? std::max(max_diff, std::abs((values[i] - previous_values[i]) / std::max(previous_values[0], std::abs(previous_values[i])))) : max_diff;
         }
         if (max_diff > cooling_max_diff_per_t_step)
         {

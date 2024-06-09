@@ -156,27 +156,81 @@ int main(int argc, char **argv)
     // instantiate bij; bee is only integrated over hadronic phase
     double b_ee = auxiliaries::math::integrate_volume<>(
                std::function<double(double)>([&nbar, &exp_phi](double r)
-                                             { return dne_to_dmue(nbar(r)) / exp_phi(r) * (number_densities_of_nbar[constants::species::neutron] != 0); }),
+                                             {  
+                    using namespace constants::species;
+                    try
+                    {
+                        return dni_to_dmuj[{electron, electron}](nbar(r)) / exp_phi(r) * (number_densities_of_nbar[neutron](nbar(r)) != 0);
+                    }
+                    catch(const std::exception& e)
+                    {
+                        return 0.0;
+                    } }),
                0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)(),
            b_em = auxiliaries::math::integrate_volume<>(
                std::function<double(double)>([&nbar, &exp_phi](double r)
-                                             { return dne_to_dmum(nbar(r)) / exp_phi(r); }),
+                                             {  
+                    using namespace constants::species;
+                    try
+                    {
+                        return dni_to_dmuj[{electron, muon}](nbar(r)) / exp_phi(r);
+                    }
+                    catch(const std::exception& e)
+                    {
+                        return 0.0;
+                    } }),
                0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)(),
            b_mm = auxiliaries::math::integrate_volume<>(
                std::function<double(double)>([&nbar, &exp_phi](double r)
-                                             { return dnm_to_dmum(nbar(r)) / exp_phi(r); }),
+                                                {  
+                        using namespace constants::species;
+                        try
+                        {
+                            return dni_to_dmuj[{muon, muon}](nbar(r)) / exp_phi(r);
+                        }
+                        catch(const std::exception& e)
+                        {
+                            return 0.0;
+                        } }),
                0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)(),
            b_uu = auxiliaries::math::integrate_volume<>(
                std::function<double(double)>([&nbar, &exp_phi](double r)
-                                             { return dnu_to_dmuu(nbar(r)) / exp_phi(r); }),
+                                             {
+                    using namespace constants::species;
+                    try
+                    {
+                        return dni_to_dmuj[{uquark, uquark}](nbar(r)) / exp_phi(r);
+                    }
+                    catch(const std::exception& e)
+                    {
+                        return 0.0;
+                    } }),
                0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)(),
            b_us = auxiliaries::math::integrate_volume<>(
                std::function<double(double)>([&nbar, &exp_phi](double r)
-                                             { return dnu_to_dmus(nbar(r)) / exp_phi(r); }),
+                                             {
+                    using namespace constants::species;
+                    try
+                    {
+                        return dni_to_dmuj[{uquark, squark}](nbar(r)) / exp_phi(r);
+                    }
+                    catch(const std::exception& e)
+                    {
+                        return 0.0;
+                    } }),
                0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)(),
            b_ss = auxiliaries::math::integrate_volume<>(
                std::function<double(double)>([&nbar, &exp_phi](double r)
-                                             { return dns_to_dmus(nbar(r)) / exp_phi(r); }),
+                                             { 
+                    using namespace constants::species;
+                    try
+                    {
+                        return dni_to_dmuj[{squark, squark}](nbar(r)) / exp_phi(r);
+                    }
+                    catch(const std::exception& e)
+                    {
+                        return 0.0;
+                    } }),
                0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)();
     // std::cout << "b_ee = " << b_ee << " b_em = " << b_em << " b_mm = " << b_mm << " b_uu = " << b_uu << " b_us = " << b_us << " b_ss = " << b_ss << std::endl;
     // We have explicit expressions for inverted bij, so let's calculate them
@@ -396,7 +450,7 @@ int main(int argc, char **argv)
         };
         i_omegas[species->first] = auxiliaries::math::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_ns - radius_step, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)();
     }
-    for (auto rh_species = supported_rh_particles.begin(); rh_species != supported_rh_particles.end(); ++rh_species)
+    for (auto rh_species = constants::species::known_particles.begin(); rh_species != constants::species::known_particles.end(); ++rh_species)
     {
         if (i_omegas.find(*rh_species) == i_omegas.end())
         {
@@ -482,7 +536,7 @@ int main(int argc, char **argv)
         // rotochemical heating in npemuds
         auto diff_npl_inf = [&](double r, const auxiliaries::phys::Species &lepton)
         {
-            return exp_phi(r) * (number_densities_of_nbar[constants::species::neutron] != 0) *
+            return exp_phi(r) * (number_densities_of_nbar[constants::species::neutron](nbar(r)) != 0) *
                    (hadron_durca_rate_difference(r, lepton, t, T, etas.at(lepton)) +
                     hadron_murca_rate_difference(r, lepton, t, T, etas.at(lepton)));
         };
@@ -585,7 +639,7 @@ int main(int argc, char **argv)
         double max_diff = 0;
         for (size_t i = 0; i < values.size(); ++i)
         {
-            max_diff = (previous_values[i] != 0) ? std::max(max_diff, std::abs((values[i] - previous_values[i]) / previous_values[i])) : max_diff;
+            max_diff = (previous_values[i] != 0) ? std::max(max_diff, std::abs((values[i] - previous_values[i]) / std::max(previous_values[0], std::abs(previous_values[i])))) : max_diff;
         }
         if (max_diff > cooling_max_diff_per_t_step)
         {

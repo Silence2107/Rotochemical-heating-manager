@@ -31,7 +31,7 @@ int main(int argc, char **argv)
 
     using namespace instantiator;
 #if RHM_REQUIRES_INPUTFILE
-    instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV"});
+    instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV", "COOL"});
 #endif
 
     double center_pressure = instantiator::center_pressure;
