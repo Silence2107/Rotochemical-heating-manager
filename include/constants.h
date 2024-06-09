@@ -70,6 +70,9 @@ namespace constants
 		const auxiliaries::phys::Species dquark(auxiliaries::phys::Species::ParticleType::kDquark, auxiliaries::phys::Species::ParticleClassification::kQuark, "Dquark", 0.0047, -1.0 / 3.0, 1.0 / 3.0);
 		/// @brief Strange quark species
 		const auxiliaries::phys::Species squark(auxiliaries::phys::Species::ParticleType::kSquark, auxiliaries::phys::Species::ParticleClassification::kQuark, "Squark", 0.095, -1.0 / 3.0, 1.0 / 3.0);
+		/// @brief Array of known particles
+		const std::vector<auxiliaries::phys::Species> known_particles =
+                {neutron, proton, electron, muon, tau, uquark, dquark, squark};
 	}
 }
 

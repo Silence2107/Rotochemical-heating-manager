@@ -77,10 +77,10 @@ Be adviced that for each particle there is an expected mandatory list of propert
         This quantity could use some variety in provision modes.
         ```
     - `"DensityChemPotentialDerivatives"` : $b_{ij} = \frac{\partial n_i}{\partial \mu_j}\Bigg{|}_{\mu_{\ne j}}$ matrix, necessary for rotochemical heating simulation {cite}`Fernandez:2005cg`.
+        - `"Units"` (string/double, [<span style="color:red">RH</span>]) **:** Conversion factor of $b_{ij}$ to natural units (GeV powers). Choose from ["Gev2", "Mev-1Fm-3"], or specify an actual multiplier.
         - `"$PARTICLE_NAME_1"` **:** Column particle.  **Substitute** the entry name with actual species.
-            - `"$PARTICLE_NAME_2"` **:** Row particle.  **Substitute** the entry name with actual species. In total, you may supply $b_{ee}, b_{e\mu}, b_{\mu\mu}, b_{uu}, b_{us}, b_{ss}$, while unsupplemented quantities are assumed zero.
-                - `"Column"` (uint, [<span style="color:red">RH</span>]) **:** Column number with $b_{ij}$. If not specified, the derivative is assumed to be absent for all particles.
-                - `"Units"` (string/double, [<span style="color:red">RH</span>]) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev2", "Mev-1Fm-3"], or specify an actual multiplier.
+            - `"$PARTICLE_NAME_2"` **:** Row particle.  **Substitute** the entry name with actual species. One may supply $b_{ee}, b_{e\mu}, b_{\mu\mu}, b_{uu}, b_{us}, b_{ss}$, while unsupplemented quantities are assumed zero. Currently, other elements are ignored.
+                - `"Column"` (uint, [<span style="color:red">RH</span>]) **:** Column number with $b_{ij}$. If not specified, assumed to be zero.
             ```{note}
             The matrix is presumed to be symmetric, so please refrain from supplying both $b_{ij}$ and $b_{ji}$, as one of them will be ignored.
             ```
