@@ -236,14 +236,8 @@ namespace instantiator
 
     // (4) Rotochemical heating setup
 
-    // Bij matrix independent entries density dependence on nbar
-    // ee, emu, eu, es, mumu, ss
-    std::function<double(double)> dne_to_dmue = [](double nbar) { return 0.0; },
-        dne_to_dmum = [](double nbar) { return 0.0; },
-        dnm_to_dmum = [](double nbar) { return 0.0; },
-        dnu_to_dmuu = [](double nbar) { return 0.0; },
-        dnu_to_dmus = [](double nbar) { return 0.0; },
-        dns_to_dmus = [](double nbar) { return 0.0; };
+    // Bij density matrix dependence on nbar
+    std::map<std::pair<auxiliaries::phys::Species, auxiliaries::phys::Species>, std::function<double(double)>> dni_to_dmuj;
 
     // rotational 2 omega omega_dot dependency of time
     std::function<double(double)> omega_sqr_dot = [](double t)

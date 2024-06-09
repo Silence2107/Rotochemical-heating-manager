@@ -134,14 +134,8 @@ namespace instantiator
 
     // (4) Rotochemical heating setup
 
-    // Bij matrix independent entries density dependence on nbar
-    // ee, emu, eu, es, mumu, ss
-    std::function<double(double)> dne_to_dmue,
-        dne_to_dmum,
-        dnm_to_dmum,
-        dnu_to_dmuu,
-        dnu_to_dmus,
-        dns_to_dmus;
+    // Bij density matrix dependence on nbar
+    std::map<std::pair<auxiliaries::phys::Species, auxiliaries::phys::Species>, std::function<double(double)>> dni_to_dmuj;
 
     // rotational 2 omega omega_dot dependency of time
     std::function<double(double)> omega_sqr_dot;
@@ -578,12 +572,10 @@ namespace instantiator
         if (!particles_read.is_array())
             RHM_THROW(std::runtime_error, "UI error: Particle types must be provided as an array.");
 
-        std::vector<auxiliaries::phys::Species> particles;
+        std::vector<auxiliaries::phys::Species> supplied_particles;
         for (auto particle_name : particles_read)
         {
             using namespace constants::species;
-            std::vector<auxiliaries::phys::Species> known_particles =
-                {neutron, proton, electron, muon, tau, uquark, dquark, squark};
             if (particle_name.is_string())
             {
                 // identify particle with the list of known ones
@@ -592,7 +584,7 @@ namespace instantiator
                 {
                     if (particle_name == known_particle.name())
                     {
-                        particles.push_back(known_particle);
+                        supplied_particles.push_back(known_particle);
                         identified = true;
                         break;
                     }
@@ -607,7 +599,7 @@ namespace instantiator
         // number density functions of baryonic density (natural units) &&
         // fermi momentum functions of baryonic density (natural units)
 
-        for (const auto &particle : particles)
+        for (const auto &particle : supplied_particles)
         {
             auto particle_name = particle.name();
             auto particle_density_read = j["EoSSetup"]["Quantities"]["NumberDensities"][particle_name];
@@ -703,7 +695,7 @@ namespace instantiator
 
         // effective mass functions of baryonic density (natural units)
 
-        for (const auto &particle : particles)
+        for (const auto &particle : supplied_particles)
         {
             auto particle_name = particle.name();
             auto particle_mst_read = j["EoSSetup"]["Quantities"]["EffectiveMasses"][particle_name];
@@ -1225,74 +1217,64 @@ namespace instantiator
         if (!modules_has("RH"))
             return; // user does not want rotochemical heating
 
-        auto bij_density_read = j["EoSSetup"]["Quantities"]["DensityChemPotentialDerivatives"];
-
-        // we expect npemuds (H{npem} + Q{udse}) matter at most.
-        using namespace constants::species;
-
-        // we first see which entries are provided by the user
-
-        auto bee_density_read = bij_density_read["Electron"]["Electron"],
-             bem_density_read = bij_density_read["Electron"]["Muon"],
-             bmm_density_read = bij_density_read["Muon"]["Muon"],
-             buu_density_read = bij_density_read["Uquark"]["Uquark"],
-             bus_density_read = bij_density_read["Uquark"]["Squark"],
-             bss_density_read = bij_density_read["Squark"]["Squark"];
-        bem_density_read = (bem_density_read.is_null() ? bij_density_read["Muon"]["Electron"] : bem_density_read);
-        bus_density_read = (bus_density_read.is_null() ? bij_density_read["Squark"]["Uquark"] : bus_density_read);
-
-        // if all npemuds matter plays role in rotochemical heating,
-        // the number of rows is reduced to 4 (via conservation laws),
-        // namely, (dNe, dNm, dNu, dNs), with 6 independent entries within the matrix.
-
-        // all checks reflecting whether the user provided any good info will be done in the main program
-
-        auto bij_vars = std::vector<std::reference_wrapper<decltype(dne_to_dmue)>>({dne_to_dmue, dne_to_dmum, dnm_to_dmum, dnu_to_dmuu, dnu_to_dmus, dns_to_dmus});
-        auto bij_reads = std::vector<decltype(bee_density_read)>({bee_density_read, bem_density_read, bmm_density_read, buu_density_read, bus_density_read, bss_density_read});
-
-        for (size_t entry_num = 0; entry_num < bij_vars.size(); ++entry_num)
+        auto bij_densities_read = j["EoSSetup"]["Quantities"]["DensityChemPotentialDerivatives"];
+        if (!bij_densities_read.is_null())
         {
-            auto read = bij_reads[entry_num];
-            auto &entry = bij_vars[entry_num];
-            if (!read.is_null())
+            auto conversion_read = bij_densities_read["Units"];
+            double conversion_rh;
+            if (conversion_read.is_null())
+                RHM_THROW(std::runtime_error, "UI error: Units must be provided for \"DensityChemPotentialDerivatives\" entry.");
+            else if (conversion_read.is_number())
+                conversion_rh = conversion_read.get<double>();
+            else if (conversion_read.is_string())
             {
-                auto column_read = read["Column"];
-                auto conversion_read = read["Units"];
-                double conversion;
-                if (conversion_read.is_null())
-                    RHM_THROW(std::runtime_error, "UI error: Units must be provided for each \"DensityChemPotentialDerivatives\" entry.");
-                else if (conversion_read.is_number())
-                    conversion = conversion_read.get<double>();
-                else if (conversion_read.is_string())
+                if (conversion_read == "Gev2")
                 {
-                    if (conversion_read == "Gev2")
-                    {
-                        conversion = 1.0;
-                    }
-                    else if (conversion_read == "Mev-1Fm-3")
-                    {
-                        conversion = constants::conversion::gev_over_mev / constants::conversion::fm3_gev3;
-                    }
-                    else
-                    {
-                        RHM_THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for an \"DensityChemPotentialDerivatives\" entry.");
-                    }
+                    conversion_rh = 1.0;
+                }
+                else if (conversion_read == "Mev-1Fm-3")
+                {
+                    conversion_rh = constants::conversion::gev_over_mev / constants::conversion::fm3_gev3;
                 }
                 else
-                    RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for an \"DensityChemPotentialDerivatives\" entry.");
-                if (!column_read.is_number_integer())
-                    RHM_THROW(std::runtime_error, "UI error: Column number must be provided as an integer for an \"DensityChemPotentialDerivatives\" entry.");
-                entry.get() = [column_read, conversion](double nbar)
                 {
-                    return data_reader({nbar}, column_read) * conversion;
-                };
+                    RHM_THROW(std::runtime_error, "UI error: Unexpected conversion unit provided for \"DensityChemPotentialDerivatives\" entry.");
+                }
             }
             else
-                entry.get() = [](double)
+                RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for an \"DensityChemPotentialDerivatives\" entry.");
+
+            // we expect npemuds (H{npem} + Q{udse}) matter at most.
+            using namespace constants::species;
+
+            for (const auto &particle1 : supplied_particles)
+                for (const auto &particle2 : supplied_particles)
                 {
-                    return 0.0;
-                };
+                    auto particle1_name = particle1.name();
+                    auto particle2_name = particle2.name();
+                    auto bij_density_read = bij_densities_read[particle1_name][particle2_name];
+                    if (bij_density_read.is_null())
+                    {
+                        dni_to_dmuj.insert({std::make_pair(particle1, particle2), [](double)
+                                            { return 0.0; }});
+                        dni_to_dmuj.insert({std::make_pair(particle2, particle1), [](double)
+                                            { return 0.0; }});
+                        continue;
+                    }
+                    auto column_read = bij_density_read["Column"];
+                    if (!column_read.is_number_integer())
+                        RHM_THROW(std::runtime_error, "UI error: Column number must be provided as an integer for an \"DensityChemPotentialDerivatives\" entry.");
+                    dni_to_dmuj.insert({std::make_pair(particle1, particle2), [column_read, conversion_rh](double nbar)
+                                        {
+                                            return data_reader({nbar}, column_read) * conversion_rh;
+                                        }});
+                    dni_to_dmuj.insert({std::make_pair(particle2, particle1), [column_read, conversion_rh](double nbar)
+                                        {
+                                            return data_reader({nbar}, column_read) * conversion_rh;
+                                        }});
+                }
         }
+        
         auto roto_time_units = j["RHSolver"]["TimeUnits"];
         double roto_time_conversion;
         if (roto_time_units.is_null())
