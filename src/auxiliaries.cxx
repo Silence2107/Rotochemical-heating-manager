@@ -405,9 +405,9 @@ std::function<double(double, double, double)> auxiliaries::phys::fermi_specific_
             {
                 // following Blaschke except the gap is provided externally
                 auto exp_factor = superconduct_q_gap(nbar_val) / T_loc;
-                // estimate critical temperature as 0.15 GeV (consider later if we need Tc(nbar))
+                // estimate Tc = 0.4 Delta
                 if (exp_factor > 1.0)
-                    diff *= 3.1 * pow(critical_temperature(0.0, CriticalTemperatureModel::kHadronToQGP) / T_loc, 2.5) * exp(-exp_factor);
+                    diff *= 3.1 * pow(0.4 * exp_factor, 2.5) * exp(-exp_factor);
             }
             cv_dens += diff;
         }
@@ -562,12 +562,13 @@ double auxiliaries::phys::critical_temperature(double k_fermi, auxiliaries::phys
             k_fermi, 5.5E9 / gev_over_k, 2.3 / (1.0E-18 * km_gev), 0.9 / (1.0E-18 * km_gev), 0.0);
     case CriticalTemperatureModel::kCCDK:
         return critical_temperature_smeared_guassian(
-            k_fermi, 6.6E9 / gev_over_k, 0.66 / (1.0E-18 * km_gev), 0.46 / (1.0E-18 * km_gev), 0.69);
+            k_fermi, 5.7E9 / gev_over_k, 0.65 / (1.0E-18 * km_gev), 0.28 / (1.0E-18 * km_gev), 0.24);
     case CriticalTemperatureModel::kAO:
         return critical_temperature_smeared_guassian(
             k_fermi, 2.35E9 / gev_over_k, 0.49 / (1.0E-18 * km_gev), 0.31 / (1.0E-18 * km_gev), 0.0);
-    case CriticalTemperatureModel::kHadronToQGP:
-        return 0.15;
+    case CriticalTemperatureModel::kSFB:
+        return critical_temperature_smeared_guassian(
+            k_fermi, 5.1E9 / gev_over_k, 0.81 / (1.0E-18 * km_gev), 0.56 / (1.0E-18 * km_gev), 1.09);
     default:
         RHM_THROW(std::runtime_error, "Unknown critical temperature model.");
     }

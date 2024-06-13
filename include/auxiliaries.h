@@ -475,7 +475,7 @@ namespace auxiliaries
             kB,
             kC,
             kA2,
-            kHadronToQGP
+            kSFB
         };
 
         /// @brief Critical temperature in given model

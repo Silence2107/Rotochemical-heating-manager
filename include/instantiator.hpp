@@ -1102,13 +1102,6 @@ namespace instantiator
 
         auto select_crit_temp_model = [](const std::string &model_name)
         {
-            /*kAO,
-            kCCDK,
-            kA,
-            kB,
-            kC,
-            kA2,
-            kHadronToQGP*/
             using namespace auxiliaries::phys;
             if (model_name == "AO")
                 return CriticalTemperatureModel::kAO;
@@ -1122,8 +1115,8 @@ namespace instantiator
                 return CriticalTemperatureModel::kC;
             else if (model_name == "A2")
                 return CriticalTemperatureModel::kA2;
-            else if (model_name == "HadronToQGP")
-                return CriticalTemperatureModel::kHadronToQGP;
+            else if (model_name == "SFB")
+                return CriticalTemperatureModel::kSFB;
             else
                 RHM_THROW(std::runtime_error, "UI error: Critical temperature model must be provided as a string among \"AO\", \"CCDK\", \"A\", \"B\", \"C\", \"A2\" or \"HadronToQGP\".");
         };
