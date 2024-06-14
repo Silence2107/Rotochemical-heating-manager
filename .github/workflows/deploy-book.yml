@@ -5,8 +5,6 @@ on:
   push:
     branches:
     - main
-    paths:
-    - docs/**
 
 # This job installs dependencies, builds the book, and pushes it to `gh-pages`
 jobs:
@@ -41,6 +39,7 @@ jobs:
     # Build the book
     - name: Build the book
       run: |
+        cd ./docs
         jupyter-book build .
 
     # Upload the book's HTML as an artifact
