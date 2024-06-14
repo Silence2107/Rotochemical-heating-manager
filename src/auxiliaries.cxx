@@ -532,6 +532,11 @@ double auxiliaries::phys::critical_temperature_smeared_guassian(double k_fermi, 
     return temp_ampl * exp(-pow((k_fermi - k_offs) / k_width, 2) - quad_skew * pow((k_fermi - k_offs) / k_width, 4));
 }
 
+double auxiliaries::phys::critical_temperature_double_lorenzian(double k_fermi, double t0, double k0, double k1, double k2, double k3)
+{
+    return t0 * pow(k_fermi - k0, 2) / (pow(k_fermi - k0, 2) + pow(k1, 2)) * pow(k_fermi - k2, 2) / (pow(k_fermi - k2, 2) + pow(k3, 2));
+}
+
 double auxiliaries::phys::superfluid_gap_1s0(double tau)
 {
     return std::sqrt(1 - tau) * (1.456 - 0.157 / std::sqrt(tau) + 1.764 / tau);
@@ -546,29 +551,45 @@ double auxiliaries::phys::critical_temperature(double k_fermi, auxiliaries::phys
 {
     using namespace constants::conversion;
     using namespace auxiliaries::phys;
+    double fm_gev = 1.0E-18 * km_gev;
     switch (model)
     {
-    case CriticalTemperatureModel::kA:
-        return critical_temperature_smeared_guassian(
-            k_fermi, 1.0E9 / gev_over_k, 1.8 / (1.0E-18 * km_gev), 0.5 / (1.0E-18 * km_gev), 0.0);
-    case CriticalTemperatureModel::kB:
-        return critical_temperature_smeared_guassian(
-            k_fermi, 3.0E9 / gev_over_k, 2.0 / (1.0E-18 * km_gev), 0.5 / (1.0E-18 * km_gev), 0.0);
-    case CriticalTemperatureModel::kC:
-        return critical_temperature_smeared_guassian(
-            k_fermi, 1.0E10 / gev_over_k, 2.5 / (1.0E-18 * km_gev), 0.7 / (1.0E-18 * km_gev), 0.0);
-    case CriticalTemperatureModel::kA2:
-        return critical_temperature_smeared_guassian(
-            k_fermi, 5.5E9 / gev_over_k, 2.3 / (1.0E-18 * km_gev), 0.9 / (1.0E-18 * km_gev), 0.0);
-    case CriticalTemperatureModel::kCCDK:
-        return critical_temperature_smeared_guassian(
-            k_fermi, 5.7E9 / gev_over_k, 0.65 / (1.0E-18 * km_gev), 0.28 / (1.0E-18 * km_gev), 0.24);
-    case CriticalTemperatureModel::kAO:
-        return critical_temperature_smeared_guassian(
-            k_fermi, 2.35E9 / gev_over_k, 0.49 / (1.0E-18 * km_gev), 0.31 / (1.0E-18 * km_gev), 0.0);
-    case CriticalTemperatureModel::kSFB:
-        return critical_temperature_smeared_guassian(
-            k_fermi, 5.1E9 / gev_over_k, 0.81 / (1.0E-18 * km_gev), 0.56 / (1.0E-18 * km_gev), 1.09);
+    case CriticalTemperatureModel::kGIPSF_NS:
+        return critical_temperature_double_lorenzian(
+            k_fermi, 8.8E-3 / 1.76, 0.18 / fm_gev, 0.1 / fm_gev, 1.2 / fm_gev, 0.6 / fm_gev);
+    case CriticalTemperatureModel::kMSH_NS:
+        return critical_temperature_double_lorenzian(
+            k_fermi, 2.45E-3 / 1.76, 0.18 / fm_gev, 0.05 / fm_gev, 1.4 / fm_gev, 0.1 / fm_gev);
+    case CriticalTemperatureModel::kAWP2_NS:
+        return critical_temperature_double_lorenzian(
+            k_fermi, 28E-3 / 1.76, 0.2 / fm_gev, 1.5 / fm_gev, 1.7 / fm_gev, 2.5 / fm_gev);
+    case CriticalTemperatureModel::kSFB_NS:
+        return critical_temperature_double_lorenzian(
+            k_fermi, 45E-3 / 1.76, 0.1 / fm_gev, 4.5 / fm_gev, 1.55 / fm_gev, 2.5 / fm_gev);
+    case CriticalTemperatureModel::kAO_NT:
+        return critical_temperature_double_lorenzian(
+            k_fermi, 4E-3 / 1.19, 1.2 / fm_gev, 0.45 / fm_gev, 3.3 / fm_gev, 5 / fm_gev);
+    case CriticalTemperatureModel::kTTOA_NT:
+        return critical_temperature_double_lorenzian(
+            k_fermi, 2.1E-3 / 1.19, 1.1 / fm_gev, 0.6 / fm_gev, 3.2 / fm_gev, 2.4 / fm_gev);
+    case CriticalTemperatureModel::kBEEHS_NT:
+        return critical_temperature_double_lorenzian(
+            k_fermi, 0.45E-3 / 1.19, 1.0 / fm_gev, 0.4 / fm_gev, 3.2 / fm_gev, 0.25 / fm_gev);
+    case CriticalTemperatureModel::kTTAV_NT:
+        return critical_temperature_double_lorenzian(
+            k_fermi, 3.0E-3 / 1.19, 1.1 / fm_gev, 0.6 / fm_gev, 2.92 / fm_gev, 3.0 / fm_gev);
+    case CriticalTemperatureModel::kCCDK_PS:
+        return critical_temperature_double_lorenzian(
+            k_fermi, 102E-3 / 1.76, 0 / fm_gev, 9.0 / fm_gev, 1.3 / fm_gev, 1.5 / fm_gev);
+    case CriticalTemperatureModel::kAO_PS:
+        return critical_temperature_double_lorenzian(
+            k_fermi, 14E-3 / 1.76, 0.15 / fm_gev, 0.22 / fm_gev, 1.05 / fm_gev, 3.8 / fm_gev);
+    case CriticalTemperatureModel::kBS_PS:
+        return critical_temperature_double_lorenzian(
+            k_fermi, 17E-3 / 1.76, 0 / fm_gev, 2.9 / fm_gev, 0.8 / fm_gev, 0.08 / fm_gev);
+    case CriticalTemperatureModel::kBCLL_PS:
+        return critical_temperature_double_lorenzian(
+            k_fermi, 1.69E-3 / 1.76, 0.05 / fm_gev, 0.07 / fm_gev, 1.05 / fm_gev, 0.16 / fm_gev);
     default:
         RHM_THROW(std::runtime_error, "Unknown critical temperature model.");
     }

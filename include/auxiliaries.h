@@ -466,22 +466,39 @@ namespace auxiliaries
         /// @cite Parametrization - Yanagi, Nagata, 2019
         double critical_temperature_smeared_guassian(double k_fermi, double temp_ampl, double k_offs, double k_width, double quad_skew);
 
-        /// @brief Enumerate choices for the nucleon critical temperature parametrization
+        /// @brief Nucleon critical temperature parametrization
+        /// @param k_fermi fermi momentum [GeV], correspoding to the nucleon
+        /// @param t0 amplitude parameter [GeV]
+        /// @param k0 fit parameter [GeV]
+        /// @param k1 fit parameter [GeV]
+        /// @param k2 fit parameter [GeV]
+        /// @param k3 fit parameter [GeV]
+        /// @return T0 * (k_fermi - k0)^2/((k_fermi - k0)^2 + k1^2) * (k_fermi - k2)^2/((k_fermi - k2)^2 + k3^2)
+        /// @cite Parametrization - Kaminker, Haensel, Yakovlev 2001
+        double critical_temperature_double_lorenzian(double k_fermi, double t0, double k0, double k1, double k2, double k3);
+
+        /// @brief Enumerate choices for the nucleon critical temperature parametrization.
+        /// @brief Naming convention: k{name}_{baryon}{state}
         enum class CriticalTemperatureModel
         {
-            kAO,
-            kCCDK,
-            kA,
-            kB,
-            kC,
-            kA2,
-            kSFB
+            kGIPSF_NS,
+            kMSH_NS,
+            kAWP2_NS,
+            kSFB_NS,
+            kAO_NT,
+            kTTOA_NT,
+            kBEEHS_NT,
+            kTTAV_NT,
+            kCCDK_PS,
+            kAO_PS,
+            kBS_PS,
+            kBCLL_PS
         };
 
         /// @brief Critical temperature in given model
         /// @param k_fermi fermi momentum [GeV], correspoding to the nucleon
         /// @param model choice of the model
-        /// @cite Parametrization - Yanagi, Nagata, 2019
+        /// @cite Fit parameters - Ho, Elshamouty, 2015
         double critical_temperature(double k_fermi, CriticalTemperatureModel model);
 
         /// @brief Superfluid gap in 1S0 state (A)

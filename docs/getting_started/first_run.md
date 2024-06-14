@@ -29,7 +29,7 @@ bin/project/M-R_diagram/m_r_diagram.out --inputfile presupplied/APR4/RHMconfig.j
 ```
 
 **Expected output :**
-- $(M, R)$ pairs of order $(2 \text{M}_\odot, 10 \text{km})$ based on various center density fractions.
+- $(M, R)$ pairs of order $(2 \text{M}_\odot, 10 \text{km})$ based on various center pressure fractions.
     - phenomenal work
 
 **Unexpected output :**

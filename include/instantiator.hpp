@@ -1073,25 +1073,37 @@ namespace instantiator
         superfluid_n_3p2 = !superfluid_n_3p2_read.is_null();
         superfluid_n_1s0 = !superfluid_n_1s0_read.is_null();
 
-        auto select_crit_temp_model = [](const std::string &model_name)
+        auto select_crit_temp_model = [](const std::string &model_name, const std::string &append)
         {
+            auto full_name = model_name + "_" + append;
             using namespace auxiliaries::phys;
-            if (model_name == "AO")
-                return CriticalTemperatureModel::kAO;
-            else if (model_name == "CCDK")
-                return CriticalTemperatureModel::kCCDK;
-            else if (model_name == "A")
-                return CriticalTemperatureModel::kA;
-            else if (model_name == "B")
-                return CriticalTemperatureModel::kB;
-            else if (model_name == "C")
-                return CriticalTemperatureModel::kC;
-            else if (model_name == "A2")
-                return CriticalTemperatureModel::kA2;
-            else if (model_name == "SFB")
-                return CriticalTemperatureModel::kSFB;
+            if (full_name == "GIPSF_NS")
+                return CriticalTemperatureModel::kGIPSF_NS;
+            else if (full_name == "MSH_NS")
+                return CriticalTemperatureModel::kMSH_NS;
+            else if (full_name == "AWP2_NS")
+                return CriticalTemperatureModel::kAWP2_NS;
+            else if (full_name == "SFB_NS")
+                return CriticalTemperatureModel::kSFB_NS;
+            else if (full_name == "AO_NT")
+                return CriticalTemperatureModel::kAO_NT;
+            else if (full_name == "TTOA_NT")
+                return CriticalTemperatureModel::kTTOA_NT;
+            else if (full_name == "BEEHS_NT")
+                return CriticalTemperatureModel::kBEEHS_NT;
+            else if (full_name == "TTAV_NT")
+                return CriticalTemperatureModel::kTTAV_NT;
+            else if (full_name == "CCDK_PS")
+                return CriticalTemperatureModel::kCCDK_PS;
+            else if (full_name == "AO_PS")
+                return CriticalTemperatureModel::kAO_PS;
+            else if (full_name == "BS_PS")
+                return CriticalTemperatureModel::kBS_PS;
+            else if (full_name == "BCLL_PS")
+                return CriticalTemperatureModel::kBCLL_PS;
             else
-                RHM_THROW(std::runtime_error, "UI error: Critical temperature model must be provided as a string among \"AO\", \"CCDK\", \"A\", \"B\", \"C\", \"A2\" or \"HadronToQGP\".");
+                RHM_THROW(std::runtime_error, "UI error: Unsupported critical temperature model. Choose from \"GIPSF\", \"MSH\", \"AWP2\", \"SFB\" for n1S0,"
+                                + "\"AO\", \"TTOA\", \"BEEHS\", \"TTAV\" for n3P2 or \"CCDK\", \"AO\", \"BS\", \"BCLL\" for p1S0.");
         };
 
         if (!superfluid_p_1s0_read.is_string() && superfluid_p_1s0)
@@ -1106,7 +1118,7 @@ namespace instantiator
             if (superfluid_p_1s0)
             {
                 using namespace auxiliaries::phys;
-                return critical_temperature(k_fermi, select_crit_temp_model(superfluid_p_1s0_read.get<std::string>()));
+                return critical_temperature(k_fermi, select_crit_temp_model(superfluid_p_1s0_read.get<std::string>(), "PS"));
             }
             return 0.0;
         };
@@ -1117,14 +1129,14 @@ namespace instantiator
             if (superfluid_n_3p2 && superfluid_n_1s0)
             {
                 if (k_fermi <= k_fermi_of_nbar[neutron](nbar_core_limit))
-                    return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_1s0_read.get<std::string>()));
+                    return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_1s0_read.get<std::string>(), "NS"));
                 else
-                    return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_3p2_read.get<std::string>()));
+                    return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_3p2_read.get<std::string>(), "NT"));
             }
             else if (superfluid_n_3p2)
-                return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_3p2_read.get<std::string>()));
+                return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_3p2_read.get<std::string>(), "NT"));
             else if (superfluid_n_1s0)
-                return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_1s0_read.get<std::string>()));
+                return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_1s0_read.get<std::string>(), "NS"));
             else
                 return 0.0;
         };
