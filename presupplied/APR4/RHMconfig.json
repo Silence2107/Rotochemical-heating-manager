@@ -28,10 +28,7 @@
             {
                 "Units" : "Fm-3",
                 "Column" : 2,
-                "Low" : 6.023E-13,
-                "Upp" : 1.89,
-                "CoreLimit" : 9E-02,
-                "CrustLimit" : 2.096E-02
+                "CoreLimit" : 9E-02
             },
             "NumberDensities" :
             {

@@ -62,12 +62,10 @@ namespace instantiator
     /// while _core_limit, _crust_limit represent phase transition boundaries
     double nbar_low = 6.023E-13 * nbar_conversion,
            nbar_upp = 1.89 * nbar_conversion,
-           nbar_core_limit = 9E-2 * nbar_conversion,
-           nbar_crust_limit = 2.096E-2 * nbar_conversion;
+           nbar_core_limit = 9E-2 * nbar_conversion;
     /// @brief energy density limits in natural units. _low and _upp represent limits of EoS itself <para></para>
     /// while _core_limit represents phase transition boundary
     double edensity_low = energy_density_of_nbar(nbar_low),
-           edensity_core_limit = energy_density_of_nbar(nbar_core_limit),
            edensity_upp = energy_density_of_nbar(nbar_upp);
     /// @brief pressure limits in natural units. _low and _upp represent limits of EoS itself
     double pressure_low = pressure_of_nbar(nbar_low),
@@ -111,7 +109,7 @@ namespace instantiator
 
     std::function<double(double)> ion_volume_fr = [](double nbar)
     {
-        if (nbar >= nbar_crust_limit)
+        if (nbar >= nbar_core_limit)
             return 0.0;
         using namespace constants::conversion;
         using namespace constants::scientific;

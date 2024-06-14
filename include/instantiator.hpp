@@ -41,12 +41,10 @@ namespace instantiator
     /// while _core_limit, _crust_limit represent phase transition boundaries
     double nbar_low,
         nbar_upp,
-        nbar_core_limit,
-        nbar_crust_limit;
+        nbar_core_limit;
     /// @brief energy density limits in natural units. _low and _upp represent limits of EoS itself <para></para>
     /// while _core_limit represents phase transition boundary
     double edensity_low,
-        edensity_core_limit,
         edensity_upp;
     /// @brief pressure limits in natural units. _low and _upp represent limits of EoS itself
     double pressure_low,
@@ -346,65 +344,40 @@ namespace instantiator
         // while _core_limit, _crust_limit represent phase transition boundaries
         auto nbar_low_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["Low"],
              nbar_upp_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["Upp"],
-             nbar_core_limit_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["CoreLimit"],
-             nbar_crust_limit_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["CrustLimit"];
-        if (!(nbar_low_read.is_number() && nbar_upp_read.is_number() && nbar_core_limit_read.is_number()))
-            RHM_THROW(std::runtime_error, "UI error: Barionic density limits must be provided as numbers.");
-
-        if (!nbar_crust_limit_read.is_number() && !nbar_crust_limit_read.is_null())
-            RHM_THROW(std::runtime_error, "UI error: Barionic density crust limit may only be provided as a number.");
-        if (nbar_crust_limit_read.is_null())
-            nbar_crust_limit_read = nbar_core_limit_read;
-
-        nbar_low = nbar_low_read.get<double>() * nbar_conversion;
-        nbar_upp = nbar_upp_read.get<double>() * nbar_conversion;
-        nbar_core_limit = nbar_core_limit_read.get<double>() * nbar_conversion;
-        nbar_crust_limit = nbar_crust_limit_read.get<double>() * nbar_conversion;
-
-        // energy density limits in natural units. _low and _upp represent limits of EoS itself <para></para>
-        // while _core_limit represents phase transition boundary
-        auto edensity_low_read = j["EoSSetup"]["Quantities"]["EnergyDensity"]["Low"],
-             edensity_core_limit_read = j["EoSSetup"]["Quantities"]["EnergyDensity"]["CoreLimit"],
-             edensity_upp_read = j["EoSSetup"]["Quantities"]["EnergyDensity"]["Upp"];
-
-        if (edensity_low_read.is_null() || edensity_low_read == "Deduce")
-            edensity_low = energy_density_of_nbar(nbar_low);
-        else if (edensity_low_read.is_number())
-            edensity_low = edensity_low_read.get<double>() * energy_density_conversion;
+             nbar_core_limit_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["CoreLimit"];
+        if (nbar_low_read.is_null())
+            nbar_low = std::min(table.at(nbar_index).front(), table.at(nbar_index).back()) * nbar_conversion;
         else
-            RHM_THROW(std::runtime_error, "UI error: Energy density low limit may only be provided as a number or \"Deduce\".");
-
-        if (edensity_core_limit_read.is_null() || edensity_core_limit_read == "Deduce")
-            edensity_core_limit = energy_density_of_nbar(nbar_core_limit);
-        else if (edensity_core_limit_read.is_number())
-            edensity_core_limit = edensity_core_limit_read.get<double>() * energy_density_conversion;
+        {
+            if (!(nbar_low_read.is_number()))
+                RHM_THROW(std::runtime_error, "UI error: Barionic density lower limit must be provided as a number.");
+            else
+                nbar_low = nbar_low_read.get<double>() * nbar_conversion;
+        }
+        if (nbar_upp_read.is_null())
+            nbar_upp = std::max(table.at(nbar_index).front(), table.at(nbar_index).back()) * nbar_conversion;
         else
-            RHM_THROW(std::runtime_error, "UI error: Energy density core limit may only be provided as a number or \"Deduce\".");
+        {
+            if (!(nbar_upp_read.is_number()))
+                RHM_THROW(std::runtime_error, "UI error: Barionic density upper limit must be provided as a number.");
+            else
+                nbar_upp = nbar_upp_read.get<double>() * nbar_conversion;
+        }
+        if (modules_has("COOL"))
+        {
+            if (!(nbar_core_limit_read.is_number()))
+                RHM_THROW(std::runtime_error, "UI error: Barionic density core limit must be provided as a number for cooling simulations.");
+            else
+                nbar_core_limit = nbar_core_limit_read.get<double>() * nbar_conversion;
+        }
 
-        if (edensity_upp_read.is_null() || edensity_upp_read == "Deduce")
-            edensity_upp = energy_density_of_nbar(nbar_upp);
-        else if (edensity_upp_read.is_number())
-            edensity_upp = edensity_upp_read.get<double>() * energy_density_conversion;
-        else
-            RHM_THROW(std::runtime_error, "UI error: Energy density upp limit may only be provided as a number or \"Deduce\".");
-
-        // pressure limits in natural units. _low and _upp represent limits of EoS itself
-        auto pressure_low_read = j["EoSSetup"]["Quantities"]["Pressure"]["Low"],
-             pressure_upp_read = j["EoSSetup"]["Quantities"]["Pressure"]["Upp"];
-
-        if (pressure_low_read.is_null() || pressure_low_read == "Deduce")
-            pressure_low = pressure_of_nbar(nbar_low);
-        else if (pressure_low_read.is_number())
-            pressure_low = pressure_low_read.get<double>() * pressure_conversion;
-        else
-            RHM_THROW(std::runtime_error, "UI error: Pressure low limit may only be provided as a number or \"Deduce\".");
-
-        if (pressure_upp_read.is_null() || pressure_upp_read == "Deduce")
-            pressure_upp = pressure_of_nbar(nbar_upp);
-        else if (pressure_upp_read.is_number())
-            pressure_upp = pressure_upp_read.get<double>() * pressure_conversion;
-        else
-            RHM_THROW(std::runtime_error, "UI error: Pressure upp limit may only be provided as a number or \"Deduce\".");
+        // energy density is deduced automatically
+        edensity_low = energy_density_of_nbar(nbar_low);
+        edensity_upp = energy_density_of_nbar(nbar_upp);
+        
+        // pressure is deduced automatically
+        pressure_low = pressure_of_nbar(nbar_low);
+        pressure_upp = pressure_of_nbar(nbar_upp);
 
         // (2) TOV solver setup
 
@@ -780,7 +753,7 @@ namespace instantiator
         else if (ion_volume_provided_as_read == "ExcludedVolume")
             ion_volume_fr = [](double nbar)
             {
-                if (nbar >= nbar_crust_limit)
+                if (nbar >= nbar_core_limit)
                     return 0.0;
                 using namespace constants::conversion;
                 using namespace constants::scientific;

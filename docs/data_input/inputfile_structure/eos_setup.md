@@ -30,21 +30,15 @@ Be adviced that for each particle there is an expected mandatory list of propert
         Example : if your units are $m^{-3}$, the factor must be set to $\frac{1}{\text{m}^3\cdot \text{GeV}^3} \approx 7.72\text{E-}48$, since $n_b[\text{GeV}^3] = \dfrac{n_b[\text{m}^{-3}] \cdot \text{m}^{-3}}{\text{GeV}^3} = n_b[\text{m}^{-3}] \cdot \frac{1}{\text{m}^3\cdot \text{GeV}^3}$
         ```
         - `"Column"` (uint, [<span style="color:red">TOV, COOL, RH</span>]) **:** Column number with baryonic density, counting from 0th.
-        - `"Low"` (double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Smallest accessible $n_b$ within the datafile.
-        - `"Upp"` (double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Biggest accessible $n_b$ within the datafile.
-        - `"CoreLimit"` (double, [<span style="color:red">TOV, COOL, RH</span>]) **:** First $n_b$ upon entering core.
-        - `"CrustLimit"` (double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Last $n_b$ upon leaving crust. If not supplied, "CoreLimit" value is substituted.
+        - `"Low"` (double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Smallest $n_b$, available for access. If not supplied, the minimum value within the datafile is substituted.
+        - `"Upp"` (double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Biggest $n_b$, available for access. If not supplied, the maximum value within the datafile is substituted.
+        - `"CoreLimit"` (double, [<span style="color:red">COOL, RH</span>]) **:** $n_b$ upon entering (inner) core. Is used to determine the n1S0/n3P2 superfluidity transition point and other minor features. 
     - `"EnergyDensity"` **:** Total energy density at the point.
         - `"Units"` (string/double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev4", "MevFm-3", "GCm-3"], or specify an actual multiplier.
         - `"Column"` (uint, [<span style="color:red">TOV, COOL, RH</span>]) **:** Column number with energy density, counting from 0th.
-        - `"Low"` (double/string, [<span style="color:red">TOV, COOL, RH</span>]) **:** Smallest accessible $\rho_E$ within the datafile. Deduced automatically if specified as "Deduce" or if left blank.
-        - `"Upp"` (double/string, [<span style="color:red">TOV, COOL, RH</span>]) **:** Biggest accessible $\rho_E$ within the datafile. Deduced automatically if specified as "Deduce" or if left blank.
-        - `"CoreLimit"` (double/string, [<span style="color:red">TOV, COOL, RH</span>]) **:** First $\rho_E$ upon entering core. Deduced automatically if specified as "Deduce" or if left blank.
     - `"Pressure"` **:** Total pressure at the point.
         - `"Units"` (string/double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev4", "MevFm-3", "DyneCm-2"], or specify an actual multiplier.
         - `"Column"` (uint, [<span style="color:red">TOV, COOL, RH</span>]) **:** Column number with pressure, counting from 0th.
-        - `"Low"` (double/string, [<span style="color:red">TOV, COOL, RH</span>]) **:** Smallest accessible $P$ within the datafile. Deduced automatically if specified as "Deduce" or if left blank.
-        - `"Upp"` (double/string, [<span style="color:red">TOV, COOL, RH</span>]) **:** Biggest accessible $P$ within the datafile. Deduced automatically if specified as "Deduce" or if left blank.
     - `"NumberDensities"` **:** Number densities per each particle at the point.
         - `"$PARTICLE_NAME"` **:** Properties, related to a specific particle. **Substitute** the entry name with actual species among provided in "Particles" array one by one.
             - `"Column"` (uint, [<span style="color:red">COOL, RH</span>]) **:** Column number with number density for given particle, counting from 0th.
