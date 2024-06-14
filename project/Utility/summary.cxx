@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 
     using namespace instantiator;
 #if RHM_REQUIRES_INPUTFILE
-    instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV"});
+    instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV", "COOL"});
 #endif
 
     // RUN --------------------------------------------------------------------------
@@ -103,7 +103,7 @@ int main(int argc, char **argv)
                     // now we somehow have to find corresponding n_B
                     // let's stick to densities
                     double density_at_r = tov(r_current)[1];
-                    if (density_at_r >= edensity_core_limit)
+                    if (density_at_r >= energy_density_of_nbar(nbar_core_limit))
                     {
                         r_core = r_current;
                     }
