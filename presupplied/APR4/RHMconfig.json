@@ -8,8 +8,7 @@
         "Datafile" :
         {
             "Path" : "presupplied/APR4/APR_EOS_Acc_Fe_RHMstandard.dat",
-            "Rows" : [7, 237],
-            "Interpolation" : "Linear"
+            "Rows" : [7, 237]
         },
         "Particles" : ["Electron", "Muon", "Neutron", "Proton"],
         "Quantities" :
@@ -92,16 +91,15 @@
         },
         "Misc" :
         {
-            "#ProtonSuperfluidity1S0" : "AO",
-            "#NeutronSuperfluidity1S0" : "CCDK",
-            "#NeutronSuperfluidity3P2" : "C",
+            "#ProtonSuperfluidity1S0" : "CCDK",
+            "#NeutronSuperfluidity1S0" : "SFB",
+            "#NeutronSuperfluidity3P2" : "AO",
             "CrustalEta" : 2.26E-18
         }
     },
     "TOVSolver" :
     {
         "LengthUnits" : "Km",
-        "EoSInterpolation" : "Linear",
         "EoSDiscretization" : 1000,
         "RadiusStep" : 0.01,
         "SurfacePressure" : 
@@ -112,7 +110,7 @@
         "CenterPressure" : 
         {
             "ProvidedAs" : "LinspacedMinToMax",
-            "Value" : 0.0176975
+            "Value" : 0.0176897
         },
         "AdaptionLimit" : 20
     },

@@ -219,7 +219,7 @@ namespace instantiator
         auxiliaries::math::InterpolationMode eos_datafile_interp_mode;
         auto eos_datafile_interp_read = j["EoSSetup"]["Datafile"]["Interpolation"];
         if (eos_datafile_interp_read.is_null())
-            eos_datafile_interp_mode = auxiliaries::math::InterpolationMode::kLinear;
+            eos_datafile_interp_mode = auxiliaries::math::InterpolationMode::kCubic;
         else if (!(eos_datafile_interp_read.is_string()))
             RHM_THROW(std::runtime_error, "UI error: Datafile interpolation mode may only be a string.");
         else
@@ -387,7 +387,7 @@ namespace instantiator
         auxiliaries::math::InterpolationMode eos_interp_mode;
         auto eos_interp_mode_read = j["TOVSolver"]["EoSInterpolation"];
         if (eos_interp_mode_read.is_null())
-            eos_interp_mode = auxiliaries::math::InterpolationMode::kLinear;
+            eos_interp_mode = auxiliaries::math::InterpolationMode::kCubic;
         else if (!(eos_interp_mode_read.is_string()))
             RHM_THROW(std::runtime_error, "UI error: EoS interpolation mode must be a string.");
         else
@@ -402,7 +402,7 @@ namespace instantiator
         auxiliaries::math::InterpolationMode nbar_interp_mode;
         auto nbar_interp_mode_read = j["TOVSolver"]["BarionicDensityInterpolation"];
         if (nbar_interp_mode_read.is_null())
-            nbar_interp_mode = auxiliaries::math::InterpolationMode::kLinear;
+            nbar_interp_mode = auxiliaries::math::InterpolationMode::kCubic;
         else if (!(nbar_interp_mode_read.is_string()))
             RHM_THROW(std::runtime_error, "UI error: nbar interpolation mode must be a string.");
         else
