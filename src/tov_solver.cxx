@@ -38,7 +38,7 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::function<double(do
 	auto phi_integrand = [&eos_inv](double p)
 	{
 		double rho = eos_inv(p);
-		return - 1.0 / (rho + p);
+		return -1.0 / (rho + p);
 	}; // integrand of phi function wrt pressure
 
 	double adaptive_radius_step = radius_step; // this one radius step may get smaller if we encounter problems
@@ -92,12 +92,19 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::function<double(do
 				++adaption_count;
 				continue;
 			}
+			double linear_coeff = 1;
+			bool surfaced = false;
 			// if we are below surface pressure, we exit EARLY to avoid going beyond EoS domain
 			if (p < surface_pressure)
-				break;
-			m += adaptive_radius_step / 6 * (m_rk[0] + 2 * m_rk[1] + 2 * m_rk[2] + m_rk[3]);
-			r += adaptive_radius_step;
-			phi += 0.5 * (p - df[2].back()) * (phi_integrand(p) + phi_integrand(df[2].back())); // trapezoid integral
+			{
+				// find linear interpolation of pressure between last two points
+				linear_coeff = (df[2].back() - surface_pressure) / (df[2].back() - p);
+				p = surface_pressure;
+				surfaced = true;
+			}
+			m += linear_coeff * adaptive_radius_step / 6 * (m_rk[0] + 2 * m_rk[1] + 2 * m_rk[2] + m_rk[3]);
+			r += linear_coeff * adaptive_radius_step;
+			phi += 0.5 * linear_coeff * (p - df[2].back()) * (phi_integrand(p) + phi_integrand(df[2].back())); // trapezoid integral
 			// memorize results
 			df[0].push_back(r);
 			df[1].push_back(m);
@@ -105,6 +112,9 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::function<double(do
 			df[3].push_back(phi);
 			adaptive_radius_step = radius_step; // reset adaptive radius step
 			adaption_count = 0;					// reset adaption count
+			// exit if reached surface
+			if (surfaced)
+				break;
 		}
 
 		// shift phi function so that to satisfy phi(R) condition
@@ -116,17 +126,13 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::function<double(do
 
 		for (size_t i = 0; i < 3; ++i)
 			cache.push_back([=](double r) mutable
-			{ 
-				return interpolators[i](df[0], df[i + 1], mode, r, false, true); 
-			});
-		
+							{ return interpolators[i](df[0], df[i + 1], mode, r, false, true); });
+
 		cache.push_back([=](double) mutable
-		{
-			return df[0].back();
-		});
+						{ return df[0].back(); });
 	}
 
-	// linear interpolation
+	// Interpolation
 
 	double mass = cache[0](r);
 	double pressure = cache[1](r);
