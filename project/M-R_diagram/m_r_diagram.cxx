@@ -84,12 +84,13 @@ int main(int argc, char **argv)
     auto get_m_r_at_pressure = [&](double pressure)
     {
         // TOV solver
-        auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
-                                                        const std::function<double(double)> &, double, double, double, double, size_t>(tov_solver::tov_solution);
+        auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::function<double(double)>>, std::vector<double>,
+                                                        const std::function<double(double)> &, double, double, double, 
+                                                        double, size_t, auxiliaries::math::InterpolationMode>(tov_solver::tov_solution);
         auto tov = [&tov_cached, &eos_inv_cached, pressure](double r)
         {
             // TOV solution cached
-            return tov_cached(eos_inv_cached, r, pressure, radius_step, surface_pressure, tov_adapt_limit);
+            return tov_cached(eos_inv_cached, r, pressure, radius_step, surface_pressure, tov_adapt_limit, radial_interp_mode);
         };
 
         double r_ns = tov(0.0)[4];

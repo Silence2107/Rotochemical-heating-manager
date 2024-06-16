@@ -127,6 +127,9 @@ namespace instantiator
         return eos_interpolator_cached(input, output, auxiliaries::math::InterpolationMode::kLinear, val, false, true);
     };
 
+    // interpolation mode for radial functions (nbar(r), m(r), ...)
+    auxiliaries::math::InterpolationMode radial_interp_mode = auxiliaries::math::InterpolationMode::kLinear;
+
     // nbar(r) cached interpolator. Only use it if you want to erase cache
     auto nbar_interpolator_cached = auxiliaries::math::CachedInterpolatorWrap(auxiliaries::math::interpolate_cached);
     // Interpolator used for nbar(r)
@@ -177,7 +180,7 @@ namespace instantiator
         if (superfluid_p_1s0)
         {
             using namespace auxiliaries::phys;
-            return critical_temperature(k_fermi, CriticalTemperatureModel::kAO);
+            return critical_temperature(k_fermi, CriticalTemperatureModel::kCCDK_PS);
         }
         return 0.0;
     };
@@ -188,14 +191,14 @@ namespace instantiator
         if (superfluid_n_3p2 && superfluid_n_1s0)
         {
             if (k_fermi <= k_fermi_of_nbar[neutron](nbar_core_limit))
-                return critical_temperature(k_fermi, CriticalTemperatureModel::kCCDK);
+                return critical_temperature(k_fermi, CriticalTemperatureModel::kSFB_NS);
             else
-                return critical_temperature(k_fermi, CriticalTemperatureModel::kC);
+                return critical_temperature(k_fermi, CriticalTemperatureModel::kAO_NT);
         }
         else if (superfluid_n_3p2)
-            return critical_temperature(k_fermi, CriticalTemperatureModel::kC);
+            return critical_temperature(k_fermi, CriticalTemperatureModel::kAO_NT);
         else if (superfluid_n_1s0)
-            return critical_temperature(k_fermi, CriticalTemperatureModel::kCCDK);
+            return critical_temperature(k_fermi, CriticalTemperatureModel::kSFB_NS);
         else
             return 0.0;
     };

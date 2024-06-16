@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 
     using namespace instantiator;
 #if RHM_REQUIRES_INPUTFILE
-    instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV", "COOL"});
+    instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV"});
 #endif
 
     // RUN --------------------------------------------------------------------------
@@ -68,15 +68,14 @@ int main(int argc, char **argv)
 
     // TOV solver
 
-    auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
-                                                    const std::function<double(double)> &, double, double, double, double, size_t>(tov_solver::tov_solution);
+    auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::function<double(double)>>, std::vector<double>,
+                                                    const std::function<double(double)> &, double, double, double,
+                                                    double, size_t, auxiliaries::math::InterpolationMode>(tov_solver::tov_solution);
     auto tov = [&tov_cached, &eos_inv_cached](double r)
     {
         // TOV solution cached
-        return tov_cached(eos_inv_cached, r, center_pressure, radius_step, surface_pressure, tov_adapt_limit);
+        return tov_cached(eos_inv_cached, r, center_pressure, radius_step, surface_pressure, tov_adapt_limit, radial_interp_mode);
     };
-
-    double r_core = 0.0;
 
     auto nbar = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double>(
         [&](std::vector<std::vector<double>> &cache, double r) mutable
@@ -97,10 +96,6 @@ int main(int argc, char **argv)
                     // now we somehow have to find corresponding n_B
                     // let's stick to densities
                     double density_at_r = tov(r_current)[1];
-                    if (density_at_r >= energy_density_of_nbar(nbar_core_limit))
-                    {
-                        r_core = r_current;
-                    }
 
                     double nbar_left = nbar_low, nbar_right = nbar_upp; // we need these for bisection search;
                     double nbar_mid = (nbar_left + nbar_right) / 2.0;
@@ -142,7 +137,6 @@ int main(int argc, char **argv)
     size_t indent = 20;
     std::cout << std::left << std::setw(indent) << "Mass (M sol) : " << m_ns * constants::conversion::gev_over_msol << '\n';
     std::cout << std::left << std::setw(indent) << "Radius (km) : " << r_ns / constants::conversion::km_gev << '\n';
-    std::cout << std::left << std::setw(indent) << "Core radius (km) : " << r_core / constants::conversion::km_gev << '\n';
 
     if (!do_mr_analysis)
         return 0;
@@ -150,12 +144,13 @@ int main(int argc, char **argv)
     auto get_m_r_at_pressure = [&](double pressure)
     {
         // TOV solver
-        auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
-                                                        const std::function<double(double)> &, double, double, double, double, size_t>(tov_solver::tov_solution);
+        auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::function<double(double)>>, std::vector<double>,
+                                                        const std::function<double(double)> &, double, double, double,
+                                                        double, size_t, auxiliaries::math::InterpolationMode>(tov_solver::tov_solution);
         auto tov = [&tov_cached, &eos_inv_cached, pressure](double r)
         {
             // TOV solution cached
-            return tov_cached(eos_inv_cached, r, pressure, radius_step, surface_pressure, tov_adapt_limit);
+            return tov_cached(eos_inv_cached, r, pressure, radius_step, surface_pressure, tov_adapt_limit, radial_interp_mode);
         };
 
         double r_ns = tov(0.0)[4];
@@ -188,6 +183,7 @@ int main(int argc, char **argv)
     std::cout << std::left << std::setw(indent) << "Max mass (M sol) : " << *max_mass_it << '\n';
     std::cout << std::left << std::setw(indent) << "Max mass radius (km) : " << x[std::distance(y.begin(), max_mass_it)] << '\n';
 
+    /*
     // calculate the mass of core appearance
     tov_cached.erase();
     double transition_pressure = pressure_of_nbar(nbar_core_limit);
@@ -195,12 +191,12 @@ int main(int argc, char **argv)
     auto tov_at_transition = [&tov_cached, &eos_inv_cached, transition_pressure](double r)
     {
         // TOV solution cached
-        return tov_cached(eos_inv_cached, r, transition_pressure, radius_step, surface_pressure, tov_adapt_limit);
+        return tov_cached(eos_inv_cached, r, transition_pressure, radius_step, surface_pressure, tov_adapt_limit, radial_interp_mode);
     };
 
     // print core emergence radius and mass
     double r_ns_at_transition = tov_at_transition(0.0)[4];
     double m_ns_at_transition = tov_at_transition(r_ns_at_transition)[0];
     std::cout << std::left << std::setw(indent) << "Core emergence mass (M sol) : " << m_ns_at_transition * constants::conversion::gev_over_msol << '\n';
-    std::cout << std::left << std::setw(indent) << "Core emergence radius (km) : " << r_ns_at_transition / constants::conversion::km_gev << '\n';
+    std::cout << std::left << std::setw(indent) << "Core emergence radius (km) : " << r_ns_at_transition / constants::conversion::km_gev << '\n';*/
 }

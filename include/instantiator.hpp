@@ -68,6 +68,9 @@ namespace instantiator
     // Interpolator used for EoS P/rho
     std::function<double(const std::vector<double> &, const std::vector<double> &, double)> eos_interpolator;
 
+    // interpolation mode for radial functions (nbar(r), m(r), ...)
+    auxiliaries::math::InterpolationMode radial_interp_mode;
+
     // nbar(r) cached interpolator. Only use it if you want to erase cache
     auto nbar_interpolator_cached = auxiliaries::math::CachedInterpolatorWrap(auxiliaries::math::interpolate_cached);
     // Interpolator used for nbar(r)
@@ -399,19 +402,18 @@ namespace instantiator
             return eos_interpolator_cached(input, output, eos_interp_mode, val, false, true);
         };
 
-        auxiliaries::math::InterpolationMode nbar_interp_mode;
-        auto nbar_interp_mode_read = j["TOVSolver"]["BarionicDensityInterpolation"];
-        if (nbar_interp_mode_read.is_null())
-            nbar_interp_mode = auxiliaries::math::InterpolationMode::kCubic;
-        else if (!(nbar_interp_mode_read.is_string()))
-            RHM_THROW(std::runtime_error, "UI error: nbar interpolation mode must be a string.");
+        auto radial_interp_mode_read = j["TOVSolver"]["RadialInterpolation"];
+        if (radial_interp_mode_read.is_null())
+            radial_interp_mode = auxiliaries::math::InterpolationMode::kCubic;
+        else if (!(radial_interp_mode_read.is_string()))
+            RHM_THROW(std::runtime_error, "UI error: Radial interpolation mode must be a string.");
         else
-            nbar_interp_mode = get_interpolation_mode(nbar_interp_mode_read);
+            radial_interp_mode = get_interpolation_mode(radial_interp_mode_read);
 
         // Interpolator used for nbar(r)
-        nbar_interpolator = [nbar_interp_mode](const std::vector<double> &input, const std::vector<double> &output, double val)
+        nbar_interpolator = [](const std::vector<double> &input, const std::vector<double> &output, double val)
         {
-            return nbar_interpolator_cached(input, output, nbar_interp_mode, val, false, true);
+            return nbar_interpolator_cached(input, output, radial_interp_mode, val, false, true);
         };
 
         // EoS linspace discretization
