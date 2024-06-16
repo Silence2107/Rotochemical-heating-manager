@@ -240,54 +240,55 @@ double auxiliaries::math::interpolate_cached(std::function<double(double)> &cach
             };
         }
         break;
+        // This interpolation mode became possible only thanks to https://signalsmith-audio.co.uk/writing/2021/monotonic-smooth-interpolation/
         case auxiliaries::math::InterpolationMode::kCubic:
         {
             if (enable_checks)
-                if (input.size() < 5)
-                    RHM_THROW(std::runtime_error, "Cannot perform cubic interpolation with less than 5 points.");
-            auto tridiagonal_solve = [](const std::vector<double> &subdiag, const std::vector<double> &diag, const std::vector<double> &superdiag, const std::vector<double> &rhs)
+                if (input.size() < 2)
+                    RHM_THROW(std::runtime_error, "Cannot perform cubic interpolation with less than 2 points.");
+            std::vector<double> linear_coeffs(input.size()),
+                quadratic_coeffs(input.size() - 1),
+                cubic_coeffs(input.size() - 1),
+                slopes(input.size() - 1);
+            for (size_t i = 0; i < input.size() - 1; ++i)
             {
-                auxiliaries::math::MatrixD A(diag.size(), diag.size(), 0.0);
-                for (size_t i = 0; i < diag.size(); ++i)
+                slopes[i] = (output[i + 1] - output[i]) / (input[i + 1] - input[i]);
+            }
+            // deal with linear coefficients, which correspond to the slopes at the nodes
+            for (size_t i = 0; i < input.size(); ++i)
+            {
+                // edge cases shall have natural slopes
+                if (i == 0)
                 {
-                    A.at(i, i) = diag[i];
-                    if (i < diag.size() - 1)
-                        A.at(i, i + 1) = superdiag[i];
-                    if (i > 0)
-                        A.at(i, i - 1) = subdiag[i - 1];
+                    linear_coeffs[i] = slopes.front();
+                    continue;
                 }
-                return A.tridiagonal_solve(rhs);
-            };
-            // Solve for quadratic coefficients
-            std::vector<double> subdiag(input.size() - 4);
-            std::vector<double> diag(input.size() - 3);
-            std::vector<double> superdiag(input.size() - 4);
-            std::vector<double> rhs(input.size() - 3);
-            for (size_t i = 0; i < input.size() - 4; ++i)
-            {
-                subdiag[i] = (input[i + 2] - input[i + 1]);
-                superdiag[i] = (input[i + 2] - input[i + 1]);
+                else if (i == input.size() - 1)
+                {
+                    linear_coeffs[i] = slopes.back();
+                    continue;
+                }
+                // we enforce monotonicity by imposing extremum at discrete slope sign change
+                else if (slopes[i - 1] * slopes[i] <= 0)
+                {
+                    linear_coeffs[i] = 0;
+                    continue;
+                }
+                // averaging slopes with weights
+                else
+                    linear_coeffs[i] = (slopes[i - 1] * (input[i + 1] - input[i]) + slopes[i] * (input[i] - input[i - 1])) / (input[i + 1] - input[i - 1]);
+                
+                // In the latter case, make sure linear coefficients are not too large to avoid overshooting.
+                // Note that the signs of the slopes and linear_coeffs are at this point the same.
+                if (linear_coeffs[i] / slopes[i] > 3 || linear_coeffs[i] / slopes[i - 1] > 3)
+                    linear_coeffs[i] = 3 * (linear_coeffs[i] > 0) * std::min(std::abs(slopes[i]), std::abs(slopes[i - 1]));
             }
-            for (size_t i = 0; i < input.size() - 3; ++i)
+            // deal with the rest
+            for (size_t i = 0; i < input.size() - 1; ++i)
             {
-                diag[i] = 2 * (input[i + 2] - input[i]);
-                rhs[i] = 3 * ((output[i + 2] - output[i + 1]) / (input[i + 2] - input[i + 1]) - (output[i + 1] - output[i]) / (input[i + 1] - input[i]));
+                cubic_coeffs[i] = (linear_coeffs[i] + linear_coeffs[i + 1] - 2 * slopes[i]) / pow(input[i + 1] - input[i], 2);
+                quadratic_coeffs[i] = (3 * slopes[i] - linear_coeffs[i + 1] - 2 * linear_coeffs[i]) / (input[i + 1] - input[i]);
             }
-            std::vector<double> quadratic_coeffs = tridiagonal_solve(subdiag, diag, superdiag, rhs);
-            quadratic_coeffs.insert(quadratic_coeffs.begin(), 0);
-            quadratic_coeffs.push_back(0);
-            // Solve for cubic and linear coefficients
-            std::vector<double> cubic_coeffs(input.size() - 1), linear_coeffs(input.size() - 1);
-            for (size_t i = 0; i < input.size() - 2; ++i)
-            {
-                cubic_coeffs[i] = (quadratic_coeffs[i + 1] - quadratic_coeffs[i]) / (3 * (input[i + 1] - input[i]));
-                linear_coeffs[i] = (output[i + 1] - output[i]) / (input[i + 1] - input[i]) - (input[i + 1] - input[i]) * (2 * quadratic_coeffs[i] + quadratic_coeffs[i + 1]) / 3;
-            }
-            linear_coeffs[input.size() - 2] = linear_coeffs[input.size() - 3] + 2 * (input[input.size() - 2] - input[input.size() - 3]) * quadratic_coeffs[input.size() - 3] +
-                                              3 * (input[input.size() - 2] - input[input.size() - 3]) * (input[input.size() - 2] - input[input.size() - 3]) * cubic_coeffs[input.size() - 3];
-            cubic_coeffs[input.size() - 2] = (output[input.size() - 1] - output[input.size() - 2] -
-                                              linear_coeffs[input.size() - 2] * (input[input.size() - 1] - input[input.size() - 2])) /
-                                             ((input[input.size() - 1] - input[input.size() - 2]) * (input[input.size() - 1] - input[input.size() - 2]) * (input[input.size() - 1] - input[input.size() - 2]));
             cache = [=](double x)
             {
                 // find index of x in input sorted array in reasonable time
@@ -312,8 +313,9 @@ double auxiliaries::math::interpolate_cached(std::function<double(double)> &cach
                 if (x == input[low_pos])
                     return output[low_pos];
 
-                return cubic_coeffs[low_pos] * (x - input[low_pos]) * (x - input[low_pos]) * (x - input[low_pos]) + quadratic_coeffs[low_pos] * (x - input[low_pos]) * (x - input[low_pos]) +
-                       linear_coeffs[low_pos] * (x - input[low_pos]) + output[low_pos];
+                double s = x - input[low_pos];
+
+                return cubic_coeffs[low_pos] * s * s * s + quadratic_coeffs[low_pos] * s * s + linear_coeffs[low_pos] * s + output[low_pos];
             };
         }
         break;
@@ -785,7 +787,7 @@ auxiliaries::math::MatrixD auxiliaries::math::MatrixD::inverse() const
             }
         }
     }
-    //Obtain inverse
+    // Obtain inverse
     for (size_t row = 0; row < this->rows(); ++row)
     {
         double factor = 1.0 / augmented.at(row, row);
@@ -917,7 +919,7 @@ auxiliaries::math::MatrixD auxiliaries::math::MatrixD::tridiagonal_inverse() con
     return result;
 }
 
-std::vector<double> auxiliaries::math::MatrixD::tridiagonal_solve(const std::vector<double>& rhs) const
+std::vector<double> auxiliaries::math::MatrixD::tridiagonal_solve(const std::vector<double> &rhs) const
 {
     if (this->rows() != this->columns())
     {
@@ -965,7 +967,7 @@ auxiliaries::math::MatrixD auxiliaries::math::MatrixD::operator+(const MatrixD &
     return result;
 }
 
-auxiliaries::math::MatrixD auxiliaries::math::MatrixD::operator-(const MatrixD& other) const
+auxiliaries::math::MatrixD auxiliaries::math::MatrixD::operator-(const MatrixD &other) const
 {
     if (this->rows() != other.rows() || this->columns() != other.columns())
     {
@@ -982,7 +984,7 @@ auxiliaries::math::MatrixD auxiliaries::math::MatrixD::operator-(const MatrixD& 
     return result;
 }
 
-auxiliaries::math::MatrixD auxiliaries::math::MatrixD::operator*(const MatrixD& other) const
+auxiliaries::math::MatrixD auxiliaries::math::MatrixD::operator*(const MatrixD &other) const
 {
     if (this->columns() != other.rows())
     {

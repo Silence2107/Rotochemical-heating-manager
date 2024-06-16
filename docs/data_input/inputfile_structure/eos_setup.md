@@ -12,12 +12,12 @@ In order to refer to an example, see <span style="color:blue">_presupplied/APR4/
     - `"Path"` (string, [<span style="color:red">TOV, COOL, RH</span>]) **:** valid path to the EoS datafile.
     - `"Rows"` (uint pair, [<span style="color:red">TOV, COOL, RH</span>]) **:** [first, last) row in the inputfile to consider (counting from 0th). Assumes whole file, if not specified. Last row may be specified as 0 to indicate the last row in the file.
     - `"Columns"` (uint pair, [<span style="color:red">TOV, COOL, RH</span>]) **:** [first, last) row in the inputfile to consider (counting from 0th). Deduces from the first row, if not specified. Last column may be specified as 0 to indicate the last column in the file.
-    - `"Interpolation"` (string, [<span style="color:red">TOV, COOL, RH</span>]) **:** Interpolation kind to be used across all columns. Choose from ["Linear", "Cubic"], with "Linear" being default. 
-    ```{warning}
-    Using "Cubic" mode may lead to issues with positivity of some functions, so it is at the moment advised to instead populate the datafile with more points, yet to use "Linear" mode.
-    ```
     ```{warning}
     Be advised that any uint entry (a.k.a. `size_t` in C++) will happily consume negative values(causing overflow), if supplied as such. Since it is usually not the intended behavior, though silently allowed, make sure you supply meaningful values. This applies to **all uint entries** in the inputfile, as well as within the instantiator.
+    ```
+    - `"Interpolation"` (string, [<span style="color:red">TOV, COOL, RH</span>]) **:** Interpolation kind to be used across all columns. Choose from ["Linear", "Cubic"], with "Cubic" being default. 
+    ```{note}
+    "Cubic" mode ensures monotonicity between consecutive nodes, what makes it as stable as "Linear" option even for abrupt functions. "Linear" mode may be a choice, though, if you want to replicate derivative discontinuities.  
     ```
 - `"Particles"` (string array, [<span style="color:red">COOL, RH</span>]) **:** Names for the particles, available in the EoS. Must strictly **and uniquely** match with predefined list ["Neutron", "Proton", "Electron", "Muon", "Tau", "Uquark", "Dquark", "Squark"].
 ```{warning}
