@@ -62,18 +62,12 @@ int main(int argc, char **argv)
             {                                                                                        // then fill/refill cache
                 cache = std::vector<std::vector<double>>(2, std::vector<double>(discr_size_EoS, 0)); // initialize 2xdiscr_size_EoS matrix
                 std::vector<double> x(discr_size_EoS, 0);
-                for (size_t i = 1; i < discr_size_EoS - 1; ++i)
+                for (size_t i = 0; i < discr_size_EoS; ++i)
                 { // cache EoS for further efficiency
-                    x[i] = i * (nbar_upp - nbar_low) / discr_size_EoS + nbar_low;
+                    x[i] = i * (nbar_upp - nbar_low) / (discr_size_EoS - 1) + nbar_low;
                     cache[0][i] = pressure_of_nbar(x[i]);
                     cache[1][i] = energy_density_of_nbar(x[i]);
                 }
-                x[0] = nbar_low;
-                x[x.size() - 1] = nbar_upp;
-                cache[0][0] = pressure_low;
-                cache[0][cache[1].size() - 1] = pressure_upp;
-                cache[1][0] = edensity_low;
-                cache[1][cache[0].size() - 1] = edensity_upp;
                 eos_interpolator_cached.erase(); // clean up cached interpolator
             }
             return eos_interpolator(cache[0], cache[1], p);
