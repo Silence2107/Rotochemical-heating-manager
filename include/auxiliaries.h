@@ -473,7 +473,7 @@ namespace auxiliaries
         /// @param k1 fit parameter [GeV]
         /// @param k2 fit parameter [GeV]
         /// @param k3 fit parameter [GeV]
-        /// @return T0 * (k_fermi - k0)^2/((k_fermi - k0)^2 + k1^2) * (k_fermi - k2)^2/((k_fermi - k2)^2 + k3^2)
+        /// @return T0 * (k_fermi - k0)^2/((k_fermi - k0)^2 + k1^2) * (k_fermi - k2)^2/((k_fermi - k2)^2 + k3^2) * I(k0 < k_fermi < k2)
         /// @cite Parametrization - Kaminker, Haensel, Yakovlev 2001
         double critical_temperature_double_lorenzian(double k_fermi, double t0, double k0, double k1, double k2, double k3);
 
@@ -489,6 +489,9 @@ namespace auxiliaries
             kTTOA_NT,
             kBEEHS_NT,
             kTTAV_NT,
+            kA_NT,
+            kB_NT,
+            kC_NT,
             kCCDK_PS,
             kAO_PS,
             kBS_PS,
