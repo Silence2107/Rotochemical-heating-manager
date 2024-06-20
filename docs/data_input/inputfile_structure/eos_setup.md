@@ -82,7 +82,7 @@ Be adviced that for each particle there is an expected mandatory list of propert
     - `"CrustalEta"` (double, [<span style="color:red">COOL, RH</span>]) **:** Light element share in the atmosphere {cite}`potekhin1997internal`.
     - `"ProtonSuperfluidity1S0"` (string, [<span style="color:red">COOL, RH</span>]) **:** Critical temperature model for protons in 1S0 superfluid state. Choose from ["CCDK", "AO", "BS", "BCLL"] {cite}`Ho_2015`, with normal fluidity being default.
     - `"NeutronSuperfluidity1S0"` (string, [<span style="color:red">COOL, RH</span>]) **:** Critical temperature model for neutrons in 1S0 superfluid state. Choose from ["GIPSF", "MSH", "AWP2", "SFB"] {cite}`Ho_2015`, with normal fluidity being default.
-    - `"NeutronSuperfluidity3P2"` (string, [<span style="color:red">COOL, RH</span>]) **:** Critical temperature model for neutrons in 3P2 superfluid state. Choose from ["AO", "TTOA", "BEEHS", "TTAV"] {cite}`Ho_2015`, with normal fluidity being default.
+    - `"NeutronSuperfluidity3P2"` (string, [<span style="color:red">COOL, RH</span>]) **:** Critical temperature model for neutrons in 3P2 superfluid state. Choose from ["AO", "TTOA", "BEEHS", "TTAV", "A", "B", "C"] {cite}`Ho_2015`, with normal fluidity being default.
     ```{note}
     There is an interplay, if one enables both 1S0 and 3P2 superfluidity for neutrons. In this case, the critical temperature will be imposed as 3P2 in the core and 1S0 beyond the core.
     ```
