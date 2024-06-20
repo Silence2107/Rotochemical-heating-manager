@@ -572,16 +572,16 @@ double auxiliaries::phys::critical_temperature(double k_fermi, auxiliaries::phys
             k_fermi, 45E-3 / 1.76, 0.1 / fm_gev, sqrt(4.5) / fm_gev, 1.55 / fm_gev, sqrt(2.5) / fm_gev);
     case CriticalTemperatureModel::kAO_NT:
         return critical_temperature_double_lorenzian(
-            k_fermi, 4E-3 / 1.19, 1.2 / fm_gev, sqrt(0.45) / fm_gev, 3.3 / fm_gev, sqrt(5.0) / fm_gev);
+            k_fermi, 4E-3 / 8.42, 1.2 / fm_gev, sqrt(0.45) / fm_gev, 3.3 / fm_gev, sqrt(5.0) / fm_gev);
     case CriticalTemperatureModel::kTTOA_NT:
         return critical_temperature_double_lorenzian(
-            k_fermi, 2.1E-3 / 1.19, 1.1 / fm_gev, sqrt(0.6) / fm_gev, 3.2 / fm_gev, sqrt(2.4) / fm_gev);
+            k_fermi, 2.1E-3 / 8.42, 1.1 / fm_gev, sqrt(0.6) / fm_gev, 3.2 / fm_gev, sqrt(2.4) / fm_gev);
     case CriticalTemperatureModel::kBEEHS_NT:
         return critical_temperature_double_lorenzian(
-            k_fermi, 0.45E-3 / 1.19, 1.0 / fm_gev, sqrt(0.4) / fm_gev, 3.2 / fm_gev, sqrt(0.25) / fm_gev);
+            k_fermi, 0.45E-3 / 8.42, 1.0 / fm_gev, sqrt(0.4) / fm_gev, 3.2 / fm_gev, sqrt(0.25) / fm_gev);
     case CriticalTemperatureModel::kTTAV_NT:
         return critical_temperature_double_lorenzian(
-            k_fermi, 3.0E-3 / 1.19, 1.1 / fm_gev, sqrt(0.6) / fm_gev, 2.92 / fm_gev, sqrt(3.0) / fm_gev);
+            k_fermi, 3.0E-3 / 8.42, 1.1 / fm_gev, sqrt(0.6) / fm_gev, 2.92 / fm_gev, sqrt(3.0) / fm_gev);
     case CriticalTemperatureModel::kA_NT:
         return critical_temperature_smeared_guassian(
             k_fermi, 1E9 / gev_over_k, 1.8 / fm_gev, 0.5 / fm_gev, 0.0);
