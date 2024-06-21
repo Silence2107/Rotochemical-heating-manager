@@ -171,7 +171,7 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
     } while (max_diff > newton_eps && ++iter < newton_iter_max);
 
     // return the profiles
-    return {t_profile, l_profile};
+    return {t_profile, l_profile, {static_cast<double>(iter == newton_iter_max)}};
 }
 
 std::vector<double> cooling::solver::coupled_cooling(

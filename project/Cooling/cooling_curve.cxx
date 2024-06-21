@@ -267,6 +267,7 @@ int main(int argc, char **argv)
     while (t_curr < t_end)
     {
         double next_T; // predicted T
+        bool reached_adaption_limit = false;
 
         // non-equilibrium stage
         if (!switch_to_equilibrium(t_curr, profile))
@@ -275,6 +276,7 @@ int main(int argc, char **argv)
                 t_curr, t_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
                 exp_lambda, exp_phi, radii, profile, te_tb, cooling_newton_step_eps, cooling_newton_max_iter);
             next_T = t_l_profiles[0].end()[-2];
+            reached_adaption_limit = t_l_profiles[2][0];
             double max_diff = 0;
             for (size_t i = 0; i < radii.size() - 1; ++i)
             {
@@ -282,7 +284,7 @@ int main(int argc, char **argv)
                 max_diff = std::max(max_diff, fabs(t_l_profiles[0][i] - profile[i]) / profile[i]);
             }
             // std::cout << "max_diff = " << max_diff << '\n';
-            if (max_diff > cooling_max_diff_per_t_step)
+            if (max_diff > cooling_max_diff_per_t_step || reached_adaption_limit)
             {
                 t_step /= 2;
                 // exp_rate_estim = sqrt(exp_rate_estim);

@@ -256,17 +256,20 @@ int main(int argc, char **argv)
     {
         using namespace constants::conversion;
 
-        // if exception is met
-        bool error = false;
+        // if problems are met
+        bool error = false,
+                reached_adaption_limit = false;
         // update
         while (true)
         {
             std::vector<double> new_profile;
             try
             {
-                new_profile = cooling::solver::nonequilibrium_cooling(
+                auto result = cooling::solver::nonequilibrium_cooling(
                     t_curr, time_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
-                    exp_lambda, exp_phi, radii, profile, te_tb, cooling_newton_step_eps, cooling_newton_max_iter)[0];
+                    exp_lambda, exp_phi, radii, profile, te_tb, cooling_newton_step_eps, cooling_newton_max_iter);
+                new_profile = result[0];
+                reached_adaption_limit = result[2][0];
             }
             catch (const std::exception &e)
             {
@@ -287,7 +290,7 @@ int main(int argc, char **argv)
                 max_diff = std::max(max_diff, fabs(new_profile[i] - profile[i]) / profile[i]);
             }
             // std::cout << "max_diff = " << max_diff << '\n';
-            if (max_diff > cooling_max_diff_per_t_step)
+            if (max_diff > cooling_max_diff_per_t_step || reached_adaption_limit)
             {
                 time_step /= 2;
                 // exp_rate_estim = sqrt(exp_rate_estim);
@@ -299,7 +302,7 @@ int main(int argc, char **argv)
         }
 
         if (error)
-            break;
+           break;
 
         t_curr += time_step;
         time_step *= exp_rate_estim;

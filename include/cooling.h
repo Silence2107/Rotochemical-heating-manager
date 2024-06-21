@@ -38,7 +38,7 @@ namespace cooling
         /// @param te_tb Local surface temperature [GeV] as a function of undercrustal T_b^inf [GeV]
         /// @param newton_eps desirable relative accuracy of the solution
         /// @param newton_iter_max maximum number of iterations for the Newton-Raphson method
-        /// @return Temperature, luminosity profiles [T^inf(r, t), Ld^inf(r, t)] as an [2][i_m + 1] array corresponding to radii
+        /// @return Temperature, luminosity profiles [T^inf(r, t), Ld^inf(r, t)] as an [2][i_m + 1] array corresponding to radii; [2] containts additional info : [0] - boolean flag for reaching the adaption limit
         std::vector<std::vector<double>> nonequilibrium_cooling(
             double t_curr, double t_step, const std::function<double(double, double, double)> &neutrino_rate, const std::function<double(double, double, double)> &cv, const std::function<double(double, double, double)> &lambda,
             const std::function<double(double)> &exp_lambda, const std::function<double(double)> &exp_phi, const std::vector<double> &radii, const std::vector<double> &initial_profile,
