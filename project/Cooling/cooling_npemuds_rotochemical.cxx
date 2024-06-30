@@ -70,7 +70,7 @@ int main(int argc, char **argv)
                 std::vector<double> x(discr_size_EoS, 0);
                 for (size_t i = 0; i < discr_size_EoS; ++i)
                 { // cache EoS for further efficiency
-                    x[i] = i * (nbar_upp - nbar_low) / (discr_size_EoS - 1) + nbar_low;
+                    x[i] = nbar_low * pow(nbar_upp / nbar_low, i / (discr_size_EoS - 1.0));
                     cache[0][i] = pressure_of_nbar(x[i]);
                     cache[1][i] = energy_density_of_nbar(x[i]);
                 }
