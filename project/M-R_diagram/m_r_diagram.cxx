@@ -35,9 +35,9 @@ int main(int argc, char **argv)
     parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: M-R-diagram.pdf)");
     parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
 #endif
-    parser.addArgument({"--left_fraction"}, "least fraction of central pressure to consider (optional, default: 0.001)");
+    parser.addArgument({"--left_fraction"}, "least fraction of central pressure to consider (optional, default: 0.0001)");
     parser.addArgument({"--right_fraction"}, "greatest fraction of central pressure to consider (optional, default: 0.999)");
-    parser.addArgument({"--selection_size"}, "number of points to discretize pressure interval (optional, default: 1000)");
+    parser.addArgument({"--selection_size"}, "number of points to discretize pressure interval (optional, default: 5000)");
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
@@ -52,9 +52,9 @@ int main(int argc, char **argv)
         rootfile = new TFile(args.get<std::string>("rootfile_path").c_str(), "RECREATE");
 #endif
 
-    double left_fraction = args.safeGet<double>("left_fraction", 0.001);
+    double left_fraction = args.safeGet<double>("left_fraction", 0.0001);
     double right_fraction = args.safeGet<double>("right_fraction", 0.999);
-    size_t selection_size = args.safeGet<size_t>("selection_size", 1000);
+    size_t selection_size = args.safeGet<size_t>("selection_size", 5000);
 
     // RUN --------------------------------------------------------------------------
 
@@ -103,12 +103,12 @@ int main(int argc, char **argv)
 
     size_t indent = 20;
     std::vector<double> x, y, z;
-    // assemble data for different center densities
+    // assemble data for different center pressures
     std::cout << std::left << std::setw(indent) << "pressure fraction" << std::setw(indent) << "pressure [df. units]" << std::setw(indent) << "M [Ms]" << std::setw(indent) << "R [km]" << '\n';
     for (size_t count = 0; count < selection_size; ++count)
     {
         using namespace constants::conversion;
-        double frac = left_fraction + count * (right_fraction - left_fraction) / (selection_size - 1);
+        double frac = left_fraction * pow((right_fraction / left_fraction), count / (selection_size - 1.0));
         double pressure = frac * (pressure_upp - pressure_low) + pressure_low;
         auto point = get_m_r_at_pressure(pressure);
         x.push_back(point[0] / km_gev);
