@@ -108,7 +108,7 @@ int main(int argc, char **argv)
     for (size_t count = 0; count < selection_size; ++count)
     {
         using namespace constants::conversion;
-        double frac = left_fraction + count * (right_fraction - left_fraction) / (selection_size - 1);
+        double frac = left_fraction * pow((right_fraction / left_fraction), count / (selection_size - 1.0));
         double pressure = frac * (pressure_upp - pressure_low) + pressure_low;
         auto point = get_m_r_at_pressure(pressure);
         x.push_back(point[0] / km_gev);
