@@ -38,6 +38,7 @@ int main(int argc, char **argv)
     parser.addArgument({"--left_fraction"}, "least fraction of central pressure to consider (optional, default: 0.0001)");
     parser.addArgument({"--right_fraction"}, "greatest fraction of central pressure to consider (optional, default: 0.999)");
     parser.addArgument({"--selection_size"}, "number of points to discretize pressure interval (optional, default: 5000)");
+    parser.addArgument({"--restrict_stable"}, "whether to exit early upon reaching dM/dP < 0 with M > 1.8Ms (optional, value-free, default: false)", argparse::ArgumentType::StoreTrue);
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
@@ -55,6 +56,7 @@ int main(int argc, char **argv)
     double left_fraction = args.safeGet<double>("left_fraction", 0.0001);
     double right_fraction = args.safeGet<double>("right_fraction", 0.999);
     size_t selection_size = args.safeGet<size_t>("selection_size", 5000);
+    bool restrict_stable_branch = args.has("restrict_stable");
 
     // RUN --------------------------------------------------------------------------
 
@@ -111,6 +113,10 @@ int main(int argc, char **argv)
         double frac = left_fraction * pow((right_fraction / left_fraction), count / (selection_size - 1.0));
         double pressure = frac * (pressure_upp - pressure_low) + pressure_low;
         auto point = get_m_r_at_pressure(pressure);
+        if(restrict_stable_branch && count != 0)
+            // Early exit if dM/dP < 0 with M/Ms > 1.8
+            if (y.back() > point[1] * gev_over_msol && point[1] * gev_over_msol > 1.8)
+                break;
         x.push_back(point[0] / km_gev);
         y.push_back(point[1] * gev_over_msol);
         z.push_back(pressure / pressure_conversion);
