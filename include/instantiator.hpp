@@ -347,7 +347,7 @@ namespace instantiator
         // while _core_limit, _crust_limit represent phase transition boundaries
         auto nbar_low_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["Low"],
              nbar_upp_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["Upp"],
-             nbar_sf_shift_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["CoreLimit"];
+             nbar_sf_shift_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["SuperfluidShift"];
         if (nbar_low_read.is_null())
             nbar_low = std::min(table.at(nbar_index).front(), table.at(nbar_index).back()) * nbar_conversion;
         else
@@ -368,10 +368,11 @@ namespace instantiator
         }
         if (modules_has("COOL"))
         {
-            if (!(nbar_sf_shift_read.is_number()))
-                RHM_THROW(std::runtime_error, "UI error: Barionic density core limit must be provided as a number for cooling simulations.");
-            else
+            if (nbar_sf_shift_read.is_number())
                 nbar_sf_shift = nbar_sf_shift_read.get<double>() * nbar_conversion;
+            else
+                // assume pure core
+                nbar_sf_shift = nbar_low;
         }
 
         // energy density is deduced automatically

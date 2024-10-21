@@ -27,7 +27,7 @@
             {
                 "Units" : "Fm-3",
                 "Column" : 2,
-                "CoreLimit" : 9E-02
+                "SuperfluidShift" : 9E-02
             },
             "NumberDensities" :
             {
@@ -109,9 +109,8 @@
         },
         "CenterPressure" : 
         {
-            "ProvidedAs": "MassCached",
-            "CachePath": "presupplied/APR4/tov_cache.log",
-            "Value" : 1.4
+            "ProvidedAs": "LinspacedMinToMax",
+            "Value": 0.0176897
         },
         "AdaptionLimit" : 20
     },
