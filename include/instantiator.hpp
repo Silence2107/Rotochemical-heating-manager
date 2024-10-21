@@ -107,12 +107,6 @@ namespace instantiator
     // Cooling settings
     double crust_eta;
 
-    // Critical phenomena settings
-
-    bool superfluid_p_1s0,
-        superfluid_n_3p2,
-        superfluid_n_1s0;
-
     std::function<double(double)> superfluid_p_temp;
     std::function<double(double)> superfluid_n_temp;
     std::function<double(double)> superconduct_q_gap;
@@ -1072,9 +1066,10 @@ namespace instantiator
         auto superfluid_n_3p2_read = j["EoSSetup"]["Misc"]["NeutronSuperfluidity3P2"];
         auto superfluid_n_1s0_read = j["EoSSetup"]["Misc"]["NeutronSuperfluidity1S0"];
 
-        superfluid_p_1s0 = !superfluid_p_1s0_read.is_null();
-        superfluid_n_3p2 = !superfluid_n_3p2_read.is_null();
-        superfluid_n_1s0 = !superfluid_n_1s0_read.is_null();
+        if (superfluid_n_3p2_read.is_null())
+            nbar_sf_shift = nbar_upp;
+        if (superfluid_n_1s0_read.is_null())
+            nbar_sf_shift = nbar_low;
 
         auto select_crit_temp_model = [](const std::string &model_name, const std::string &append)
         {
@@ -1103,16 +1098,16 @@ namespace instantiator
             return crit_temp_models[full_name];
         };
 
-        if (!superfluid_p_1s0_read.is_string() && superfluid_p_1s0)
+        if (!superfluid_p_1s0_read.is_string() && !superfluid_p_1s0_read.is_null())
             RHM_THROW(std::runtime_error, "UI error: Proton superfluidity may only be provided as a string (namely model name).");
-        if (!superfluid_n_3p2_read.is_string() && superfluid_n_3p2)
+        if (!superfluid_n_3p2_read.is_string() && !superfluid_n_3p2_read.is_null())
             RHM_THROW(std::runtime_error, "UI error: Neutron superfluidity may only be provided as a string (namely model name).");
-        if (!superfluid_n_1s0_read.is_string() && superfluid_n_1s0)
+        if (!superfluid_n_1s0_read.is_string() && !superfluid_n_1s0_read.is_null())
             RHM_THROW(std::runtime_error, "UI error: Neutron superfluidity may only be provided as a string (namely model name).");
 
         superfluid_p_temp = [select_crit_temp_model, superfluid_p_1s0_read](double k_fermi)
         {
-            if (superfluid_p_1s0)
+            if (!superfluid_p_1s0_read.is_null())
             {
                 using namespace auxiliaries::phys;
                 return critical_temperature(k_fermi, select_crit_temp_model(superfluid_p_1s0_read.get<std::string>(), "PS"));
@@ -1123,19 +1118,14 @@ namespace instantiator
         {
             using namespace auxiliaries::phys;
             using constants::species::neutron;
-            if (superfluid_n_3p2 && superfluid_n_1s0)
+            if (!superfluid_n_3p2_read.is_null() || !superfluid_n_1s0_read.is_null())
             {
                 if (k_fermi <= k_fermi_of_nbar[neutron](nbar_sf_shift))
                     return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_1s0_read.get<std::string>(), "NS"));
                 else
                     return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_3p2_read.get<std::string>(), "NT"));
             }
-            else if (superfluid_n_3p2)
-                return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_3p2_read.get<std::string>(), "NT"));
-            else if (superfluid_n_1s0)
-                return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_1s0_read.get<std::string>(), "NS"));
-            else
-                return 0.0;
+            return 0.0;
         };
 
         // superconducting gap

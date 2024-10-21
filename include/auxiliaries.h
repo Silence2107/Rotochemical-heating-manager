@@ -307,7 +307,6 @@ namespace auxiliaries
             /// @param other matrix to multiply with
             /// @return matrix product
             MatrixD operator*(const MatrixD &other) const;
-
         };
 
         /// @brief matrix multiplication with scalar
@@ -319,7 +318,7 @@ namespace auxiliaries
         /// @brief matrix multiplication with scalar
         /// @param matrix matrix to multiply with
         /// @param scalar scalar to multiply with
-        /// @return matrix product  
+        /// @return matrix product
         MatrixD operator*(const MatrixD &matrix, double scalar);
 
         /// @brief print matrix to stdout
@@ -377,7 +376,7 @@ namespace auxiliaries
             /// @brief Constructor
             /// @param naming particle type
             /// @param classification particle classification
-            Species(ParticleType naming, ParticleClassification classification, const std::string& name, double mass, double qcharge, double bcharge);
+            Species(ParticleType naming, ParticleClassification classification, const std::string &name, double mass, double qcharge, double bcharge);
             /// @brief Comparison operator
             /// @param other other species
             /// @return true if species are the same
@@ -416,7 +415,6 @@ namespace auxiliaries
             {
                 return m_bcharge;
             }
-            
         };
 
         /// @brief Specific heat of substance, based on Fermi gas model
@@ -425,18 +423,15 @@ namespace auxiliaries
         /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
         /// @param nbar_sf_shift lowest baryon density [GeV^3] with triplet pairing
         /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
-        /// @param superfluid_n_1s0 allow/forbid superfluidity in 1S0 state for neutrons
-        /// @param superfluid_p_1s0 allow/forbid superfluidity in 1S0 state for protons
-        /// @param superfluid_n_3p2 allow/forbid superfluidity in 3P2 state for neutrons
-        /// @param superfluid_p_temp temperature of superfluid protons [GeV]
-        /// @param superfluid_n_temp temperature of superfluid neutrons [GeV]
+        /// @param superfluid_p_temp proton SF critical temperature [GeV] as a function of proton fermi momentum [GeV]
+        /// @param superfluid_n_temp neutron SF critical temperature [GeV] as a function of neutron fermi momentum [GeV]
         /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^3]
         /// @return specific heat as a function of radius, time and T^inf [natural units]
         /// @cite Base density - Yanagi, 2020; superfluidity - Yakovlev, Levenfish, 1999; superconductivity - Blaschke, Grigorian 2001
         std::function<double(double, double, double)> fermi_specific_heat_density(
             const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
             const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-            double nbar_sf_shift, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+            double nbar_sf_shift, const std::function<double(double)> &exp_phi,
             const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp, const std::function<double(double)> &superconduct_q_gap);
 
         /// @brief Thermal conductivity of substance

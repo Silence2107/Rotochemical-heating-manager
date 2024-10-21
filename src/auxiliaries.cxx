@@ -344,8 +344,8 @@ bool auxiliaries::phys::Species::operator<(const auxiliaries::phys::Species &oth
 std::function<double(double, double, double)> auxiliaries::phys::fermi_specific_heat_density(
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-    double nbar_sf_shift, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
-    const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp, const std::function<double(double)> &superconduct_q_gap)
+    double nbar_sf_shift, const std::function<double(double)> &exp_phi, const std::function<double(double)> &superfluid_p_temp, 
+    const std::function<double(double)> &superfluid_n_temp, const std::function<double(double)> &superconduct_q_gap)
 {
     return [=](double r, double t, double T)
     {
@@ -375,31 +375,25 @@ std::function<double(double, double, double)> auxiliaries::phys::fermi_specific_
             };
 
             // proton superfluidity?
-            if (key == proton && superfluid_p_1s0)
+            if (key == proton)
             {
-                double tau = T_loc / superfluid_p_temp(k_fermi);
-                if (tau < 1.0)
+                double T_c = superfluid_p_temp(k_fermi);
+                if (T_loc < T_c)
                 {
+                    double tau = T_loc / T_c;
                     using namespace auxiliaries::phys;
                     diff *= r_A(superfluid_gap_1s0(tau));
                 }
             }
             // neutron superfluidity?
-            else if (key == neutron && (superfluid_n_3p2 || superfluid_n_1s0))
+            else if (key == neutron)
             {
-                double tau = T_loc / superfluid_p_temp(k_fermi);
-                if (tau < 1.0)
+                double T_c = superfluid_p_temp(k_fermi);
+                if (T_loc < T_c)
                 {
+                    double tau = T_loc / T_c;
                     using namespace auxiliaries::phys;
-                    // 1S0/3P2 division at core entrance
-                    if (superfluid_n_1s0 && superfluid_n_3p2)
-                        diff *= (nbar_val > nbar_sf_shift ? r_B(superfluid_gap_3p2(tau)) : r_A(superfluid_gap_1s0(tau)));
-                    // 3P2 only
-                    else if (superfluid_n_3p2)
-                        diff *= r_B(superfluid_gap_3p2(tau));
-                    // 1S0 only
-                    else
-                        diff *= r_A(superfluid_gap_1s0(tau));
+                    diff *= (nbar_val > nbar_sf_shift ? r_B(superfluid_gap_3p2(tau)) : r_A(superfluid_gap_1s0(tau)));
                 }
             }
             // quark superconductivity?
