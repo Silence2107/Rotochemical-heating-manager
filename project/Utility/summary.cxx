@@ -186,7 +186,7 @@ int main(int argc, char **argv)
     /*
     // calculate the mass of core appearance
     tov_cached.erase();
-    double transition_pressure = pressure_of_nbar(nbar_core_limit);
+    double transition_pressure = pressure_of_nbar(nbar_sf_shift);
 
     auto tov_at_transition = [&tov_cached, &eos_inv_cached, transition_pressure](double r)
     {

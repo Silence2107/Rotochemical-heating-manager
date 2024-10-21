@@ -32,7 +32,7 @@ Be adviced that for each particle there is an expected mandatory list of propert
         - `"Column"` (uint, [<span style="color:red">TOV, COOL, RH</span>]) **:** Column number with baryonic density, counting from 0th.
         - `"Low"` (double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Smallest $n_b$, available for access. If not supplied, the minimum value within the datafile is substituted.
         - `"Upp"` (double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Biggest $n_b$, available for access. If not supplied, the maximum value within the datafile is substituted.
-        - `"CoreLimit"` (double, [<span style="color:red">COOL, RH</span>]) **:** $n_b$ upon entering (inner) core. Is used to determine the n1S0/n3P2 superfluidity transition point and other minor features. 
+        - `"SuperfluidShift"` (double, [<span style="color:red">COOL, RH</span>]) **:** $n_b$ upon entering core. Is used to separate the neutron 1S0/3P2 superfluidity regions. Defaults to pure 3P2. Is automatically overriden, if either n1S0 or n3P2 critical temperature is not supplied.
     - `"EnergyDensity"` **:** Total energy density at the point.
         - `"Units"` (string/double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev4", "MevFm-3", "GCm-3"], or specify an actual multiplier.
         - `"Column"` (uint, [<span style="color:red">TOV, COOL, RH</span>]) **:** Column number with energy density, counting from 0th.
@@ -84,6 +84,6 @@ Be adviced that for each particle there is an expected mandatory list of propert
     - `"NeutronSuperfluidity1S0"` (string, [<span style="color:red">COOL, RH</span>]) **:** Critical temperature model for neutrons in 1S0 superfluid state. Choose from ["GIPSF", "MSH", "AWP2", "SFB"] {cite}`Ho_2015`, with normal fluidity being default.
     - `"NeutronSuperfluidity3P2"` (string, [<span style="color:red">COOL, RH</span>]) **:** Critical temperature model for neutrons in 3P2 superfluid state. Choose from ["AO", "TTOA", "BEEHS", "TTAV", "A", "B", "C"] {cite}`Ho_2015`, with normal fluidity being default.
     ```{note}
-    There is an interplay, if one enables both 1S0 and 3P2 superfluidity for neutrons. In this case, the critical temperature will be imposed as 3P2 in the core and 1S0 beyond the core.
+    There is an interplay, if one enables both 1S0 and 3P2 superfluidity for neutrons. In this case, the critical temperature will be imposed as 3P2 above SF shift and 1S0 beyond it.
     ```
 

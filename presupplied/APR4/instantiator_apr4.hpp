@@ -62,7 +62,7 @@ namespace instantiator
     /// while _core_limit, _crust_limit represent phase transition boundaries
     double nbar_low = 6.023E-13 * nbar_conversion,
            nbar_upp = 1.89 * nbar_conversion,
-           nbar_core_limit = 9E-2 * nbar_conversion;
+           nbar_sf_shift = 9E-2 * nbar_conversion;
     /// @brief energy density limits in natural units. _low and _upp represent limits of EoS itself <para></para>
     /// while _core_limit represents phase transition boundary
     double edensity_low = energy_density_of_nbar(nbar_low),
@@ -109,7 +109,7 @@ namespace instantiator
 
     std::function<double(double)> ion_volume_fr = [](double nbar)
     {
-        if (nbar >= nbar_core_limit)
+        if (nbar >= nbar_sf_shift)
             return 0.0;
         using namespace constants::conversion;
         using namespace constants::scientific;
@@ -190,7 +190,7 @@ namespace instantiator
         using constants::species::neutron;
         if (superfluid_n_3p2 && superfluid_n_1s0)
         {
-            if (k_fermi <= k_fermi_of_nbar[neutron](nbar_core_limit))
+            if (k_fermi <= k_fermi_of_nbar[neutron](nbar_sf_shift))
                 return critical_temperature(k_fermi, CriticalTemperatureModel::kSFB_NS);
             else
                 return critical_temperature(k_fermi, CriticalTemperatureModel::kAO_NT);
