@@ -423,7 +423,7 @@ namespace auxiliaries
         /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^3]
         /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^3]
         /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
-        /// @param nbar_core_limit baryon density [GeV^3] at the core
+        /// @param nbar_sf_shift lowest baryon density [GeV^3] with triplet pairing
         /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
         /// @param superfluid_n_1s0 allow/forbid superfluidity in 1S0 state for neutrons
         /// @param superfluid_p_1s0 allow/forbid superfluidity in 1S0 state for protons
@@ -436,7 +436,7 @@ namespace auxiliaries
         std::function<double(double, double, double)> fermi_specific_heat_density(
             const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
             const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-            double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+            double nbar_sf_shift, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
             const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp, const std::function<double(double)> &superconduct_q_gap);
 
         /// @brief Thermal conductivity of substance

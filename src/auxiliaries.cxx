@@ -344,7 +344,7 @@ bool auxiliaries::phys::Species::operator<(const auxiliaries::phys::Species &oth
 std::function<double(double, double, double)> auxiliaries::phys::fermi_specific_heat_density(
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-    double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+    double nbar_sf_shift, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp, const std::function<double(double)> &superconduct_q_gap)
 {
     return [=](double r, double t, double T)
@@ -393,7 +393,7 @@ std::function<double(double, double, double)> auxiliaries::phys::fermi_specific_
                     using namespace auxiliaries::phys;
                     // 1S0/3P2 division at core entrance
                     if (superfluid_n_1s0 && superfluid_n_3p2)
-                        diff *= (nbar_val > nbar_core_limit ? r_B(superfluid_gap_3p2(tau)) : r_A(superfluid_gap_1s0(tau)));
+                        diff *= (nbar_val > nbar_sf_shift ? r_B(superfluid_gap_3p2(tau)) : r_A(superfluid_gap_1s0(tau)));
                     // 3P2 only
                     else if (superfluid_n_3p2)
                         diff *= r_B(superfluid_gap_3p2(tau));

@@ -41,7 +41,7 @@ namespace instantiator
     /// while _core_limit, _crust_limit represent phase transition boundaries
     double nbar_low,
         nbar_upp,
-        nbar_core_limit;
+        nbar_sf_shift;
     /// @brief energy density limits in natural units. _low and _upp represent limits of EoS itself <para></para>
     /// while _core_limit represents phase transition boundary
     double edensity_low,
@@ -347,7 +347,7 @@ namespace instantiator
         // while _core_limit, _crust_limit represent phase transition boundaries
         auto nbar_low_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["Low"],
              nbar_upp_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["Upp"],
-             nbar_core_limit_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["CoreLimit"];
+             nbar_sf_shift_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["CoreLimit"];
         if (nbar_low_read.is_null())
             nbar_low = std::min(table.at(nbar_index).front(), table.at(nbar_index).back()) * nbar_conversion;
         else
@@ -368,10 +368,10 @@ namespace instantiator
         }
         if (modules_has("COOL"))
         {
-            if (!(nbar_core_limit_read.is_number()))
+            if (!(nbar_sf_shift_read.is_number()))
                 RHM_THROW(std::runtime_error, "UI error: Barionic density core limit must be provided as a number for cooling simulations.");
             else
-                nbar_core_limit = nbar_core_limit_read.get<double>() * nbar_conversion;
+                nbar_sf_shift = nbar_sf_shift_read.get<double>() * nbar_conversion;
         }
 
         // energy density is deduced automatically
@@ -755,7 +755,7 @@ namespace instantiator
         else if (ion_volume_provided_as_read == "ExcludedVolume")
             ion_volume_fr = [](double nbar)
             {
-                if (nbar >= nbar_core_limit)
+                if (nbar >= nbar_sf_shift)
                     return 0.0;
                 using namespace constants::conversion;
                 using namespace constants::scientific;
@@ -907,7 +907,7 @@ namespace instantiator
 
             initial_t_profile_inf = [temp_core, temp_crust, redshift_factor](double r, double r_ns, const std::function<double(double)> &exp_phi, const std::function<double(double)> &nbar_of_r)
             {
-                return (nbar_of_r(r) > nbar_core_limit ? temp_core : temp_crust) * redshift_factor(r, r_ns, exp_phi);
+                return (nbar_of_r(r) > nbar_sf_shift ? temp_core : temp_crust) * redshift_factor(r, r_ns, exp_phi);
             };
         }
         else
@@ -1124,7 +1124,7 @@ namespace instantiator
             using constants::species::neutron;
             if (superfluid_n_3p2 && superfluid_n_1s0)
             {
-                if (k_fermi <= k_fermi_of_nbar[neutron](nbar_core_limit))
+                if (k_fermi <= k_fermi_of_nbar[neutron](nbar_sf_shift))
                     return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_1s0_read.get<std::string>(), "NS"));
                 else
                     return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_3p2_read.get<std::string>(), "NT"));

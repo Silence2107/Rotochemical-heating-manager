@@ -240,7 +240,7 @@ std::function<double(double, double)> cooling::predefined::photonic::surface_lum
 std::function<double(double, const auxiliaries::phys::Species &, double, double)> cooling::predefined::neutrinic::hadron_durca_emissivity(
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-    double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+    double nbar_sf_shift, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
     return [=](double r, const auxiliaries::phys::Species &lepton_flavour, double t, double T)
@@ -306,7 +306,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
             //  1S0/3P2 division at core entrance
             if (superfluid_n_3p2 && superfluid_n_1s0)
             {
-                return dens * (nbar_val > nbar_core_limit ? r_B(superfluid_gap_3p2(1 / tau_n_inv)) : r_A(superfluid_gap_1s0(1 / tau_n_inv)));
+                return dens * (nbar_val > nbar_sf_shift ? r_B(superfluid_gap_3p2(1 / tau_n_inv)) : r_A(superfluid_gap_1s0(1 / tau_n_inv)));
             }
             // 1S0 only
             else if (superfluid_n_1s0)
@@ -409,7 +409,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
             if (superfluid_n_1s0 && superfluid_n_3p2)
             {
                 return dens *
-                       (nbar_val > nbar_core_limit ? r_AB(1 / tau_n_inv, 1 / tau_p_inv)
+                       (nbar_val > nbar_sf_shift ? r_AB(1 / tau_n_inv, 1 / tau_p_inv)
                                                    : r_AA(superfluid_gap_1s0(1 / tau_n_inv), superfluid_gap_1s0(1 / tau_p_inv)));
             }
             // pure 1S0 for neutrons
@@ -430,7 +430,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
 std::function<double(double, const auxiliaries::phys::Species &, double, double)> cooling::predefined::neutrinic::hadron_murca_emissivity(
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-    double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+    double nbar_sf_shift, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
     return [=](double r, const auxiliaries::phys::Species &lepton_flavour, double t, double T)
@@ -512,8 +512,8 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
                 //  1S0/3P2 division at core entrance
                 if (superfluid_n_3p2 && superfluid_n_1s0)
                 {
-                    r_Mn_n = (nbar_val > nbar_core_limit ? r_Mn_n_3P2(superfluid_gap_3p2(tau)) : r_Mn_n_1S0(superfluid_gap_1s0(tau)));
-                    r_Mp_n = (nbar_val > nbar_core_limit ? r_Mp_n_3P2(superfluid_gap_3p2(tau)) : r_Mp_n_1S0(superfluid_gap_1s0(tau)));
+                    r_Mn_n = (nbar_val > nbar_sf_shift ? r_Mn_n_3P2(superfluid_gap_3p2(tau)) : r_Mn_n_1S0(superfluid_gap_1s0(tau)));
+                    r_Mp_n = (nbar_val > nbar_sf_shift ? r_Mp_n_3P2(superfluid_gap_3p2(tau)) : r_Mp_n_1S0(superfluid_gap_1s0(tau)));
                 }
                 // 1S0 only
                 else if (superfluid_n_1s0)
@@ -536,7 +536,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
 std::function<double(double, double, double)> cooling::predefined::neutrinic::hadron_bremsstrahlung_emissivity(
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-    const std::function<double(double)> &ion_volume_frac, double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+    const std::function<double(double)> &ion_volume_frac, double nbar_sf_shift, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
     return [=](double r, double t, double T)
@@ -622,8 +622,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
                 // 1S0/3P2 division at core entrance
                 if (superfluid_n_3p2 && superfluid_n_1s0)
                 {
-                    r_nn_n = (nbar_val > nbar_core_limit ? r_nn_n_3P2(superfluid_gap_3p2(tau)) : r_nn_n_1S0(superfluid_gap_1s0(tau)));
-                    r_np_n = (nbar_val > nbar_core_limit ? r_np_n_3P2(superfluid_gap_3p2(tau)) : r_np_n_1S0(superfluid_gap_1s0(tau)));
+                    r_nn_n = (nbar_val > nbar_sf_shift ? r_nn_n_3P2(superfluid_gap_3p2(tau)) : r_nn_n_1S0(superfluid_gap_1s0(tau)));
+                    r_np_n = (nbar_val > nbar_sf_shift ? r_np_n_3P2(superfluid_gap_3p2(tau)) : r_np_n_1S0(superfluid_gap_1s0(tau)));
                 }
                 // 1S0 only
                 else if (superfluid_n_1s0)
@@ -650,7 +650,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
 std::function<double(double, const auxiliaries::phys::Species &, double, double)> cooling::predefined::neutrinic::hadron_pbf_emissivity(
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-    double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+    double nbar_sf_shift, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
     return [=](double r, const auxiliaries::phys::Species &hadron, double t, double T)
@@ -733,7 +733,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
                 // 1S0/3P2 division at core entrance
                 if (superfluid_n_3p2 && superfluid_n_1s0)
                 {
-                    return base_dens * (nbar_val > nbar_core_limit ? a_t * f_t(superfluid_gap_3p2(tau)) : a_s * f_s(superfluid_gap_1s0(tau)));
+                    return base_dens * (nbar_val > nbar_sf_shift ? a_t * f_t(superfluid_gap_3p2(tau)) : a_s * f_s(superfluid_gap_1s0(tau)));
                 }
                 // 1S0 only
                 else if (superfluid_n_1s0)
@@ -1003,7 +1003,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::el
 std::function<double(double, const auxiliaries::phys::Species &, double, double, double)> cooling::predefined::rotochemical::hadron_durca_enhanced_emissivity(
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-    double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+    double nbar_sf_shift, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
     return [=](double r, const auxiliaries::phys::Species &lepton_flavour, double t, double T, double eta)
@@ -1011,7 +1011,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double,
         // DISCLAIMER FOR FUTURE ME
         // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
         double base_emissivity = cooling::predefined::neutrinic::hadron_durca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, nbar_core_limit, exp_phi, superfluid_n_1s0,
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, nbar_sf_shift, exp_phi, superfluid_n_1s0,
             superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp)(r, lepton_flavour, t, T);
         double u = eta / (constants::scientific::Pi * T);
         return base_emissivity * (1 + 1071.0 / 457 * pow(u, 2.0) + 315.0 / 457 * pow(u, 4.0) + 21.0 / 457 * pow(u, 6.0));
@@ -1021,7 +1021,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double,
 std::function<double(double, const auxiliaries::phys::Species &, double, double, double)> cooling::predefined::rotochemical::hadron_murca_enhanced_emissivity(
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-    double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+    double nbar_sf_shift, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
     return [=](double r, const auxiliaries::phys::Species &lepton_flavour, double t, double T, double eta)
@@ -1029,7 +1029,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double,
         // DISCLAIMER FOR FUTURE ME
         // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
         double base_emissivity = cooling::predefined::neutrinic::hadron_murca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, nbar_core_limit, exp_phi, superfluid_n_1s0,
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, nbar_sf_shift, exp_phi, superfluid_n_1s0,
             superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp)(r, lepton_flavour, t, T);
         double u = eta / (constants::scientific::Pi * T);
         return base_emissivity * (1 + 22020.0 / 11513 * pow(u, 2.0) + 5670.0 / 11513 * pow(u, 4.0) + 420.0 / 11513 * pow(u, 6.0) + 9.0 / 11513 * pow(u, 8.0));
@@ -1103,7 +1103,7 @@ std::function<double(double, double, double, double)> cooling::predefined::rotoc
 std::function<double(double, const auxiliaries::phys::Species &, double, double, double)> cooling::predefined::rotochemical::hadron_durca_rate_difference(
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-    double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+    double nbar_sf_shift, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
     return [=](double r, const auxiliaries::phys::Species &lepton_flavour, double t, double T, double eta)
@@ -1111,7 +1111,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double,
         // DISCLAIMER FOR FUTURE ME
         // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
         double base_emissivity = cooling::predefined::neutrinic::hadron_durca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, nbar_core_limit, exp_phi, superfluid_n_1s0,
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, nbar_sf_shift, exp_phi, superfluid_n_1s0,
             superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp)(r, lepton_flavour, t, T);
         double T_loc = T / exp_phi(r);
         using constants::scientific::Pi;
@@ -1124,7 +1124,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double,
 std::function<double(double, const auxiliaries::phys::Species &, double, double, double)> cooling::predefined::rotochemical::hadron_murca_rate_difference(
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-    double nbar_core_limit, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
+    double nbar_sf_shift, const std::function<double(double)> &exp_phi, bool superfluid_n_1s0, bool superfluid_p_1s0, bool superfluid_n_3p2,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
     return [=](double r, const auxiliaries::phys::Species &lepton_flavour, double t, double T, double eta)
@@ -1132,7 +1132,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double,
         // DISCLAIMER FOR FUTURE ME
         // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
         double base_emissivity = cooling::predefined::neutrinic::hadron_murca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, nbar_core_limit, exp_phi, superfluid_n_1s0,
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, nbar_sf_shift, exp_phi, superfluid_n_1s0,
             superfluid_p_1s0, superfluid_n_3p2, superfluid_p_temp, superfluid_n_temp)(r, lepton_flavour, t, T);
         double T_loc = T / exp_phi(r);
         using constants::scientific::Pi;
