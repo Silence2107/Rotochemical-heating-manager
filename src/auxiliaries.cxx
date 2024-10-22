@@ -388,7 +388,7 @@ std::function<double(double, double, double)> auxiliaries::phys::fermi_specific_
             // neutron superfluidity?
             else if (key == neutron)
             {
-                double T_c = superfluid_p_temp(k_fermi);
+                double T_c = superfluid_n_temp(k_fermi);
                 if (T_loc < T_c)
                 {
                     double tau = T_loc / T_c;
