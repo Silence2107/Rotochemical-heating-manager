@@ -1,8 +1,4 @@
 {
-    "System" :
-    {
-        "LogLevel" : "Trace"
-    },
     "EoSSetup" : 
     {
         "Datafile" :
@@ -82,11 +78,6 @@
             "IonVolumeFraction" :
             {
                 "ProvidedAs" : "ExcludedVolume"
-            },
-            "#QuarkSuperconductingGap" :  
-            {
-                "Units" : "Mev",
-                "Column" : 13
             }
         },
         "Misc" :
@@ -120,13 +111,13 @@
         "TimeUnits" : "Yr",
         "TemperatureUnits" : "K",
         "NewtonTolerance" : 1E-5,
-        "NewtonMaxIter" : 50,
+        "NewtonMaxIter" : 10,
         "StepTolerance": 0.05,
         "RadiusStep" : 0.1,
         "TimeInit" : 0.0,
-        "TimeEnd" : 1E+9,
+        "TimeEnd" : 1E+7,
         "TimeBaseStep" : 1.0E-12,
-        "NumberPointsEstimate" : 1000,
+        "NumberPointsEstimate" : 300,
         "TemperatureProfile" :
         {
             "ProvidedAs" : "SurfaceRedshifted",
