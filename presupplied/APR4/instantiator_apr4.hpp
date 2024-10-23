@@ -173,22 +173,24 @@ namespace instantiator
          superfluid_n_3p2 = false,
          superfluid_n_1s0 = false;
 
-    std::function<double(double)> superfluid_p_temp = [](double k_fermi)
+    std::function<double(double)> superfluid_p_temp = [](double nbar)
     {
         if (superfluid_p_1s0)
         {
             using namespace auxiliaries::phys;
-            return critical_temperature(k_fermi, CriticalTemperatureModel::kCCDK_PS);
+            using constants::species::proton;
+            return critical_temperature(k_fermi_of_nbar.at(proton)(nbar), CriticalTemperatureModel::kCCDK_PS);
         }
         return 0.0;
     };
-    std::function<double(double)> superfluid_n_temp = [](double k_fermi)
+    std::function<double(double)> superfluid_n_temp = [](double nbar)
     {
         using namespace auxiliaries::phys;
         using constants::species::neutron;
+        double k_fermi = k_fermi_of_nbar.at(neutron)(nbar);
         if (superfluid_n_3p2 && superfluid_n_1s0)
         {
-            if (k_fermi <= k_fermi_of_nbar[neutron](nbar_sf_shift))
+            if (nbar <= nbar_sf_shift)
                 return critical_temperature(k_fermi, CriticalTemperatureModel::kSFB_NS);
             else
                 return critical_temperature(k_fermi, CriticalTemperatureModel::kAO_NT);

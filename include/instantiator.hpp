@@ -1108,22 +1108,24 @@ namespace instantiator
         if (!superfluid_n_1s0_read.is_string() && !superfluid_n_1s0_read.is_null())
             RHM_THROW(std::runtime_error, "UI error: Neutron superfluidity may only be provided as a string (namely model name).");
 
-        superfluid_p_temp = [select_crit_temp_model, superfluid_p_1s0_read](double k_fermi)
+        superfluid_p_temp = [select_crit_temp_model, superfluid_p_1s0_read](double nbar)
         {
             if (!superfluid_p_1s0_read.is_null())
             {
                 using namespace auxiliaries::phys;
-                return critical_temperature(k_fermi, select_crit_temp_model(superfluid_p_1s0_read.get<std::string>(), "PS"));
+                using constants::species::proton;
+                return critical_temperature(k_fermi_of_nbar.at(proton)(nbar), select_crit_temp_model(superfluid_p_1s0_read.get<std::string>(), "PS"));
             }
             return 0.0;
         };
-        superfluid_n_temp = [select_crit_temp_model, superfluid_n_3p2_read, superfluid_n_1s0_read](double k_fermi)
+        superfluid_n_temp = [select_crit_temp_model, superfluid_n_3p2_read, superfluid_n_1s0_read](double nbar)
         {
             using namespace auxiliaries::phys;
             using constants::species::neutron;
+            double k_fermi = k_fermi_of_nbar.at(neutron)(nbar);
             if (!superfluid_n_3p2_read.is_null() || !superfluid_n_1s0_read.is_null())
             {
-                if (k_fermi <= k_fermi_of_nbar[neutron](nbar_sf_shift))
+                if (nbar <= nbar_sf_shift)
                     return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_1s0_read.get<std::string>(), "NS"));
                 else
                     return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_3p2_read.get<std::string>(), "NT"));
