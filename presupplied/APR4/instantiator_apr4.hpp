@@ -109,12 +109,10 @@ namespace instantiator
 
     std::function<double(double)> ion_volume_fr = [](double nbar)
     {
-        if (nbar >= nbar_sf_shift)
-            return 0.0;
         using namespace constants::conversion;
         using namespace constants::scientific;
         auto eta_ion = 4.0 / 3 * Pi * pow(1.1, 3.0) * fm3_gev3 * energy_density_of_nbar(nbar) / constants::species::neutron.mass();
-        return std::min(1.0, eta_ion);
+        return eta_ion > 1.0 ? 0.0 : eta_ion;
     };
 
     // (2) TOV solver setup
