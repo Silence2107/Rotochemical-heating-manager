@@ -1069,11 +1069,6 @@ namespace instantiator
         auto superfluid_n_3p2_read = j["EoSSetup"]["Misc"]["NeutronSuperfluidity3P2"];
         auto superfluid_n_1s0_read = j["EoSSetup"]["Misc"]["NeutronSuperfluidity1S0"];
 
-        if (superfluid_n_3p2_read.is_null())
-            nbar_sf_shift = nbar_upp;
-        if (superfluid_n_1s0_read.is_null())
-            nbar_sf_shift = nbar_low;
-
         auto select_crit_temp_model = [](const std::string &model_name, const std::string &append)
         {
             auto full_name = model_name + "_" + append;
@@ -1108,25 +1103,28 @@ namespace instantiator
         if (!superfluid_n_1s0_read.is_string() && !superfluid_n_1s0_read.is_null())
             RHM_THROW(std::runtime_error, "UI error: Neutron superfluidity may only be provided as a string (namely model name).");
 
-        superfluid_p_temp = [select_crit_temp_model, superfluid_p_1s0_read](double k_fermi)
+        superfluid_p_temp = [=](double nbar)
         {
             if (!superfluid_p_1s0_read.is_null())
             {
                 using namespace auxiliaries::phys;
-                return critical_temperature(k_fermi, select_crit_temp_model(superfluid_p_1s0_read.get<std::string>(), "PS"));
+                using constants::species::proton;
+                return critical_temperature(k_fermi_of_nbar.at(proton)(nbar), select_crit_temp_model(superfluid_p_1s0_read.get<std::string>(), "PS"));
             }
             return 0.0;
         };
-        superfluid_n_temp = [select_crit_temp_model, superfluid_n_3p2_read, superfluid_n_1s0_read](double k_fermi)
+        superfluid_n_temp = [=](double nbar)
         {
             using namespace auxiliaries::phys;
             using constants::species::neutron;
-            if (!superfluid_n_3p2_read.is_null() || !superfluid_n_1s0_read.is_null())
+            double k_fermi = k_fermi_of_nbar.at(neutron)(nbar);
+            if (nbar <= nbar_sf_shift && !superfluid_n_1s0_read.is_null())
             {
-                if (k_fermi <= k_fermi_of_nbar[neutron](nbar_sf_shift))
-                    return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_1s0_read.get<std::string>(), "NS"));
-                else
-                    return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_3p2_read.get<std::string>(), "NT"));
+                return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_1s0_read.get<std::string>(), "NS"));
+            }
+            if (nbar > nbar_sf_shift && !superfluid_n_3p2_read.is_null())
+            {
+                return critical_temperature(k_fermi, select_crit_temp_model(superfluid_n_3p2_read.get<std::string>(), "NT"));
             }
             return 0.0;
         };

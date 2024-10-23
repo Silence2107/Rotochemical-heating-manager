@@ -32,7 +32,7 @@ Be adviced that for each particle there is an expected mandatory list of propert
         - `"Column"` (uint, [<span style="color:red">TOV, COOL, RH</span>]) **:** Column number with baryonic density, counting from 0th.
         - `"Low"` (double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Smallest $n_b$, available for access. If not supplied, the minimum value within the datafile is substituted.
         - `"Upp"` (double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Biggest $n_b$, available for access. If not supplied, the maximum value within the datafile is substituted.
-        - `"SuperfluidShift"` (double, [<span style="color:red">COOL, RH</span>]) **:** $n_b$ upon entering core. Is used to separate the neutron 1S0/3P2 superfluidity regions. Defaults to pure 3P2. Is automatically overriden, if either n1S0 or n3P2 critical temperature is not supplied.
+        - `"SuperfluidShift"` (double, [<span style="color:red">COOL, RH</span>]) **:** $n_b$ upon entering core. Is used to separate the neutron 1S0/3P2 superfluidity regions. Defaults to pure 3P2.
     - `"EnergyDensity"` **:** Total energy density at the point.
         - `"Units"` (string/double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev4", "MevFm-3", "GCm-3"], or specify an actual multiplier.
         - `"Column"` (uint, [<span style="color:red">TOV, COOL, RH</span>]) **:** Column number with energy density, counting from 0th.

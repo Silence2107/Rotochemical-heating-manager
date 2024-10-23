@@ -423,8 +423,8 @@ namespace auxiliaries
         /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
         /// @param nbar_sf_shift lowest baryon density [GeV^3] with triplet pairing
         /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
-        /// @param superfluid_p_temp proton SF critical temperature [GeV] as a function of proton fermi momentum [GeV]
-        /// @param superfluid_n_temp neutron SF critical temperature [GeV] as a function of neutron fermi momentum [GeV]
+        /// @param superfluid_p_temp proton SF critical temperature [GeV] as a function of baryon density [GeV^3]
+        /// @param superfluid_n_temp neutron SF critical temperature [GeV] as a function of baryon density [GeV^3]
         /// @param superconduct_q_gap quark superconductivity gap [GeV] as a function of baryon density [GeV^3]
         /// @return specific heat as a function of radius, time and T^inf [natural units]
         /// @cite Base density - Yanagi, 2020; superfluidity - Yakovlev, Levenfish, 1999; superconductivity - Blaschke, Grigorian 2001

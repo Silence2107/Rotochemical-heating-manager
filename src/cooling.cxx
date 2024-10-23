@@ -285,8 +285,8 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         };
 
         // I calculate inverse taus so that I do not hit 1/0, and also it signals about whether superfluidity is present
-        double tau_p_inv = superfluid_p_temp(pf_p) / T_loc,
-               tau_n_inv = superfluid_n_temp(pf_n) / T_loc;
+        double tau_p_inv = superfluid_p_temp(nbar_val) / T_loc,
+               tau_n_inv = superfluid_n_temp(nbar_val) / T_loc;
 
         // normal fluidity
         if (tau_p_inv <= 1.0 && tau_n_inv <= 1.0)
@@ -463,7 +463,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         auto r_Mn_n_3P2 = r_Mp_p_1S0; // Following Yakovlev similarity criteria
 
         // proton superfluidity?
-        double T_cp = superfluid_p_temp(pf_p);
+        double T_cp = superfluid_p_temp(nbar_val);
         if (T_loc < T_cp)
         {
             double tau = T_loc / T_cp;
@@ -472,7 +472,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
             r_Mp_p = r_Mp_p_1S0(superfluid_gap_1s0(tau));
         }
         // neutron superfluidity?
-        double T_cn = superfluid_n_temp(pf_n);
+        double T_cn = superfluid_n_temp(nbar_val);
         if (T_loc < T_cn)
         {
             double tau = T_loc / T_cn;
@@ -552,7 +552,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
         auto r_nn_n_3P2 = r_nn_n_1S0;
 
         // proton superfluidity?
-        double T_cp = superfluid_p_temp(pf_p);
+        double T_cp = superfluid_p_temp(nbar_val);
         if (T_loc < T_cp)
         {
             double tau = T_loc / T_cp;
@@ -562,7 +562,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
         }
 
         // neutron superfluidity?
-        double T_cn = superfluid_n_temp(pf_n);
+        double T_cn = superfluid_n_temp(nbar_val);
         if (T_loc < T_cn)
         {
             double tau = T_loc / T_cn;
@@ -605,7 +605,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         if (hadron == neutron)
         {
             // the process is not allowed in normal matter
-            double T_c = superfluid_n_temp(pf);
+            double T_c = superfluid_n_temp(nbar_val);
             if (mst == 0.0 || T_c == 0.0)
                 return 0.0;
             // From Page
@@ -615,7 +615,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         else if (hadron == proton)
         {
             // the process is not allowed in normal matter
-            double T_c = superfluid_p_temp(pf);
+            double T_c = superfluid_p_temp(nbar_val);
             if (mst == 0.0 || T_c == 0.0)
                 return 0.0;
             // Yakovlev's formula appear to include more corrections in a_ps
@@ -648,7 +648,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         if (hadron == proton)
         {
             // T_c is certainly nonzero here
-            double tau = T_loc / superfluid_p_temp(pf);
+            double tau = T_loc / superfluid_p_temp(nbar_val);
             if (tau < 1.0)
             {
                 using namespace auxiliaries::phys;
@@ -660,7 +660,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         if (hadron == neutron)
         {
             // T_c is certainly nonzero here
-            double tau = T_loc / superfluid_n_temp(pf);
+            double tau = T_loc / superfluid_n_temp(nbar_val);
             if (tau < 1.0)
             {
                 using namespace auxiliaries::phys;

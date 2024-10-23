@@ -80,8 +80,8 @@ namespace cooling
             /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
             /// @param nbar_sf_shift lowest baryon density [GeV^3] with triplet pairing
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
-            /// @param superfluid_p_temp proton SF critical temperature [GeV] as a function of proton fermi momentum [GeV]
-            /// @param superfluid_n_temp neutron SF critical temperature [GeV] as a function of neutron fermi momentum [GeV]
+            /// @param superfluid_p_temp proton SF critical temperature [GeV] as a function of baryon density [GeV^3]
+            /// @param superfluid_n_temp neutron SF critical temperature [GeV] as a function of baryon density [GeV^3]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], species, time [GeV], temperature [GeV]
             /// @cite All - Yakovlev, Kaminker, 2000; AB joint superfluidity - Levenfish, Yakovlev, 1994
             std::function<double(double, const auxiliaries::phys::Species &, double, double)> hadron_durca_emissivity(
@@ -96,8 +96,8 @@ namespace cooling
             /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
             /// @param nbar_sf_shift lowest baryon density [GeV^3] with triplet pairing
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
-            /// @param superfluid_p_temp proton SF critical temperature [GeV] as a function of proton fermi momentum [GeV]
-            /// @param superfluid_n_temp neutron SF critical temperature [GeV] as a function of neutron fermi momentum [GeV]
+            /// @param superfluid_p_temp proton SF critical temperature [GeV] as a function of baryon density [GeV^3]
+            /// @param superfluid_n_temp neutron SF critical temperature [GeV] as a function of baryon density [GeV^3]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], species, time [GeV], temperature [GeV]
             /// @cite All - Yakovlev, Kaminker, 2000; Pion exchange coefficients - Yanagi, 2020
             std::function<double(double, const auxiliaries::phys::Species &, double, double)> hadron_murca_emissivity(
@@ -113,8 +113,8 @@ namespace cooling
             /// @param ion_volume_frac volume fraction of ions as a function of baryon density [GeV^3]
             /// @param nbar_sf_shift lowest baryon density [GeV^3] with triplet pairing
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
-            /// @param superfluid_p_temp proton SF critical temperature [GeV] as a function of proton fermi momentum [GeV]
-            /// @param superfluid_n_temp neutron SF critical temperature [GeV] as a function of neutron fermi momentum [GeV]
+            /// @param superfluid_p_temp proton SF critical temperature [GeV] as a function of baryon density [GeV^3]
+            /// @param superfluid_n_temp neutron SF critical temperature [GeV] as a function of baryon density [GeV^3]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
             /// @cite Yakovlev, Kaminker, 2000
             std::function<double(double, double, double)> hadron_bremsstrahlung_emissivity(
@@ -129,8 +129,8 @@ namespace cooling
             /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
             /// @param nbar_sf_shift lowest baryon density [GeV^3] with triplet pairing
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
-            /// @param superfluid_p_temp proton SF critical temperature [GeV] as a function of proton fermi momentum [GeV]
-            /// @param superfluid_n_temp neutron SF critical temperature [GeV] as a function of neutron fermi momentum [GeV]
+            /// @param superfluid_p_temp proton SF critical temperature [GeV] as a function of baryon density [GeV^3]
+            /// @param superfluid_n_temp neutron SF critical temperature [GeV] as a function of baryon density [GeV^3]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], species, time [GeV], temperature [GeV]
             /// @cite Density expression - Page, 2009; superfluidity factors - Yakovlev, Kaminker, 1998
             std::function<double(double, const auxiliaries::phys::Species &, double, double)> hadron_pbf_emissivity(
@@ -226,8 +226,8 @@ namespace cooling
             /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
             /// @param nbar_sf_shift lowest baryon density [GeV^3] with triplet pairing
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
-            /// @param superfluid_p_temp proton SF critical temperature [GeV] as a function of proton fermi momentum [GeV]
-            /// @param superfluid_n_temp neutron SF critical temperature [GeV] as a function of neutron fermi momentum [GeV]
+            /// @param superfluid_p_temp proton SF critical temperature [GeV] as a function of baryon density [GeV^3]
+            /// @param superfluid_n_temp neutron SF critical temperature [GeV] as a function of baryon density [GeV^3]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], species, time [GeV], temperature [GeV] and chemical imbalance [GeV]
             /// @cite RH control function - Reisenegger 1994 (arXiv:astro-ph/9410035)
             std::function<double(double, const auxiliaries::phys::Species &, double, double, double)> hadron_durca_enhanced_emissivity(
@@ -242,8 +242,8 @@ namespace cooling
             /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
             /// @param nbar_sf_shift lowest baryon density [GeV^3] with triplet pairing
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
-            /// @param superfluid_p_temp proton SF critical temperature [GeV] as a function of proton fermi momentum [GeV]
-            /// @param superfluid_n_temp neutron SF critical temperature [GeV] as a function of neutron fermi momentum [GeV]
+            /// @param superfluid_p_temp proton SF critical temperature [GeV] as a function of baryon density [GeV^3]
+            /// @param superfluid_n_temp neutron SF critical temperature [GeV] as a function of baryon density [GeV^3]
             /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], species, time [GeV], temperature [GeV] and chemical imbalance [GeV]
             /// @cite RH control function - Reisenegger 1994 (arXiv:astro-ph/9410035)
             std::function<double(double, const auxiliaries::phys::Species &, double, double, double)> hadron_murca_enhanced_emissivity(
@@ -310,8 +310,8 @@ namespace cooling
             /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
             /// @param nbar_sf_shift lowest baryon density [GeV^3] with triplet pairing
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
-            /// @param superfluid_p_temp proton SF critical temperature [GeV] as a function of proton fermi momentum [GeV]
-            /// @param superfluid_n_temp neutron SF critical temperature [GeV] as a function of neutron fermi momentum [GeV]
+            /// @param superfluid_p_temp proton SF critical temperature [GeV] as a function of baryon density [GeV^3]
+            /// @param superfluid_n_temp neutron SF critical temperature [GeV] as a function of baryon density [GeV^3]
             /// @return Rate difference [GeV^4] as a function of radius [GeV^{-1}], species, time [GeV], temperature [GeV] and chemical imbalance [GeV]
             /// @cite RH control function - Reisenegger 1994 (arXiv:astro-ph/9410035)
             std::function<double(double, const auxiliaries::phys::Species &, double, double, double)> hadron_durca_rate_difference(
@@ -326,8 +326,8 @@ namespace cooling
             /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
             /// @param nbar_sf_shift lowest baryon density [GeV^3] with triplet pairing
             /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
-            /// @param superfluid_p_temp proton SF critical temperature [GeV] as a function of proton fermi momentum [GeV]
-            /// @param superfluid_n_temp neutron SF critical temperature [GeV] as a function of neutron fermi momentum [GeV]
+            /// @param superfluid_p_temp proton SF critical temperature [GeV] as a function of baryon density [GeV^3]
+            /// @param superfluid_n_temp neutron SF critical temperature [GeV] as a function of baryon density [GeV^3]
             /// @return Rate difference [GeV^4] as a function of radius [GeV^{-1}], species, time [GeV], temperature [GeV] and chemical imbalance [GeV]
             /// @cite RH control function - Reisenegger 1994 (arXiv:astro-ph/9410035)
             std::function<double(double, const auxiliaries::phys::Species &, double, double, double)> hadron_murca_rate_difference(
