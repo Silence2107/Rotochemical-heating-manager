@@ -73,7 +73,7 @@ Actual precision of this estimate is unpredictable (given that our PDE solvers a
         \text{array[1]}, n_b \le \text{array[2]}
     \end{cases}  \cdot R(r) \cdot \text{conversion},
     $$
-    where $$\text{array[2]}$$ is automatically converted to $$n_b$$ units.
+    where $\text{array[2]}$ is automatically converted to $n_b$ units.
     ```
 - `"LengthUnits"` (string/double, [<span style="color:red">COOL, RH</span>]) **:** Conversion factor from length to natural units (GeV powers). It must either be supplied as a choice from ["Gev-1", "Km", "M", "Cm"], or as an actual multiplier. Used for "RadiusStep"
 - `"RadiusStep"` (double, [<span style="color:red">COOL, RH</span>]) **:** Defines radius step for cooling PDE. Units are defined by "LengthUnits" entry.
