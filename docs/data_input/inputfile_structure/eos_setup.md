@@ -56,8 +56,8 @@ Be adviced that for each particle there is an expected mandatory list of propert
             
     - `"IonVolumeFraction"` : Ion volume fraction in the crust at the point. Affects neutrino bremsstrahlung in the crust.
         - `"Column"` (uint, [<span style="color:red">COOL, RH</span>]) **:** Column number with ion volume fraction, counting from 0th.
-        - `"ProvidedAs"` (string, [<span style="color:red">COOL, RH</span>]) **:** The way the ion volume fraction is provided. Choose from ["IonVolumeFraction", "Absent", "ExcludedVolume"]. "IonVolumeFraction" mode expects actual ion volume fraction, "Absent" mode renders the ratio zero and "ExcludedVolume" mode performs calculation in the crust
-        $\eta = \text{min}\left[\dfrac{4}{3}\pi (1.1 \text{fm})^3 \dfrac{\rho_E}{m_{\text{nucleon}}}, 1.0\right]$. Defaults to "Absent". "Column" entry is only used in "IonVolumeFraction" mode.
+        - `"ProvidedAs"` (string, [<span style="color:red">COOL, RH</span>]) **:** The way the ion volume fraction is provided. Choose from ["IonVolumeFraction", "Absent", "ExcludedVolume"]. "IonVolumeFraction" mode expects actual ion volume fraction, "Absent" mode renders the ratio zero and "ExcludedVolume" mode performs calculation in the crustal region
+        $\eta = \dfrac{4}{3}\pi (1.1 \text{fm})^3 \dfrac{\rho_E}{m_{\text{nucleon}}}$. Defaults to "Absent". "Column" entry is only used in "IonVolumeFraction" mode.
         ```{note}
         Units are dimensionless for all modes.
         ```

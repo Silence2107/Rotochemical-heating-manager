@@ -750,12 +750,10 @@ namespace instantiator
         else if (ion_volume_provided_as_read == "ExcludedVolume")
             ion_volume_fr = [](double nbar)
             {
-                if (nbar >= nbar_sf_shift)
-                    return 0.0;
                 using namespace constants::conversion;
                 using namespace constants::scientific;
                 auto eta_ion = 4.0 / 3 * Pi * pow(1.1, 3.0) * fm3_gev3 * energy_density_of_nbar(nbar) / constants::species::neutron.mass();
-                return std::min(1.0, eta_ion);
+                return eta_ion > 1.0 ? 0.0 : eta_ion;
             };
         else if (ion_volume_provided_as_read == "IonVolumeFraction")
         {
@@ -883,26 +881,31 @@ namespace instantiator
                 return temp_init * redshift_factor(r, r_ns, exp_phi);
             };
         }
-        else if (initial_t_profile_mode_read == "CoreJump")
+        else if (initial_t_profile_mode_read == "DoublePlateau")
         {
-            // expected parameters: [T_core, T_crust]
-            if (initial_t_profile_params_read.size() != 2)
-                RHM_THROW(std::runtime_error, "UI error: Initial temperature profile parameters must be of size 2 for the \"CoreJump\" mode.");
-            auto temp_core_read = initial_t_profile_params_read[0];
-            auto temp_crust_read = initial_t_profile_params_read[1];
-            double temp_core, temp_crust;
-            if (!(temp_core_read.is_number()))
-                RHM_THROW(std::runtime_error, "UI error: Initial temperature in the core must be provided as a number.");
+            // expected parameters: [T_int, T_ext, n_jump]
+            if (initial_t_profile_params_read.size() != 3)
+                RHM_THROW(std::runtime_error, "UI error: Initial temperature profile parameters must be of size 3 for the \"DoublePlateau\" mode.");
+            auto temp_int_read = initial_t_profile_params_read[0];
+            auto temp_ext_read = initial_t_profile_params_read[1];
+            auto jump_density_read = initial_t_profile_params_read[2];
+            double temp_int, temp_ext, jump_density;
+            if (!(temp_int_read.is_number()))
+                RHM_THROW(std::runtime_error, "UI error: Initial temperature in the interior must be provided as a number.");
             else
-                temp_core = temp_core_read.get<double>() * cooling_temp_conversion;
-            if (!(temp_crust_read.is_number()))
-                RHM_THROW(std::runtime_error, "UI error: Initial temperature in the crust must be provided as a number.");
+                temp_int = temp_int_read.get<double>() * cooling_temp_conversion;
+            if (!(temp_ext_read.is_number()))
+                RHM_THROW(std::runtime_error, "UI error: Initial temperature in the exterior must be provided as a number.");
             else
-                temp_crust = temp_crust_read.get<double>() * cooling_temp_conversion;
+                temp_ext = temp_ext_read.get<double>() * cooling_temp_conversion;
+            if (!(jump_density_read.is_number()))
+                RHM_THROW(std::runtime_error, "UI error: Initial temperature profile jump density must be provided as a number.");
+            else
+                jump_density = jump_density_read.get<double>() * nbar_conversion;
 
-            initial_t_profile_inf = [temp_core, temp_crust, redshift_factor](double r, double r_ns, const std::function<double(double)> &exp_phi, const std::function<double(double)> &nbar_of_r)
+            initial_t_profile_inf = [=](double r, double r_ns, const std::function<double(double)> &exp_phi, const std::function<double(double)> &nbar_of_r)
             {
-                return (nbar_of_r(r) > nbar_sf_shift ? temp_core : temp_crust) * redshift_factor(r, r_ns, exp_phi);
+                return (nbar_of_r(r) > jump_density ? temp_int : temp_ext) * redshift_factor(r, r_ns, exp_phi);
             };
         }
         else

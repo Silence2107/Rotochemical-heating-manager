@@ -57,7 +57,7 @@ Actual precision of this estimate is unpredictable (given that our PDE solvers a
     \end{cases}
     $$
     - `"Parameters"` (array, [<span style="color:red">COOL, RH</span>]) **:** Parameters required for a chosen profile. See "Mode" options for clarification.
-    - `"Mode"` (string, [<span style="color:red">COOL, RH</span>]) **:** Profile's shape. Choose from ["Flat", "CoreJump"].
+    - `"Mode"` (string, [<span style="color:red">COOL, RH</span>]) **:** Profile's shape. Choose from ["Flat", "DoublePlateau"].
     ```{note}
     If "Mode" is supplied as "Flat", then the initial temperature profile is set to be.
 
@@ -65,14 +65,15 @@ Actual precision of this estimate is unpredictable (given that our PDE solvers a
     T^{\infty}(r, t=0) = \text{array[0]} \cdot R(r) \cdot \text{conversion}.
     $$
 
-    If "Mode" is supplied as "CoreJump", then the profile is set to be:
+    If "Mode" is supplied as "DoublePlateau", then the profile is set to be:
 
     $$
     T^{\infty}(r, t=0) = \begin{cases} 
-        \text{array[0]}, n_b > n_b^{core} \\
-        \text{array[1]}, n_b \le n_b^{core}
-    \end{cases}  \cdot R(r) \cdot \text{conversion}.
+        \text{array[0]}, n_b > \text{array[2]} \\
+        \text{array[1]}, n_b \le \text{array[2]}
+    \end{cases}  \cdot R(r) \cdot \text{conversion},
     $$
+    where $$\text{array[2]}$$ is automatically converted to $$n_b$$ units.
     ```
 - `"LengthUnits"` (string/double, [<span style="color:red">COOL, RH</span>]) **:** Conversion factor from length to natural units (GeV powers). It must either be supplied as a choice from ["Gev-1", "Km", "M", "Cm"], or as an actual multiplier. Used for "RadiusStep"
 - `"RadiusStep"` (double, [<span style="color:red">COOL, RH</span>]) **:** Defines radius step for cooling PDE. Units are defined by "LengthUnits" entry.
