@@ -712,8 +712,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         }
 
         dens_ud *= pf_l;
-        // q superconductivity?
-        return dens_ud * exp(-superconduct_q_gap(nbar_val) / T_loc);
+        // q phenomenological 2SC?
+        return dens_ud * (1.0 / 3 + 2.0 / 3 * exp(-superconduct_q_gap(nbar_val) / T_loc));
     };
 }
 
@@ -774,8 +774,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         }
         dens_us *= pf_l_mult_onemincos;
 
-        // q superconductivity?
-        return dens_us * exp(-superconduct_q_gap(nbar_val) / T_loc);
+        // q phenomenological 2SC?
+        return dens_us * (1.0 / 3 + 2.0 / 3 * exp(-superconduct_q_gap(nbar_val) / T_loc));
     };
 }
 
@@ -809,8 +809,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         // G_F^2 \cos^2 \theta_c = 1.284E-10 GeV^{-4}, therefore the prefactor
         double dens = 1.284E-10 * alpha_c * alpha_c * (pf_u + pf_d) * pow(T_loc, 8);
 
-        // q superconductivity?
-        dens *= exp(-2.0 * superconduct_q_gap(nbar_val) / T_loc);
+        // q phenomenological 2SC?
+        dens *= pow((1.0 / 3 + 2.0 / 3 * exp(-superconduct_q_gap(nbar_val) / T_loc)), 2.0);
         return dens;
     };
 }
@@ -847,8 +847,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         // G_F^2 \sin^2 \theta_c = 6.9E-12 GeV^{-4}, therefore the prefactor
         double dens = 6.9E-12 * alpha_c * alpha_c * (pf_u + pf_u) * pow(T_loc, 8);
 
-        // q superconductivity?
-        dens *= exp(-2.0 * superconduct_q_gap(nbar_val) / T_loc);
+        // q phenomenological 2SC?
+        dens *= pow((1.0 / 3 + 2.0 / 3 * exp(-superconduct_q_gap(nbar_val) / T_loc)), 2.0);
         return dens;
     };
 }
@@ -883,8 +883,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         // G_F^2 = 1.36E-10 GeV^{-4}, therefore the prefactor
         double dens = 1.36E-10 * (pf_u + pf_d) * pow(T_loc, 8);
 
-        // q superconductivity?
-        dens *= exp(-2.0 * superconduct_q_gap(nbar_val) / T_loc);
+        // q phenomenological 2SC?
+        dens *= pow((1.0 / 3 + 2.0 / 3 * exp(-superconduct_q_gap(nbar_val) / T_loc)), 2.0);
         return dens;
     };
 }
