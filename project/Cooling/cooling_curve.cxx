@@ -292,7 +292,15 @@ int main(int argc, char **argv)
         // equilibrium stage
         else
         {
-            next_T = cooling::solver::equilibrium_cooling(t_curr, t_step, cooling_rhs, temp_curr, cooling_newton_step_eps, cooling_newton_max_iter);
+            try
+            {
+                next_T = cooling::solver::equilibrium_cooling(t_curr, t_step, cooling_rhs, temp_curr, cooling_newton_step_eps, cooling_newton_max_iter);
+            }
+            catch(const std::exception &e)
+            {
+                t_step /= 2.0;
+                continue;
+            }
             double max_diff = std::abs((temp_curr - next_T) / temp_curr);
             if (max_diff > cooling_max_diff_per_t_step)
             {
