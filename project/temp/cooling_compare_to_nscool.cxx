@@ -261,8 +261,9 @@ int main(int argc, char **argv)
 
     while (t_curr < t_end)
     {
-        double next_T; // predicted T
-        bool reached_adaption_limit = false;
+        double next_T;                             // predicted T
+        bool reached_adaption_limit = false;       // control for adaptive solver
+        bool reached_negative_temperature = false; // exclude NaN generation to "negative" temperature
 
         // non-equilibrium stage
         if (!switch_to_equilibrium(t_curr, profile))
@@ -272,18 +273,16 @@ int main(int argc, char **argv)
                 exp_lambda, exp_phi, radii, profile, te_tb, cooling_newton_step_eps, cooling_newton_max_iter);
             next_T = t_l_profiles[0].end()[-2];
             reached_adaption_limit = t_l_profiles[2][0];
+            reached_negative_temperature = t_l_profiles[2][1];
             double max_diff = 0;
             for (size_t i = 0; i < radii.size() - 1; ++i)
             {
                 // excluding surface point
                 max_diff = std::max(max_diff, fabs(t_l_profiles[0][i] - profile[i]) / profile[i]);
             }
-            // std::cout << "max_diff = " << max_diff << '\n';
-            if (max_diff > cooling_max_diff_per_t_step || reached_adaption_limit)
+            if (max_diff > cooling_max_diff_per_t_step || reached_adaption_limit || reached_negative_temperature)
             {
                 t_step /= 2;
-                // exp_rate_estim = sqrt(exp_rate_estim);
-                // std::cout << "Adapting time step \n";
                 continue;
             }
             profile = t_l_profiles[0];
@@ -292,9 +291,12 @@ int main(int argc, char **argv)
         // equilibrium stage
         else
         {
-            next_T = cooling::solver::equilibrium_cooling(t_curr, t_step, cooling_rhs, temp_curr, cooling_newton_step_eps, cooling_newton_max_iter);
+            auto equilibrium_data = cooling::solver::equilibrium_cooling(t_curr, t_step, cooling_rhs, temp_curr, cooling_newton_step_eps, cooling_newton_max_iter);
+            next_T = equilibrium_data[0];
+            reached_adaption_limit = equilibrium_data[1];
+            reached_negative_temperature = equilibrium_data[2];
             double max_diff = std::abs((temp_curr - next_T) / temp_curr);
-            if (max_diff > cooling_max_diff_per_t_step)
+            if (max_diff > cooling_max_diff_per_t_step || reached_adaption_limit || reached_negative_temperature)
             {
                 t_step /= 2.0;
                 continue;
