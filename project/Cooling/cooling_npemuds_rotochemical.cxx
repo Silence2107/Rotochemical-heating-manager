@@ -623,13 +623,17 @@ int main(int argc, char **argv)
 
     while (t_curr < t_end)
     {
-        auto values = cooling::solver::coupled_cooling(t_curr, t_step, rotochemical_vector_rhs, previous_values, cooling_newton_step_eps, cooling_newton_max_iter);
+        auto coupled_data = cooling::solver::coupled_cooling(t_curr, t_step, rotochemical_vector_rhs, previous_values, cooling_newton_step_eps, cooling_newton_max_iter);
+        auto values = coupled_data[0];
+        bool reached_adaption_limit = coupled_data[1][0]; // control for adaptive solver
+        bool reached_negative_temperature = coupled_data[1][1]; // exclude NaN generation to "negative" temperature
+
         double max_diff = 0;
         for (size_t i = 0; i < values.size(); ++i)
         {
             max_diff = (previous_values[i] != 0) ? std::max(max_diff, std::abs((values[i] - previous_values[i]) / std::max(previous_values[0], std::abs(previous_values[i])))) : max_diff;
         }
-        if (max_diff > cooling_max_diff_per_t_step)
+        if (max_diff > cooling_max_diff_per_t_step || reached_adaption_limit || reached_negative_temperature)
         {
             t_step /= 2.0;
             continue;

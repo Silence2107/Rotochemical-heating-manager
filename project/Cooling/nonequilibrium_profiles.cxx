@@ -253,53 +253,31 @@ int main(int argc, char **argv)
     {
         using namespace constants::conversion;
 
-        // if problems are met
-        bool error = false,
-                reached_adaption_limit = false;
+        bool reached_adaption_limit = false;       // control for adaptive solver
+        bool reached_negative_temperature = false; // exclude NaN generation to "negative" temperature
         // update
         while (true)
         {
-            std::vector<double> new_profile;
-            try
-            {
-                auto result = cooling::solver::nonequilibrium_cooling(
-                    t_curr, time_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
-                    exp_lambda, exp_phi, radii, profile, te_tb, cooling_newton_step_eps, cooling_newton_max_iter);
-                new_profile = result[0];
-                reached_adaption_limit = result[2][0];
-            }
-            catch (const std::exception &e)
-            {
-                std::cout << e.what() << '\n';
-                error = true;
-                using namespace constants::conversion;
-                saved_profiles.push_back(profile);
-                for (size_t i = 0; i < radii.size(); ++i)
-                {
-                    saved_profiles.back()[i] *= gev_over_k;
-                }
-                break;
-            }
+            auto t_l_profiles = cooling::solver::nonequilibrium_cooling(
+                t_curr, time_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
+                exp_lambda, exp_phi, radii, profile, te_tb, cooling_newton_step_eps, cooling_newton_max_iter);
+            reached_adaption_limit = t_l_profiles[2][0];
+            reached_negative_temperature = t_l_profiles[2][1];
+
             double max_diff = 0;
             for (size_t i = 0; i < radii.size() - 1; ++i)
             {
                 // excluding surface point
-                max_diff = std::max(max_diff, fabs(new_profile[i] - profile[i]) / profile[i]);
+                max_diff = std::max(max_diff, fabs(t_l_profiles[0][i] - profile[i]) / profile[i]);
             }
-            // std::cout << "max_diff = " << max_diff << '\n';
-            if (max_diff > cooling_max_diff_per_t_step || reached_adaption_limit)
+            if (max_diff > cooling_max_diff_per_t_step || reached_adaption_limit || reached_negative_temperature)
             {
                 time_step /= 2;
-                // exp_rate_estim = sqrt(exp_rate_estim);
-                // std::cout << "Adapting time step \n";
                 continue;
             }
-            profile = new_profile;
+            profile = t_l_profiles[0];
             break;
         }
-
-        if (error)
-           break;
 
         t_curr += time_step;
         time_step *= exp_rate_estim;

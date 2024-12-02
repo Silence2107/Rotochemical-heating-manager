@@ -13,13 +13,14 @@
 #include <limits>
 // #include <iostream>
 
-double cooling::solver::equilibrium_cooling(
+std::vector<double> cooling::solver::equilibrium_cooling(
     double t_curr, double t_step, const std::function<double(double, double)> &cooling_rhs, double initial_temperature, double newton_eps, size_t newton_iter_max)
 {
     // inverse euler solver; I want this method to be stable for any time step, including huge ones
     // solve T_{n+1} - T_n - dt * F(t_{n+1}, T_{n+1}) = 0 with Newton's steps
 
     double t_next = t_curr + t_step;
+    bool negative_temp_reached = false;
     size_t iter = 0;
     double T_new = initial_temperature;
     double F, F_shift;
@@ -31,10 +32,13 @@ double cooling::solver::equilibrium_cooling(
         F_shift = cooling_rhs(t_next, T_new + temp_step) - F;
         update = -(T_new - initial_temperature - t_step * F) / (1 - t_step * F_shift / temp_step);
         T_new += update;
-        if (T_new < 0)
-            RHM_THROW(std::runtime_error, "Reached negative temperature with current method.");
+        if (T_new < 0.0)
+        {
+            negative_temp_reached = true;
+            break;
+        }
     } while (std::abs(update / initial_temperature) > newton_eps && ++iter < newton_iter_max);
-    return T_new;
+    return {T_new, static_cast<double>(iter == newton_iter_max), static_cast<double>(negative_temp_reached)};
 }
 
 std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
@@ -93,6 +97,7 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
     double max_diff;
     size_t max_diff_index;
     size_t iter = 0;
+    bool negative_temp_reached = false;
     do
     {
         // Unfortunately, the system is not linear, so we have to solve it iteratively.
@@ -160,7 +165,10 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
             t_profile[i] += updates[2 * i + 1];
             l_profile[i] += updates[2 * i];
             if (t_profile[i] < 0.0)
-                RHM_THROW(std::runtime_error, "Reached negative temperature with current method.");
+            {
+                negative_temp_reached = true;
+                break;
+            }
             // calculate the abs.-maximum update of the vector
             if (std::abs(updates[2 * i + 1] / t_profile[i]) > max_diff)
             {
@@ -168,18 +176,21 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
                 max_diff_index = i;
             }
         }
+        if (negative_temp_reached)
+            break;
     } while (max_diff > newton_eps && ++iter < newton_iter_max);
 
     // return the profiles
-    return {t_profile, l_profile, {static_cast<double>(iter == newton_iter_max)}};
+    return {t_profile, l_profile, {static_cast<double>(iter == newton_iter_max), static_cast<double>(negative_temp_reached)}};
 }
 
-std::vector<double> cooling::solver::coupled_cooling(
+std::vector<std::vector<double>> cooling::solver::coupled_cooling(
     double t_curr, double t_step, const std::function<std::vector<double>(double, const std::vector<double> &)> &rhs,
     const std::vector<double> &initial_values, double newton_eps, size_t newton_iter_max)
 {
     double t_next = t_curr + t_step;
     size_t iter = 0;
+    bool negative_temp_reached = false;
     double max_diff;
     auto results = initial_values;
     auto steps = std::vector<double>(initial_values.size(), 0.0);
@@ -223,8 +234,13 @@ std::vector<double> cooling::solver::coupled_cooling(
                 max_diff = std::abs(updates[i] / results[i]);
             }
         }
+        if (results[0] < 0.0)
+        {
+            negative_temp_reached = true;
+            break;
+        }
     } while (max_diff > newton_eps && ++iter < newton_iter_max);
-    return results;
+    return {results, {static_cast<double>(iter == newton_iter_max), static_cast<double>(negative_temp_reached)}};
 }
 
 std::function<double(double, double)> cooling::predefined::photonic::surface_luminosity(double R, double M, double eta)

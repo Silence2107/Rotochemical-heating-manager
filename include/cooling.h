@@ -20,8 +20,8 @@ namespace cooling
         /// @param initial_temperature Temperature^inf at t=t_curr [GeV]
         /// @param newton_eps desirable relative accuracy of the solution
         /// @param newton_iter_max maximum number of iterations for the Newton-Raphson method
-        /// @return Temperature^inf at t_curr + t_step [GeV]
-        double equilibrium_cooling(
+        /// @return [0] : Temperature^inf at t_curr + t_step [GeV]; [1] : boolean flag for reaching the adaption limit; [2] - boolean flag for negative temperature overshoot
+        std::vector<double> equilibrium_cooling(
             double t_curr, double t_step, const std::function<double(double, double)> &cooling_rhs, double initial_temperature, double newton_eps, size_t newton_iter_max);
 
         /// @brief Evolves the nonequilibrium cooling equation cv * dT^inf/dt = -Qv^inf + e^{-Lambda} / (4pir^2) d/dr Ld^inf; -lambda dT^inf/dr = Ld^inf/(4pir^2) e^{Lambda-Phi}
@@ -38,21 +38,21 @@ namespace cooling
         /// @param te_tb Local surface temperature [GeV] as a function of undercrustal T_b^inf [GeV]
         /// @param newton_eps desirable relative accuracy of the solution
         /// @param newton_iter_max maximum number of iterations for the Newton-Raphson method
-        /// @return Temperature, luminosity profiles [T^inf(r, t), Ld^inf(r, t)] as an [2][i_m + 1] array corresponding to radii; [2] containts additional info : [0] - boolean flag for reaching the adaption limit
+        /// @return Temperature, luminosity profiles [T^inf(r, t), Ld^inf(r, t)] as an [2][i_m + 1] array corresponding to radii; [2] control info : [0] - boolean flag for reaching the adaption limit, [1] - boolean flag for negative temperature overshoot
         std::vector<std::vector<double>> nonequilibrium_cooling(
             double t_curr, double t_step, const std::function<double(double, double, double)> &neutrino_rate, const std::function<double(double, double, double)> &cv, const std::function<double(double, double, double)> &lambda,
             const std::function<double(double)> &exp_lambda, const std::function<double(double)> &exp_phi, const std::vector<double> &radii, const std::vector<double> &initial_profile,
             const std::function<double(double)> &te_tb, double newton_eps, size_t newton_iter_max);
 
-        /// @brief Solves the coupled cooling equation dXi(t)/dt = Fi(t,{Xi}). These depend on the context, e.g. they may reflect temperature evolution alongside chemical imbalances
+        /// @brief Solves the coupled cooling equation dXi(t)/dt = Fi(t,{Xi}). These depend on the context, e.g. they may reflect temperature evolution alongside chemical imbalances. 0th component is ALWAYS temperature (and ensured positive)
         /// @param t_curr time at which the initial values were calculated [GeV^{-1}]
         /// @param t_step time step at which the next values are to be calculated [GeV^{-1}]
         /// @param rhs right hand vector side term Fi(t, {Xi}) of the cooling equation
         /// @param initial_values value vector at t=t_curr [GeV]
         /// @param newton_eps desirable relative accuracy of the solution
         /// @param newton_iter_max maximum number of iterations for the Newton-Raphson method
-        /// @return Evolved values at t_curr + t_step [GeV]
-        std::vector<double> coupled_cooling(
+        /// @return [0] : Evolved values at t_curr + t_step [GeV]; [1] control info : [0] - boolean flag for reaching the adaption limit, [1] - boolean flag for negative temperature overshoot
+        std::vector<std::vector<double>> coupled_cooling(
             double t_curr, double t_step, const std::function<std::vector<double>(double, const std::vector<double> &)> &rhs,
             const std::vector<double> &initial_values, double newton_eps, size_t newton_iter_max);
     }
