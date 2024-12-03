@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 
     using namespace instantiator;
 #if RHM_REQUIRES_INPUTFILE
-    instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV"});
+    instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV", "COOL"});
 #endif
 
     // RUN --------------------------------------------------------------------------
@@ -170,7 +170,7 @@ int main(int argc, char **argv)
     for (size_t count = 0; count < selection_size; ++count)
     {
         using namespace constants::conversion;
-        double frac = left_fraction + count * (right_fraction - left_fraction) / (selection_size - 1);
+        double frac = left_fraction * pow((right_fraction / left_fraction), count / (selection_size - 1.0));
         double pressure = frac * (pressure_upp - pressure_low) + pressure_low;
         auto point = get_m_r_at_pressure(pressure);
         x.push_back(point[0] / km_gev);
@@ -183,20 +183,30 @@ int main(int argc, char **argv)
     std::cout << std::left << std::setw(indent) << "Max mass (M sol) : " << *max_mass_it << '\n';
     std::cout << std::left << std::setw(indent) << "Max mass radius (km) : " << x[std::distance(y.begin(), max_mass_it)] << '\n';
 
-    /*
-    // calculate the mass of core appearance
+    // calculate the mass of quark appearance
     tov_cached.erase();
-    double transition_pressure = pressure_of_nbar(nbar_sf_shift);
-
-    auto tov_at_transition = [&tov_cached, &eos_inv_cached, transition_pressure](double r)
+    if (number_densities_of_nbar.find(constants::species::uquark) != number_densities_of_nbar.end())
     {
-        // TOV solution cached
-        return tov_cached(eos_inv_cached, r, transition_pressure, radius_step, surface_pressure, tov_adapt_limit, radial_interp_mode);
-    };
+        auto udens = number_densities_of_nbar[constants::species::uquark];
+        double tr_dens = nbar_upp;
+        for (size_t i = 0; i < discr_size_EoS; ++i)
+        { 
+            auto nb = nbar_low * pow(nbar_upp / nbar_low, i / (discr_size_EoS - 1.0));
+            if (udens(nb) != 0.0)
+            {
+                tr_dens = nb;
+                break;
+            }
+        }
+        auto transition_pressure = pressure_of_nbar(tr_dens);
 
-    // print core emergence radius and mass
-    double r_ns_at_transition = tov_at_transition(0.0)[4];
-    double m_ns_at_transition = tov_at_transition(r_ns_at_transition)[0];
-    std::cout << std::left << std::setw(indent) << "Core emergence mass (M sol) : " << m_ns_at_transition * constants::conversion::gev_over_msol << '\n';
-    std::cout << std::left << std::setw(indent) << "Core emergence radius (km) : " << r_ns_at_transition / constants::conversion::km_gev << '\n';*/
+        auto tov_at_transition = [&tov_cached, &eos_inv_cached, transition_pressure](double r)
+        {
+            // TOV solution cached
+            return tov_cached(eos_inv_cached, r, transition_pressure, radius_step, surface_pressure, tov_adapt_limit, radial_interp_mode);
+        };
+        double r_ns_at_transition = tov_at_transition(0.0)[4];
+        double m_ns_at_transition = tov_at_transition(r_ns_at_transition)[0];
+        std::cout << std::left << std::setw(indent) << "Deconfinement emergence mass (M sol) : " << m_ns_at_transition * constants::conversion::gev_over_msol << '\n';
+    }
 }
