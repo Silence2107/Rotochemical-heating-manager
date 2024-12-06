@@ -16,39 +16,21 @@
 #include <sstream>
 #include <fstream>
 
-#if RHM_HAS_ROOT
-#include <TCanvas.h>
-#include <TGraph.h>
-#include <TAxis.h>
-#include <TLegend.h>
-#include <TFile.h>
-#include <TStyle.h>
-#endif
-
 int main(int argc, char **argv)
 {
-    argparse::ArgumentParser parser("cooling_curve", "Evaluates surface temperature time dependency based on EoS", "Argparse powered by SiLeader");
+    argparse::ArgumentParser parser("dominant_process", "Determines the dominant cooling processes for every timeslice", "Argparse powered by SiLeader");
 
 #if RHM_REQUIRES_INPUTFILE
     parser.addArgument({"--inputfile"}, "json input file path (required)");
 #endif
-#if RHM_HAS_ROOT
-    parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: Cooling.pdf)");
-    parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
-#endif
+    parser.addArgument({"--fraction"}, "what fraction of total luminosity is assumed significant (double, defaults to 0.1)");
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
 #if RHM_REQUIRES_INPUTFILE
     instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV", "COOL"});
 #endif
-
-#if RHM_HAS_ROOT
-    std::string pdf_path = args.safeGet<std::string>("pdf_path", "Cooling.pdf");
-    TFile *rootfile = nullptr;
-    if (args.has("rootfile_path"))
-        rootfile = new TFile(args.get<std::string>("rootfile_path").c_str(), "RECREATE");
-#endif
+    double dominant_fraction = args.safeGet<double>("fraction", 0.1);
 
     // RUN --------------------------------------------------------------------------
 
@@ -178,30 +160,58 @@ int main(int argc, char **argv)
 
     auto electron_bremsstrahlung_emissivity = cooling::predefined::neutrinic::electron_bremsstrahlung_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi);
+    // to find dominant processes, I will also have to split species-specific processes
+    std::function<double(double, double, double)> hadron_murca_emissivity_electron = [&](double r, double t, double T)
+    {
+        return hadron_murca_emissivity(r, constants::species::electron, t, T);
+    };
+
+    std::function<double(double, double, double)> hadron_murca_emissivity_muon = [&](double r, double t, double T)
+    {
+        return hadron_murca_emissivity(r, constants::species::muon, t, T);
+    };
+
+    std::function<double(double, double, double)> hadron_durca_emissivity_electron = [&](double r, double t, double T)
+    {
+        return hadron_durca_emissivity(r, constants::species::electron, t, T);
+    };
+
+    std::function<double(double, double, double)> hadron_durca_emissivity_muon = [&](double r, double t, double T)
+    {
+        return hadron_durca_emissivity(r, constants::species::muon, t, T);
+    };
+
+    std::function<double(double, double, double)> hadron_PBF_emissivity_proton = [&](double r, double t, double T)
+    {
+        return hadron_PBF_emissivity(r, constants::species::proton, t, T);
+    };
+
+    std::function<double(double, double, double)> hadron_PBF_emissivity_neutron = [&](double r, double t, double T)
+    {
+        return hadron_PBF_emissivity(r, constants::species::proton, t, T);
+    };
+
+    std::map<std::string, std::function<double(double, double, double)>> processes =
+        {{"hMUnpe", hadron_murca_emissivity_electron},
+         {"hMUnpmu", hadron_murca_emissivity_muon},
+         {"hDUnpe", hadron_durca_emissivity_electron},
+         {"hDUnpmu", hadron_durca_emissivity_muon},
+         {"hPBFp", hadron_PBF_emissivity_proton},
+         {"hPBFn", hadron_PBF_emissivity_neutron},
+         {"hhBREMS", hadron_bremsstrahlung_emissivity},
+         {"qDUude", quark_ud_durca_emissivity},
+         {"qDUuse", quark_us_durca_emissivity},
+         {"qMUude", quark_ud_murca_emissivity},
+         {"qMUuse", quark_us_murca_emissivity},
+         {"qqBREMS", quark_bremsstrahlung_emissivity},
+         {"eeBREMS", electron_bremsstrahlung_emissivity}}; // available processes
 
     auto Q_nu = [&](double r, double t, double T)
     {
         using namespace constants::scientific;
         double result = 0;
-
-        for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
-        {
-            auto key = it->first;
-            if (key.classify() == auxiliaries::phys::Species::ParticleClassification::kLepton)
-            {
-                result += hadron_murca_emissivity(r, key, t, T);
-                result += hadron_durca_emissivity(r, key, t, T);
-            }
-            if (key.classify() == auxiliaries::phys::Species::ParticleClassification::kBaryon)
-            {
-                result += hadron_PBF_emissivity(r, key, t, T);
-            }
-        }
-        result += hadron_bremsstrahlung_emissivity(r, t, T);
-        result += quark_ud_durca_emissivity(r, t, T) + quark_us_durca_emissivity(r, t, T) +
-                  quark_ud_murca_emissivity(r, t, T) + quark_us_murca_emissivity(r, t, T) +
-                  quark_bremsstrahlung_emissivity(r, t, T);
-        result += electron_bremsstrahlung_emissivity(r, t, T);
+        for (auto it = processes.begin(); it != processes.end(); ++it)
+            result += it->second(r, t, T);
         return result * exp_phi(r) * exp_phi(r);
     };
 
@@ -246,25 +256,29 @@ int main(int argc, char **argv)
 
     // solution arrays
     std::vector<double> time, surface_temp;
-    std::vector<std::vector<double>> others(2);
+    std::vector<std::vector<double>> others(3);
     time.reserve(cooling_n_points_estimate);
     surface_temp.reserve(cooling_n_points_estimate);
     others[0].reserve(cooling_n_points_estimate);
     others[1].reserve(cooling_n_points_estimate);
+    others[2].reserve(cooling_n_points_estimate);
 
     size_t indent = 20;
     std::cout << "M = " << m_ns * constants::conversion::gev_over_msol << " [Ms]\n";
     std::cout << std::left << std::setw(indent) << "t [years] "
               << std::setw(indent) << "Te^inf [K] "
               << std::setw(indent) << "L^inf_ph [erg/s] "
-              << std::setw(indent) << "L^inf_nu [erg/s] " << '\n';
+              << std::setw(indent) << "L^inf_nu [erg/s] "
+              << std::setw(indent) << "L^inf_nu_domin [erg/s]"
+              << std::setw(indent) << "Dominant processes " << '\n';
 
     while (t_curr < t_end)
     {
-        double next_T; // predicted T
-        bool reached_adaption_limit = false; // control for adaptive solver
+        double next_T;                             // predicted T
+        bool reached_adaption_limit = false;       // control for adaptive solver
         bool reached_negative_temperature = false; // exclude NaN generation to "negative" temperature
-        double neutrino_lum = 0.0; // placeholder for neutrino luminosity estimate
+
+        std::map<std::string, double> neutrino_luminosities; // placeholder for processes neutrino luminosity estimates
 
         // non-equilibrium stage
         if (!switch_to_equilibrium(t_curr, profile))
@@ -287,10 +301,13 @@ int main(int argc, char **argv)
                 continue;
             }
             profile = t_l_profiles[0];
-            // To calculate neutrino luminosity I refrain to interpolating T(r) to avoid performance hindering. I instead carefully dublicate integration procedure
-            for (size_t count = 0; count < radii.size() - 1; ++count)
+
+            for (auto it = processes.begin(); it != processes.end(); ++it)
             {
-                neutrino_lum += 4 * constants::scientific::Pi * radii[count] * radii[count] * exp_lambda(radii[count]) * (radii[count + 1] - radii[count]) * Q_nu(radii[count], t_curr + t_step, profile[count]);
+                neutrino_luminosities[it->first] = 0.0;
+                for (size_t count = 0; count < radii.size() - 1; ++count)
+                    neutrino_luminosities[it->first] += 4 * constants::scientific::Pi * radii[count] * radii[count] * exp_lambda(radii[count]) *
+                                                        exp_phi(radii[count]) * exp_phi(radii[count]) * (radii[count + 1] - radii[count]) * it->second(radii[count], t_curr + t_step, profile[count]);
             }
         }
 
@@ -307,80 +324,48 @@ int main(int argc, char **argv)
                 t_step /= 2.0;
                 continue;
             }
-            neutrino_lum = neutrino_luminosity(t_curr + t_step, next_T);
+
+            for (auto it = processes.begin(); it != processes.end(); ++it)
+            {
+                neutrino_luminosities[it->first] = 0.0;
+                for (size_t count = 0; count < radii.size() - 1; ++count)
+                    neutrino_luminosities[it->first] += 4 * constants::scientific::Pi * radii[count] * radii[count] * exp_lambda(radii[count]) *
+                                                        exp_phi(radii[count]) * exp_phi(radii[count]) * (radii[count + 1] - radii[count]) * it->second(radii[count], t_curr + t_step, next_T);
+            }
         }
         temp_curr = next_T;
         t_curr += t_step;
         t_step *= exp_rate_estim;
+
+        double neutrino_lum = 0.0,
+               neutrino_lum_dominant = 0.0;
+        std::vector<std::string> dominant_processes;
+        for (auto it = neutrino_luminosities.begin(); it != neutrino_luminosities.end(); ++it)
+        {
+            neutrino_lum += it->second;
+        }
+        for (auto it = neutrino_luminosities.begin(); it != neutrino_luminosities.end(); ++it)
+        {
+            if (dominant_fraction <= it->second / neutrino_lum)
+            {
+                neutrino_lum_dominant += it->second;
+                dominant_processes.push_back(it->first);
+            }
+        }
 
         // save in understandable units
         time.push_back(1.0E6 * t_curr / (constants::conversion::myr_over_s * constants::conversion::gev_s));
         surface_temp.push_back(auxiliaries::phys::te_tb_relation(temp_curr, r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k);
         others[0].push_back(photon_luminosity(t_curr, temp_curr) * constants::conversion::gev_s / constants::conversion::erg_over_gev);
         others[1].push_back(neutrino_lum * constants::conversion::gev_s / constants::conversion::erg_over_gev);
+        others[2].push_back(neutrino_lum_dominant * constants::conversion::gev_s / constants::conversion::erg_over_gev);
 
         // print
-        std::cout << std::left << std::setw(indent) << time.back() << std::setw(indent) << surface_temp.back() << std::setw(indent) << others[0].back() << std::setw(indent) << others[1].back() << '\n';
+        std::cout << std::left << std::setw(indent) << time.back() << std::setw(indent) << surface_temp.back() << std::setw(indent) << others[0].back() << std::setw(indent) << others[1].back() << std::setw(indent) << others[2].back();
+        for (auto &elem : dominant_processes)
+        {
+            std::cout << elem << ",";
+        }
+        std::cout << '\n';
     }
-
-#if RHM_HAS_ROOT
-    // draw
-    TCanvas *c1 = new TCanvas("c1", "c1");
-    gPad->SetLogy();
-    gPad->SetLogx();
-    gPad->SetTicks();
-    gPad->SetTopMargin(0.05);
-    gPad->SetLeftMargin(0.11);
-    gPad->SetRightMargin(0.05);
-    gPad->SetBottomMargin(0.1);
-    gStyle->SetOptStat(0);
-    gStyle->SetOptTitle(0);
-
-    auto gr = new TGraph(time.size(), time.data(), surface_temp.data());
-    gr->GetXaxis()->SetTitle("t [yr]");
-    gr->GetYaxis()->SetTitle("T^{#infty}_{s} [K]");
-    if (rootfile)
-    {
-        auto gr_l_gamma = new TGraph(time.size(), time.data(), others[0].data());
-        gr_l_gamma->GetXaxis()->SetTitle("t [yr]");
-        gr_l_gamma->GetYaxis()->SetTitle("L^{#infty}_{#gamma} [erg/s]");
-        auto gr_l_nu = new TGraph(time.size(), time.data(), others[1].data());
-        gr_l_nu->GetXaxis()->SetTitle("t [yr]");
-        gr_l_nu->GetYaxis()->SetTitle("L^{#infty}_{#nu} [erg/s]");
-        rootfile->cd();
-        rootfile->WriteObject(gr, "cooling_curve");
-        rootfile->WriteObject(gr_l_gamma, "l_gamma");
-        rootfile->WriteObject(gr_l_nu, "l_nu");
-        rootfile->Close();
-    }
-    gr->SetLineColor(kBlue);
-    gr->SetLineWidth(2);
-    gr->SetLineStyle(1);
-    gr->Draw("AL");
-    gr->GetYaxis()->SetTitleOffset(1.5);
-    gr->GetYaxis()->SetLabelFont(43);
-    gr->GetYaxis()->SetLabelSize(22);
-    gr->GetYaxis()->SetTitleFont(43);
-    gr->GetYaxis()->SetTitleSize(26);
-    gr->GetYaxis()->SetTitleOffset(0.5);
-    gr->GetXaxis()->SetLabelFont(43);
-    gr->GetXaxis()->SetLabelSize(22);
-    gr->GetXaxis()->SetTitleFont(43);
-    gr->GetXaxis()->SetTitleSize(26);
-    gr->GetXaxis()->SetTitleOffset(0.9);
-    gr->GetYaxis()->SetLimits(surface_temp.front(), surface_temp.back());
-    gr->GetXaxis()->SetLimits(time.front(), time.back());
-
-    auto legend = new TLegend(0.15, 0.1, 0.43, 0.38);
-    legend->AddEntry(gr, "RH Manager", "l");
-    legend->SetBorderSize(0);
-    legend->SetTextFont(43);
-    legend->SetTextSize(27);
-    legend->SetFillStyle(0);
-    legend->SetMargin(0.35);
-
-    legend->Draw();
-
-    c1->SaveAs(pdf_path.c_str());
-#endif
 }
