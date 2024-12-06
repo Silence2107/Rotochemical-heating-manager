@@ -264,6 +264,7 @@ int main(int argc, char **argv)
         double next_T; // predicted T
         bool reached_adaption_limit = false; // control for adaptive solver
         bool reached_negative_temperature = false; // exclude NaN generation to "negative" temperature
+        double neutrino_lum = 0.0; // placeholder for neutrino luminosity estimate
 
         // non-equilibrium stage
         if (!switch_to_equilibrium(t_curr, profile))
@@ -286,6 +287,11 @@ int main(int argc, char **argv)
                 continue;
             }
             profile = t_l_profiles[0];
+            // To calculate neutrino luminosity I refrain to interpolating T(r) to avoid performance hindering. I instead carefully dublicate integration procedure
+            for (size_t count = 0; count < radii.size() - 1; ++count)
+            {
+                neutrino_lum += 4 * constants::scientific::Pi * radii[count] * radii[count] * exp_lambda(radii[count]) * (radii[count + 1] - radii[count]) * Q_nu(radii[count], t_curr + t_step, profile[count]);
+            }
         }
 
         // equilibrium stage
@@ -301,6 +307,7 @@ int main(int argc, char **argv)
                 t_step /= 2.0;
                 continue;
             }
+            neutrino_lum = neutrino_luminosity(t_curr + t_step, next_T);
         }
         temp_curr = next_T;
         t_curr += t_step;
@@ -310,7 +317,7 @@ int main(int argc, char **argv)
         time.push_back(1.0E6 * t_curr / (constants::conversion::myr_over_s * constants::conversion::gev_s));
         surface_temp.push_back(auxiliaries::phys::te_tb_relation(temp_curr, r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k);
         others[0].push_back(photon_luminosity(t_curr, temp_curr) * constants::conversion::gev_s / constants::conversion::erg_over_gev);
-        others[1].push_back(neutrino_luminosity(t_curr, temp_curr) * constants::conversion::gev_s / constants::conversion::erg_over_gev);
+        others[1].push_back(neutrino_lum * constants::conversion::gev_s / constants::conversion::erg_over_gev);
 
         // print
         std::cout << std::left << std::setw(indent) << time.back() << std::setw(indent) << surface_temp.back() << std::setw(indent) << others[0].back() << std::setw(indent) << others[1].back() << '\n';
