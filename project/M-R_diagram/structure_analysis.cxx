@@ -196,28 +196,43 @@ int main(int argc, char **argv)
     }
     if (search_deconfinement)
     {
-        double quark_transition_density;
         // calculate the mass of quark appearance
         if (number_densities_of_nbar.find(constants::species::uquark) != number_densities_of_nbar.end())
         {
             auto udens = number_densities_of_nbar[constants::species::uquark];
-            double tr_dens = nbar_upp;
+            double quark_transition_density = nbar_upp;
             for (size_t i = 0; i < discr_size_EoS; ++i)
             {
                 auto nb = nbar_low * pow(nbar_upp / nbar_low, i / (discr_size_EoS - 1.0));
                 if (udens(nb) != 0.0)
                 {
-                    tr_dens = nb;
+                    if (i == 0)
+                    {
+                        quark_transition_density = nb;
+                        break;
+                    }
+                    double nb_left = nbar_low * pow(nbar_upp / nbar_low, (i - 1) / (discr_size_EoS - 1.0)),
+                           nb_right = nb;
+                    while (nb_right - nb_left > nbar_low)
+                    {
+                        quark_transition_density = (nb_left + nb_right) / 2;
+                        if (udens(quark_transition_density) == 0.0)
+                            nb_left = quark_transition_density;
+                        else if (udens(quark_transition_density) != 0.0)
+                            nb_right = quark_transition_density;
+                        else
+                            RHM_THROW(std::runtime_error, "Bisection method failed for quark transition density.");
+                    }
                     break;
                 }
             }
-            quark_transition_density = pressure_of_nbar(tr_dens);
+            double quark_transition_pressure = pressure_of_nbar(quark_transition_density);
 
             tov_cached.erase();
             auto tov_at_transition = [&](double r)
             {
                 // TOV solution cached
-                return tov_cached(eos_inv_cached, r, quark_transition_density, radius_step, surface_pressure, tov_adapt_limit, radial_interp_mode);
+                return tov_cached(eos_inv_cached, r, quark_transition_pressure, radius_step, surface_pressure, tov_adapt_limit, radial_interp_mode);
             };
             double r_ns_at_transition = tov_at_transition(0.0)[4];
             double m_ns_at_transition = tov_at_transition(r_ns_at_transition)[0];
@@ -230,7 +245,7 @@ int main(int argc, char **argv)
             {
                 return nbar(r) - quark_transition_density;
             };
-            while (r_right - r_left < radius_step / 2)
+            while (r_right - r_left > radius_step / 2)
             {
                 r_deconf = (r_left + r_right) / 2;
                 if (deconf_equation(r_left) * deconf_equation(r_deconf) <= 0)
