@@ -21,6 +21,7 @@ std::vector<double> cooling::solver::equilibrium_cooling(
 
     double t_next = t_curr + t_step;
     bool negative_temp_reached = false;
+    double sqrt_eps = std::sqrt(std::numeric_limits<double>::epsilon());
     size_t iter = 0;
     double T_new = initial_temperature;
     double F, F_shift;
@@ -28,7 +29,7 @@ std::vector<double> cooling::solver::equilibrium_cooling(
     do
     {
         F = cooling_rhs(t_next, T_new);
-        auto temp_step = t_step / t_next * T_new;
+        auto temp_step = sqrt_eps * T_new;
         F_shift = cooling_rhs(t_next, T_new + temp_step) - F;
         update = -(T_new - initial_temperature - t_step * F) / (1 - t_step * F_shift / temp_step);
         T_new += update;
@@ -115,9 +116,7 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
         std::vector<double> rhs(2 * i_m + 2, 0.0);
         // fill the matrix
 
-        // we're going to calculate temperature derivatives as [f((1+ext)*x)-f(x)]/ext*x,
-        // since temperature here is always (hopefully!) > 0
-        double ext_persentage = 0.001;
+        double sqrt_eps = std::sqrt(std::numeric_limits<double>::epsilon());
 
         // placeholder for f(X), s. t. we do not reevaluate it multiple times
         double unperturbed_val;
@@ -126,6 +125,9 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
         jacobi.at(0, 0) = 1.0;
         jacobi.at(0, 1) = 0.0; // left boundary is independent of T
         rhs[0] = l_profile[0];
+
+        double shift;
+
         // PDE
         for (size_t p = 0; p < i_m; ++p)
         {
@@ -134,22 +136,24 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
             // derivatives wrt A, B, C respectively
             unperturbed_val = r2(p, t_profile[p]);
             size_t row = 2 * p + 1;
+            shift = sqrt_eps * t_profile[p];
             jacobi.at(row, row - 1) = -1.0;
-            jacobi.at(row, row) = (r2(p, t_profile[p] * (1 + ext_persentage)) - unperturbed_val) / (ext_persentage * t_profile[p]);
+            jacobi.at(row, row) = (r2(p, t_profile[p] + shift) - unperturbed_val) / shift;
             jacobi.at(row, row + 1) = 1.0;
             rhs[row] = -(l_profile[p + 1] - l_profile[p] + r2(p, t_profile[p]));
 
             unperturbed_val = r1(p, t_profile[p], t_profile[p + 1]);
             row = 2 * p + 2;
-            jacobi.at(row, row - 1) = (r1(p, t_profile[p] * (1 + ext_persentage), t_profile[p + 1]) - unperturbed_val) / (ext_persentage * t_profile[p]);
+            jacobi.at(row, row - 1) = (r1(p, t_profile[p] + shift, t_profile[p + 1]) - unperturbed_val) / shift;
             jacobi.at(row, row) = 1.0;
-            jacobi.at(row, row + 1) = (r1(p, t_profile[p], t_profile[p + 1] * (1 + ext_persentage)) - unperturbed_val) / (ext_persentage * t_profile[p + 1]);
+            shift = sqrt_eps * t_profile[p + 1];
+            jacobi.at(row, row + 1) = (r1(p, t_profile[p], t_profile[p + 1] + shift) - unperturbed_val) / shift;
             rhs[row] = -(l_profile[p + 1] + r1(p, t_profile[p], t_profile[p + 1]));
         }
         // right boundary
         unperturbed_val = right_boundary(t_profile[i_m]);
         jacobi.at(2 * i_m + 1, 2 * i_m) = 1.0;
-        jacobi.at(2 * i_m + 1, 2 * i_m + 1) = (right_boundary(t_profile[i_m] * (1 + ext_persentage)) - unperturbed_val) / (ext_persentage * t_profile[i_m]);
+        jacobi.at(2 * i_m + 1, 2 * i_m + 1) = (right_boundary(t_profile[i_m] + shift) - unperturbed_val) / shift;
         rhs[2 * i_m + 1] = -(l_profile[i_m] + right_boundary(t_profile[i_m]));
 
         // We solve J * X = -F, where X is the vector of iterative updates, and the rhs is all the equations above with minus
