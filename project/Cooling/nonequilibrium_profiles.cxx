@@ -28,9 +28,7 @@ int main(int argc, char **argv)
 {
     argparse::ArgumentParser parser("nonequilibrium_profiles", "Evaluates radial temperature profiles with time based on EoS", "Argparse powered by SiLeader");
 
-#if RHM_REQUIRES_INPUTFILE
     parser.addArgument({"--inputfile"}, "json input file path (required)");
-#endif
 #if RHM_HAS_ROOT
     parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: CoolingProfiles.pdf)");
     parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
@@ -41,9 +39,7 @@ int main(int argc, char **argv)
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
-#if RHM_REQUIRES_INPUTFILE
     instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV", "COOL"});
-#endif
 
 #if RHM_HAS_ROOT
     std::string pdf_path = args.safeGet<std::string>("pdf_path", "CoolingProfiles.pdf");

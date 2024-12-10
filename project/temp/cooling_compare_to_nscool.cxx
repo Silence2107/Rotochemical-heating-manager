@@ -27,9 +27,7 @@ int main(int argc, char **argv)
 {
     argparse::ArgumentParser parser("cooling_compare_to_nscool", "Superimposes the results of RHM cooling with NSCool output data.", "Argparse powered by SiLeader");
 
-#if RHM_REQUIRES_INPUTFILE
     parser.addArgument({"--inputfile"}, "json input file path (required)");
-#endif
 #if RHM_HAS_ROOT
     parser.addArgument({"--nscool_path"}, "nscool output file path (required)");
     parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: Cooling.pdf)");
@@ -38,9 +36,7 @@ int main(int argc, char **argv)
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
-#if RHM_REQUIRES_INPUTFILE
     instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV", "COOL"});
-#endif
 
 #if RHM_HAS_ROOT
     std::string pdf_path = args.safeGet<std::string>("pdf_path", "Cooling.pdf");

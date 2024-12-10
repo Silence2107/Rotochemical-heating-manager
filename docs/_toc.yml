@@ -23,7 +23,6 @@ parts:
           - file: data_input/inputfile_structure/tov_solver
           - file: data_input/inputfile_structure/cooling_solver
           - file: data_input/inputfile_structure/rh_solver
-      - file: data_input/instantiate_manually
   - caption: Appendix
     chapters:
       - file: appendix/bibliography

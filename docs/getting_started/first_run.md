@@ -22,19 +22,17 @@ bin/project/M-R_diagram/m_r_diagram.out --help
 
 `--help` invokes manual message for all standardized RHM programs.
 
-To finally see whether physics is in order on your machine, this binary (most of the time) must be supplemented with inputfile. Let's run it by providing the one under <span style="color:blue">_presupplied/APR4/RHMconfig.json_</span>:
+To finally see whether physics is in order on your machine, this binary must be supplemented with inputfile. Let's run it by providing the one under <span style="color:blue">_presupplied/APR4/RHMconfig.json_</span>:
 
 ```bash
 bin/project/M-R_diagram/m_r_diagram.out --inputfile presupplied/APR4/RHMconfig.json
 ```
 
 **Expected output :**
-- $(M, R)$ pairs of order $(2 \text{M}_\odot, 10 \text{km})$ based on various center pressure fractions.
+- 3rd and 4th columns contain $(M, R)$ pairs of order $(2 \text{M}_\odot, 10 \text{km})$ based on various center pressure fractions.
     - phenomenal work
 
 **Unexpected output :**
-- $(M, R)$ pairs of $(0 \text{M}_\odot, 0 \text{km})$ 
-    - inputfile is not supplied
 - "(..) Cannot open file (..)"
     - inputfile path is supplied, but is not recognized as valid
     - Check path's spelling against <span style="color:blue">_presupplied/APR4/RHMconfig.json_</span>
@@ -45,6 +43,11 @@ bin/project/M-R_diagram/m_r_diagram.out --inputfile presupplied/APR4/RHMconfig.j
 - Whatever else happened
     - Tell me I messed
 
+To attempt other programs, one wants to preserve TOV cache (this way the framework can map star's mass to central density). For presupplied and any other EoS perform the following
+```bash
+bin/project/M-R_diagram/m_r_diagram.out --inputfile <eos_path> --restrict_stable > <cache_path>
+```
+and make sure `["TOVSolver"]["CenterPressure"]["CachePath"]` points to the correct cache. For convenience, the cache is already supplied for presupplied EoS.
 ## What's next?
 
 - Investigate the <span style="color:blue">_project/_</span> folder for more programs, to see which you may find useful. Stable ones are inspectable via `--help` flag.

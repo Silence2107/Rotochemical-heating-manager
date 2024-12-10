@@ -19,11 +19,6 @@ endif
 
 CXXFLAGS += -DRHM_HAS_ROOT=$(RHM_HAS_ROOT)
 
-# Whether inputfile is expected
-RHM_REQUIRES_INPUTFILE:=1
-
-CXXFLAGS += -DRHM_REQUIRES_INPUTFILE=$(RHM_REQUIRES_INPUTFILE)
-
 # Compile
 
 HEADERS:=$(wildcard include/*.h)

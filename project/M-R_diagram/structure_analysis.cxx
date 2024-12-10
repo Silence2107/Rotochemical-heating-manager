@@ -29,9 +29,7 @@ int main(int argc, char **argv)
 {
     argparse::ArgumentParser parser("structure_analysis", "Extract structural information based on EoS. By default, prints the current mass and radius of the star.", "Argparse powered by SiLeader");
 
-#if RHM_REQUIRES_INPUTFILE
     parser.addArgument({"--inputfile"}, "json input file path (required)");
-#endif
     parser.addArgument({"--max_mass"}, "whether to search for max mass point on M-R curve (optional, value-free, default: disabled)", argparse::ArgumentType::StoreTrue);
     parser.addArgument({"--deconfinement"}, "whether to search for deconfinement emergence and quark onset mass (optional, value-free, default: disabled)", argparse::ArgumentType::StoreTrue);
     auto args = parser.parseArgs(argc, argv);
@@ -39,12 +37,10 @@ int main(int argc, char **argv)
     bool search_deconfinement = args.has("deconfinement");
 
     using namespace instantiator;
-#if RHM_REQUIRES_INPUTFILE
     if(search_deconfinement)
         instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV", "COOL"});
     else
         instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV"});
-#endif
 
     // RUN --------------------------------------------------------------------------
 
