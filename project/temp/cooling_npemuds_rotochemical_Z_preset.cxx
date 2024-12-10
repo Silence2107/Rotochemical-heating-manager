@@ -29,9 +29,7 @@ int main(int argc, char **argv)
 {
     argparse::ArgumentParser parser("cooling_npemuds_rotochemical_Z_preset", "Solves the cooling equation coupled with chemical imbalances evolution based on EoS. Z matrix is supplied manually within the code.", "Argparse powered by SiLeader");
 
-#if RHM_REQUIRES_INPUTFILE
     parser.addArgument({"--inputfile"}, "json input file path (required)");
-#endif
 #if RHM_HAS_ROOT
     parser.addArgument({"--pdf_path"}, "pdf output file path (optional, default: Cooling-with-RH.pdf)");
     parser.addArgument({"--rootfile_path"}, "root output file path (optional, default: None)");
@@ -41,9 +39,7 @@ int main(int argc, char **argv)
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
-#if RHM_REQUIRES_INPUTFILE
     instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV", "COOL", "RH"});
-#endif
 
 #if RHM_HAS_ROOT
     std::string pdf_path = args.safeGet<std::string>("pdf_path", "Cooling-with-RH.pdf");

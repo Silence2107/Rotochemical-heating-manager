@@ -20,16 +20,12 @@ int main(int argc, char **argv)
 {
     argparse::ArgumentParser parser("dominant_process", "Determines the dominant cooling processes for every timeslice", "Argparse powered by SiLeader");
 
-#if RHM_REQUIRES_INPUTFILE
     parser.addArgument({"--inputfile"}, "json input file path (required)");
-#endif
     parser.addArgument({"--fraction"}, "what fraction of total luminosity is assumed significant (double, defaults to 0.1)");
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
-#if RHM_REQUIRES_INPUTFILE
     instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV", "COOL"});
-#endif
     double dominant_fraction = args.safeGet<double>("fraction", 0.1);
 
     // RUN --------------------------------------------------------------------------
