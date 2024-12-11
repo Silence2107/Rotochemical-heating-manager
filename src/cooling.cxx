@@ -270,6 +270,9 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
+        // core process
+        if (nbar_val < nbar_sf_shift)
+            return 0.0;
         double pf_l, pf_n, pf_p, mst_n, mst_p, mst_l;
         try
         {
@@ -430,7 +433,10 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         using namespace constants::conversion;
         using namespace constants::species;
 
-        double nbar_val = nbar_of_r(r);
+        double nbar_val = nbar_of_r(r); 
+        // core process
+        if (nbar_val < nbar_sf_shift)
+            return 0.0;
         double pf_l, pf_n, pf_p, mst_n, mst_p, mst_l;
         try
         {
