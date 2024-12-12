@@ -28,7 +28,7 @@ SOURCES:=$(wildcard src/*.cxx)
 
 OBJECTS:=$(SOURCES:.cxx=.o)
 DEPENDENCIES:=$(OBJECTS:.o=.d)
-PROGRAMS:=$(wildcard project/Cooling/*.cxx) $(wildcard project/M-R_diagram/*.cxx)
+PROGRAMS:=$(wildcard project/Cooling/*.cxx) $(wildcard project/M-R_diagram/*.cxx) $(wildcard project/Utility/*.cxx)
 
 all : $(PROGRAMS)
 
