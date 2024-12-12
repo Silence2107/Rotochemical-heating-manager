@@ -249,7 +249,10 @@ int main(int argc, char **argv)
                 else if (deconf_equation(r_right) * deconf_equation(r_deconf) <= 0)
                     r_left = r_deconf;
                 else
-                    RHM_THROW(std::runtime_error, "Bisection method failed for deconfinement emergence radius.");
+                {
+                    r_deconf = NAN;
+                    break;
+                }
             }
             // print deconfinement radius
             std::cout << std::setw(indent) << r_deconf/constants::conversion::km_gev;
