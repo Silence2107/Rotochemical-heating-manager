@@ -102,7 +102,7 @@ int main(int argc, char **argv)
     size_t indent = 20;
     std::vector<double> x, y, z;
     // assemble data for different center pressures
-    std::cout << std::left << std::setw(indent) << "pressure fraction" << std::setw(indent) << "pressure [df. units]" << std::setw(indent) << "M [Ms]" << std::setw(indent) << "R [km]" << '\n';
+    std::cout << std::left << std::setw(indent) << "pressure_fraction" << std::setw(indent) << "pressure[df.units]" << std::setw(indent) << "M[Ms]" << std::setw(indent) << "R[km]" << '\n';
     for (size_t count = 0; count < selection_size; ++count)
     {
         using namespace constants::conversion;

@@ -602,10 +602,10 @@ int main(int argc, char **argv)
 
     size_t indent = 20;
     std::cout << "M = " << m_ns * constants::conversion::gev_over_msol << " [Ms]\n";
-    std::cout << std::left << std::setw(indent) << "t [years] "
-              << std::setw(indent) << "Te^inf [K] "
-              << std::setw(indent) << "L^inf_ph [erg/s] "
-              << std::setw(indent) << "L^inf_nu [erg/s] ";
+    std::cout << std::left << std::setw(indent) << "t[years] "
+              << std::setw(indent) << "Te^inf[K] "
+              << std::setw(indent) << "L^inf_ph[erg/s] "
+              << std::setw(indent) << "L^inf_nu[erg/s] ";
     if (save_chemical_imbalances)
     {
         for (auto rh_species = rh_particles.begin(); rh_species != rh_particles.end(); ++rh_species)
