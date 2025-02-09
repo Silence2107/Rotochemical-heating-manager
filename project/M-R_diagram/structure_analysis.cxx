@@ -135,11 +135,11 @@ int main(int argc, char **argv)
     };*/
 
     size_t indent = 20;
-    std::cout << std::left << std::setw(indent) << "Mass [Ms]" << std::setw(indent) << "Radius [km]";
+    std::cout << std::left << std::setw(indent) << "Mass[Ms]" << std::setw(indent) << "Radius[km]";
     if(search_max_mass)
-        std::cout << std::setw(indent) << "Max mass [Ms]" << std::setw(indent) << "Max mass radius [km]";
+        std::cout << std::setw(indent) << "Max_mass[Ms]" << std::setw(indent) << "Max_mass_radius[km]";
     if(search_deconfinement)
-        std::cout << std::setw(indent) << "Quark onset [Ms]" << std::setw(indent) << "Deconf. emergence [km]";
+        std::cout << std::setw(indent) << "Quark_onset[Ms]" << std::setw(indent) << "Deconf_emergence[km]";
     std::cout << '\n';
     // print current mass and radius
     std::cout << std::left << std::setw(indent) << m_ns * constants::conversion::gev_over_msol;

@@ -1,4 +1,4 @@
-pressure fraction   pressure [df. units]M [Ms]              R [km]              
+pressure_fraction   pressure[df.units]  M[Ms]               R[km]               
 0.0001              8.3308e+32          0.180315            21.7525             
 0.000100184         8.34616e+32         0.180365            21.7476             
 0.000100369         8.36155e+32         0.180415            21.7427             

@@ -261,12 +261,12 @@ int main(int argc, char **argv)
 
     size_t indent = 20;
     std::cout << "M = " << m_ns * constants::conversion::gev_over_msol << " [Ms]\n";
-    std::cout << std::left << std::setw(indent) << "t [years] "
-              << std::setw(indent) << "Te^inf [K] "
-              << std::setw(indent) << "L^inf_ph [erg/s] "
-              << std::setw(indent) << "L^inf_nu [erg/s] "
-              << std::setw(indent) << "L^inf_nu_domin [erg/s]"
-              << std::setw(indent) << "Dominant processes " << '\n';
+    std::cout << std::left << std::setw(indent) << "t[years] "
+              << std::setw(indent) << "Te^inf[K] "
+              << std::setw(indent) << "L^inf_ph[erg/s] "
+              << std::setw(indent) << "L^inf_nu[erg/s] "
+              << std::setw(indent + 5) << "L^inf_nu_domin[erg/s]"
+              << std::setw(indent) << "Dominant_processes " << '\n';
 
     while (t_curr < t_end)
     {

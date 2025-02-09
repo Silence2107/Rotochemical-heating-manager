@@ -242,7 +242,7 @@ int main(int argc, char **argv)
 
     if (print_all_time)
     {
-        std::cout << std::left << std::setw(indent) << "t [years]" << std::setw(indent) << "T^inf(r=0) [K]" << std::setw(indent) << "T^inf(r=R) [K]" << std::setw(indent) << "Te^inf [K]" << '\n';
+        std::cout << std::left << std::setw(indent) << "t[years]" << std::setw(indent) << "Te^inf[K]" << std::setw(indent) << "T^inf(r=0)[K]" << std::setw(indent) << "T^inf(r=R)[K]" << '\n';
     }
 
     while (t_curr + time_step < t_end)
@@ -280,7 +280,7 @@ int main(int argc, char **argv)
 
         if (print_all_time)
         {
-            std::cout << std::left << std::setw(indent) << t_curr * 1E6 / (myr_over_s * gev_s) << std::setw(indent) << profile[0] * gev_over_k << std::setw(indent) << profile.end()[-2] * gev_over_k << std::setw(indent) << te_tb(profile.end()[-2]) * exp_phi_at_R * gev_over_k << '\n';
+            std::cout << std::left << std::setw(indent) << t_curr * 1E6 / (myr_over_s * gev_s) << std::setw(indent) << te_tb(profile.end()[-2]) * exp_phi_at_R * gev_over_k << std::setw(indent) << profile[0] * gev_over_k << std::setw(indent) << profile.end()[-2] * gev_over_k << '\n';
         }
 
         if (t_curr >= write_time)
@@ -297,11 +297,11 @@ int main(int argc, char **argv)
     }
 
     // print accumulated profiles
-    std::cout << std::left << std::setw(indent) << "r [km]";
+    std::cout << std::left << std::setw(indent) << "r[km]";
     for (size_t i = 0; i < saved_times.size(); ++i)
     {
         std::stringstream ss;
-        ss << saved_times[i] << " [yr]";
+        ss << std::scientific << std::setprecision(3) << saved_times[i] << "[yr]";
         std::cout << std::setw(indent) << ss.str();
     }
     std::cout << '\n';
