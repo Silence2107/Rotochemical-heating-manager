@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import argparse
 
 # parse arguments
-parser = argparse.ArgumentParser(description='Process cooling raw output into T(t) preview.')
+parser = argparse.ArgumentParser(description='Turn cooling_curve (or identically structured) output into T(t) preview.')
 parser._action_groups.pop()
 requiredArgs = parser.add_argument_group('required arguments')
 requiredArgs.add_argument(

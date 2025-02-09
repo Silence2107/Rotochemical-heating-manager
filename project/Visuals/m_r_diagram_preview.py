@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import argparse
 
 # parse arguments
-parser = argparse.ArgumentParser(description='Process m_r_diagram raw output into M-R preview.')
+parser = argparse.ArgumentParser(description='Turn m_r_diagram output into M-R preview.')
 parser._action_groups.pop()
 requiredArgs = parser.add_argument_group('required arguments')
 requiredArgs.add_argument('--input', type=str, help='tov cache to process', required=True)

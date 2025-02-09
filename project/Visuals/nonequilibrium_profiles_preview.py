@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import argparse
 
 # parse arguments
-parser = argparse.ArgumentParser(description='Process cooling profile output into T(r) timeline preview.')
+parser = argparse.ArgumentParser(description='Turn nonequilibrium_profiles output into T(r) timeline preview.')
 parser._action_groups.pop()
 requiredArgs = parser.add_argument_group('required arguments')
 requiredArgs.add_argument(
