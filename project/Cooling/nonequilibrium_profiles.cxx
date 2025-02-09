@@ -301,7 +301,7 @@ int main(int argc, char **argv)
     for (size_t i = 0; i < saved_times.size(); ++i)
     {
         std::stringstream ss;
-        ss << saved_times[i] << "[yr]";
+        ss << std::scientific << std::setprecision(3) << saved_times[i] << "[yr]";
         std::cout << std::setw(indent) << ss.str();
     }
     std::cout << '\n';
