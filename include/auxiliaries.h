@@ -34,12 +34,24 @@ namespace auxiliaries
         /// @param message exception message
         #define RHM_THROW(exceptionClass, message) throw exceptionClass("Encountered in " + std::string(__FILE__) + "//" + std::string(__func__) + ", line " + std::to_string(__LINE__) + " : " + message)
     
-        /// @brief Logging levels
-        enum LogLevel
+        /// @brief Logger
+        class Logger
         {
-            kError,
-            kVerbose,
-            kTrace
+        private:
+            std::string header;
+        public:
+            enum class LogLevel
+            {
+                kTrace,
+                kDebug,
+                kInfo,
+                kError
+            };
+            /// @brief public constructor of Logger
+            Logger(const std::string &header = "") : header{header} {}
+            static LogLevel g_log_level;
+            static std::ostream *g_stream;
+            void log(LogLevel level, std::function<std::string()> &&lazy_message) const;
         };
     }
 
