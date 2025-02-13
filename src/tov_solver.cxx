@@ -11,7 +11,7 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::function<double(do
 {
 	using constants::scientific::G;
 	using constants::scientific::Pi;
-
+	auxiliaries::io::Logger logger(__func__);
 	// Here I apply RK4 to coupled equations {m'=f(p,r), p'=g(p,m,r)}
 	// For reference, see "Computational Quantum Mechanics" by Joshua Izaac, Jingbo Wang, section 5.9 and https://www.myphysicslab.com/explain/runge-kutta-en.html
 
@@ -80,6 +80,10 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::function<double(do
 				// if we encounter negative density, reevaluate with smaller step
 				adaptive_radius_step /= 2;
 				++adaption_count;
+				logger.log([&]()
+						   { return true; }, auxiliaries::io::Logger::LogLevel::kTrace,
+						   [&]()
+						   { return "Too rapid RK4. Adaption #" + std::to_string(adaption_count) + "/" + std::to_string(adaption_limit) + " at r[km] = " + std::to_string(r / constants::conversion::km_gev); }, "TOV loop");
 				continue;
 			}
 
@@ -90,6 +94,10 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::function<double(do
 				p -= adaptive_radius_step / 6 * (p_rk[0] + 2 * p_rk[1] + 2 * p_rk[2] + p_rk[3]);
 				adaptive_radius_step /= 2;
 				++adaption_count;
+				logger.log([&]()
+						   { return true; }, auxiliaries::io::Logger::LogLevel::kTrace,
+						   [&]()
+						   { return "Surface overshoot. Adaption #" + std::to_string(adaption_count) + "/" + std::to_string(adaption_limit) + " at r[km] = " + std::to_string(r / constants::conversion::km_gev); }, "TOV loop");
 				continue;
 			}
 			double linear_coeff = 1;
@@ -110,12 +118,18 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::function<double(do
 			df[1].push_back(m);
 			df[2].push_back(p);
 			df[3].push_back(phi);
+
 			adaptive_radius_step = radius_step; // reset adaptive radius step
 			adaption_count = 0;					// reset adaption count
 			// exit if reached surface
 			if (surfaced)
 				break;
 		}
+
+		logger.log([&]()
+				   { return adaption_count >= adaption_limit; }, auxiliaries::io::Logger::LogLevel::kDebug,
+				   [&]()
+				   { return "TOV exits early (adaption limit exceeded). Perhaps raise TOVSolver.AdaptionLimit"; });
 
 		// shift phi function so that to satisfy phi(R) condition
 		double phi_shift = 1.0 / 2 * log(1 - 2 * G * df[1].back() / df[0].back()) - df[3].back();
