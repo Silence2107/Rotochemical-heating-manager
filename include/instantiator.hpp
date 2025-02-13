@@ -6,6 +6,7 @@
 #include "../include/cooling.h"
 #include "../3rd-party/json/single_include/nlohmann/json.hpp"
 
+#include <iostream>
 #include <fstream>
 #include <functional>
 #include <vector>
@@ -18,9 +19,6 @@
 /// @brief global data powering RHM
 namespace instantiator
 {
-    // (0) System setup
-    auxiliaries::io::LogLevel log_level;
-
     // (1) EoS setup
 
     // conversion factors from datafile units to natural units
@@ -169,21 +167,30 @@ namespace instantiator
 
         // (0) System setup
         auto log_level_read = j["System"]["LogLevel"];
+        auxiliaries::io::Logger::LogLevel log_level;
         if (log_level_read.is_null())
-            log_level = auxiliaries::io::LogLevel::kError;
+            log_level = auxiliaries::io::Logger::LogLevel::kError;
         else if (!(log_level_read.is_string()))
             RHM_THROW(std::runtime_error, "UI error: Log level must be provided as a string.");
         else
         {
             if (log_level_read == "Error")
-                log_level = auxiliaries::io::LogLevel::kError;
-            else if (log_level_read == "Verbose")
-                log_level = auxiliaries::io::LogLevel::kVerbose;
+                log_level = auxiliaries::io::Logger::LogLevel::kError;
+            else if (log_level_read == "Info")
+                log_level = auxiliaries::io::Logger::LogLevel::kInfo;
+            else if (log_level_read == "Debug")
+                log_level = auxiliaries::io::Logger::LogLevel::kDebug;
             else if (log_level_read == "Trace")
-                log_level = auxiliaries::io::LogLevel::kTrace;
+                log_level = auxiliaries::io::Logger::LogLevel::kTrace;
             else
-                RHM_THROW(std::runtime_error, "UI error: Log level may only be provided as a string of \"Error\", \"Verbose\" or \"Trace\".");
+                RHM_THROW(std::runtime_error, "UI error: Log level may only be provided as a string of \"Error\", \"Info\", \"Debug\" or \"Trace\".");
         }
+        // initialize logger ONCE
+        auxiliaries::io::Logger::g_log_level = log_level;
+        // have a stream variable in case we would want to extend the logger later
+        auxiliaries::io::Logger::g_stream = &std::cout;
+
+        auxiliaries::io::Logger logger(__func__);
 
         // (1) EoS setup
 

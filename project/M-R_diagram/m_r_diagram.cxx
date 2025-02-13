@@ -42,6 +42,8 @@ int main(int argc, char **argv)
     using namespace instantiator;
     instantiator::instantiate_system(args.get<std::string>("inputfile"), {});
 
+    auxiliaries::io::Logger logger(__func__);
+
 #if RHM_HAS_ROOT
     std::string pdf_path = args.safeGet<std::string>("pdf_path", "M-R-diagram.pdf");
     TFile *rootfile = nullptr;
@@ -53,6 +55,11 @@ int main(int argc, char **argv)
     double right_fraction = args.safeGet<double>("right_fraction", 0.999);
     size_t selection_size = args.safeGet<size_t>("selection_size", 5000);
     bool restrict_stable_branch = args.has("restrict_stable");
+
+    logger.log([]()
+               { return true; }, auxiliaries::io::Logger::LogLevel::kInfo,
+               [&]()
+               { return "Instantiation complete"; });
 
     // RUN --------------------------------------------------------------------------
 
@@ -102,6 +109,14 @@ int main(int argc, char **argv)
     size_t indent = 20;
     std::vector<double> x, y, z;
     // assemble data for different center pressures
+    logger.log([]()
+               { return true; }, auxiliaries::io::Logger::LogLevel::kInfo,
+               [&]()
+               { 
+                    std::stringstream ss;
+                    ss << std::scientific << std::setprecision(3) << "Pressure fraction is exp mapped [" << left_fraction << ", " << right_fraction << ", " << selection_size << "]"; 
+                    return ss.str();
+                });
     std::cout << std::left << std::setw(indent) << "pressure_fraction" << std::setw(indent) << "pressure[df.units]" << std::setw(indent) << "M[Ms]" << std::setw(indent) << "R[km]" << '\n';
     for (size_t count = 0; count < selection_size; ++count)
     {
@@ -112,10 +127,28 @@ int main(int argc, char **argv)
         if(restrict_stable_branch && count != 0)
             // Early exit if dM/dP < 0 with M/Ms > 1.8
             if (y.back() > point[1] * gev_over_msol && point[1] * gev_over_msol > 1.8)
-                break;
+                {
+                    logger.log([]()
+                               { return true; }, auxiliaries::io::Logger::LogLevel::kInfo,
+                               [&]()
+                               { return std::string("Reached potential unstable configuration at ") + std::to_string(point[1] * gev_over_msol) + " Ms"; });
+                    break;
+                }
         x.push_back(point[0] / km_gev);
         y.push_back(point[1] * gev_over_msol);
         z.push_back(pressure / pressure_conversion);
+        logger.log([&]()
+                   { return count % 100 == 0; }, auxiliaries::io::Logger::LogLevel::kDebug,
+                   [&]()
+                   { return std::to_string(count) + " counts past"; }, "M-R loop");
+        logger.log([&]()
+                   { return x.back() > 50.0; }, auxiliaries::io::Logger::LogLevel::kDebug,
+                   [&]()
+                   { return "NS radius exceeds 50 km. Consider entering stiffer area (perhaps raise --left_fraction)"; }, "M-R loop");
+        logger.log([&]()
+                   { return y.back() > 3.0; }, auxiliaries::io::Logger::LogLevel::kDebug,
+                   [&]()
+                   { return "NS mass exceeds 3 Ms. Consider halting the calculation (perhaps pass --restrict_stable)"; }, "M-R loop");
         std::cout << std::left << std::setw(indent) << frac << std::setw(indent) << z.back() << std::setw(indent) << y.back() << std::setw(indent) << x.back() << "\n";
     }
 

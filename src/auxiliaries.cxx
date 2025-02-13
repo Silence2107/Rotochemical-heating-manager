@@ -89,6 +89,27 @@ std::string auxiliaries::io::retrieve_cleared_line(const std::string &line)
     return cleared_line;
 }
 
+auxiliaries::io::Logger::LogLevel auxiliaries::io::Logger::g_log_level;
+std::ostream *auxiliaries::io::Logger::g_stream;
+
+void auxiliaries::io::Logger::log(std::function<bool()> &&lazy_condition, LogLevel level, std::function<std::string()> &&lazy_message, std::string appendix) const
+{
+    static const std::map<auxiliaries::io::Logger::LogLevel, std::string> log_level_map = {
+        {LogLevel::kTrace, "TRACE"},
+        {LogLevel::kDebug, "DEBUG"},
+        {LogLevel::kInfo, "INFO"},
+        {LogLevel::kError, "ERROR"}};
+    if (level >= auxiliaries::io::Logger::g_log_level)
+    {
+        if (!lazy_condition())
+            return;
+        if (appendix != "")
+            appendix.insert(0, ", ");
+        
+        *auxiliaries::io::Logger::g_stream << "[" << log_level_map.at(level) << "] <" << header << appendix << "> : " << lazy_message() << '\n';
+    }
+}
+
 double auxiliaries::math::interpolate(const std::vector<double> &input, const std::vector<double> &output,
                                       auxiliaries::math::InterpolationMode mode, double x, bool extrapolate, bool enable_checks)
 {
@@ -277,7 +298,7 @@ double auxiliaries::math::interpolate_cached(std::function<double(double)> &cach
                 // averaging slopes with weights
                 else
                     linear_coeffs[i] = (slopes[i - 1] * (input[i + 1] - input[i]) + slopes[i] * (input[i] - input[i - 1])) / (input[i + 1] - input[i - 1]);
-                
+
                 // In the latter case, make sure linear coefficients are not too large to avoid overshooting.
                 // Note that the signs of the slopes and linear_coeffs are at this point the same.
                 if (linear_coeffs[i] / slopes[i] > 3 || linear_coeffs[i] / slopes[i - 1] > 3)
@@ -344,7 +365,7 @@ bool auxiliaries::phys::Species::operator<(const auxiliaries::phys::Species &oth
 std::function<double(double, double, double)> auxiliaries::phys::fermi_specific_heat_density(
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-    double nbar_sf_shift, const std::function<double(double)> &exp_phi, const std::function<double(double)> &superfluid_p_temp, 
+    double nbar_sf_shift, const std::function<double(double)> &exp_phi, const std::function<double(double)> &superfluid_p_temp,
     const std::function<double(double)> &superfluid_n_temp, const std::function<double(double)> &superconduct_q_gap)
 {
     return [=](double r, double t, double T)
