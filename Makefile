@@ -1,5 +1,3 @@
-CXX:=g++
-
 CXXFLAGS:=-Wall -Wextra 
 all: CXXFLAGS +=-O3
 release: CXXFLAGS +=-O3
