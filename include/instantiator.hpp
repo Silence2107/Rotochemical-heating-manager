@@ -270,8 +270,7 @@ namespace instantiator
                             if (!decreasing && nbars[i] >= nbars[i + 1])
                                 return true;
                         }
-                        return false;
-                    },
+                        return false; },
                    auxiliaries::io::Logger::LogLevel::kInfo, []()
                    { return "Number density column is not strictly sorted. Unpredictable behaviour may arise."; });
 
@@ -349,8 +348,7 @@ namespace instantiator
                             if (!decreasing && edensities[i] >= edensities[i + 1])
                                 return true;
                         }
-                        return false;
-                    },
+                        return false; },
                    auxiliaries::io::Logger::LogLevel::kInfo, []()
                    { return "Energy density column is not strictly sorted. Unpredictable behaviour may arise."; });
 
@@ -402,8 +400,7 @@ namespace instantiator
                             if (!decreasing && pressures[i] > pressures[i + 1])
                                 return true;
                         }
-                        return false;
-                    },
+                        return false; },
                    auxiliaries::io::Logger::LogLevel::kInfo, []()
                    { return "Mechanical stability not maintained. Unexpected behaviour may arise."; });
 
