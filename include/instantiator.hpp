@@ -135,7 +135,7 @@ namespace instantiator
 
     /// @brief instantiate the system from json input
     /// @param json_input json inputfile path
-    void instantiate_system(const std::string &json_input, const std::vector<std::string>& modules)
+    void instantiate_system(const std::string &json_input, const std::vector<std::string> &modules)
     {
         using namespace instantiator;
         using json = nlohmann::json;
@@ -188,7 +188,7 @@ namespace instantiator
         // initialize logger ONCE
         auxiliaries::io::Logger::g_log_level = log_level;
         // have a stream variable in case we would want to extend the logger later
-        auxiliaries::io::Logger::g_stream = &std::cout;
+        auxiliaries::io::Logger::g_stream_ptr = &std::cout;
 
         auxiliaries::io::Logger logger(__func__);
 
@@ -256,6 +256,25 @@ namespace instantiator
         // read datafile
         static auto table = auxiliaries::io::read_tabulated_file(eos_datafile, eos_datafile_cols, eos_datafile_rows);
 
+        // nbars should be ordered (might not fail)
+        logger.log([nbar_index]()
+                   { 
+                        const auto &nbars = table.at(nbar_index);
+                        if (nbars.size() < 2)
+                            return false;
+                        bool decreasing = nbars.front() > nbars.back();
+                        for (size_t i = 0; i < nbars.size() - 1; ++i)
+                        {
+                            if (decreasing && nbars[i] <= nbars[i + 1])
+                                return true;
+                            if (!decreasing && nbars[i] >= nbars[i + 1])
+                                return true;
+                        }
+                        return false;
+                    },
+                   auxiliaries::io::Logger::LogLevel::kInfo, []()
+                   { return "Number density column is not strictly sorted. Unpredictable behaviour may arise."; });
+
         // data_reader takes input vector and outputs vector of outputs from EoS datafile
         static auto data_reader = auxiliaries::math::CachedFunc<std::vector<auxiliaries::math::CachedInterpolatorWrap>,
                                                                 double, const std::vector<double> &, size_t>(
@@ -313,6 +332,28 @@ namespace instantiator
         energy_density_of_nbar = [energy_density_index](double nbar)
         { return data_reader({nbar}, energy_density_index) * energy_density_conversion; };
 
+        // energy density should be ordered along nbars (might not fail)
+        logger.log([energy_density_index, nbar_index]()
+                   { 
+                        const auto &edensities = table.at(energy_density_index);
+                        if (edensities.size() < 2)
+                            return false;
+                        bool decreasing = edensities.front() > edensities.back();
+                        bool nbars_decreasing = table.at(nbar_index).front() > table.at(nbar_index).back();
+                        if (decreasing != nbars_decreasing)
+                            return true;
+                        for (size_t i = 0; i < edensities.size() - 1; ++i)
+                        {
+                            if (decreasing && edensities[i] <= edensities[i + 1])
+                                return true;
+                            if (!decreasing && edensities[i] >= edensities[i + 1])
+                                return true;
+                        }
+                        return false;
+                    },
+                   auxiliaries::io::Logger::LogLevel::kInfo, []()
+                   { return "Energy density column is not strictly sorted. Unpredictable behaviour may arise."; });
+
         // pressure function of baryonic density (natural units)
         auto pressure_index = j["EoSSetup"]["Quantities"]["Pressure"]["Column"];
         auto pressure_conversion_read = j["EoSSetup"]["Quantities"]["Pressure"]["Units"];
@@ -343,6 +384,28 @@ namespace instantiator
             RHM_THROW(std::runtime_error, "UI error: Unparsable conversion unit provided for pressure.");
         pressure_of_nbar = [pressure_index](double nbar)
         { return data_reader({nbar}, pressure_index) * pressure_conversion; };
+
+        // pressure should maintained mechanical stability (might be ignored in some cases)
+        logger.log([pressure_index, nbar_index]()
+                   { 
+                        const auto &pressures = table.at(pressure_index);
+                        if (pressures.size() < 2)
+                            return false;
+                        bool decreasing = pressures.front() > pressures.back();
+                        bool nbars_decreasing = table.at(nbar_index).front() > table.at(nbar_index).back();
+                        if (decreasing != nbars_decreasing)
+                            return true;
+                        for (size_t i = 0; i < pressures.size() - 1; ++i)
+                        {
+                            if (decreasing && pressures[i] < pressures[i + 1])
+                                return true;
+                            if (!decreasing && pressures[i] > pressures[i + 1])
+                                return true;
+                        }
+                        return false;
+                    },
+                   auxiliaries::io::Logger::LogLevel::kInfo, []()
+                   { return "Mechanical stability not maintained. Unexpected behaviour may arise."; });
 
         // baryonic density limits in natural units. _low and _upp represent limits of EoS itself
         // while _core_limit, _crust_limit represent phase transition boundaries
@@ -379,7 +442,7 @@ namespace instantiator
         // energy density is deduced automatically
         edensity_low = energy_density_of_nbar(nbar_low);
         edensity_upp = energy_density_of_nbar(nbar_upp);
-        
+
         // pressure is deduced automatically
         pressure_low = pressure_of_nbar(nbar_low);
         pressure_upp = pressure_of_nbar(nbar_upp);
@@ -537,7 +600,6 @@ namespace instantiator
                 RHM_THROW(std::runtime_error, "UI error: TOV center pressure may only be provided in \"LinspacedMinToMax\", \"Same\" or \"MassCached\" modes.");
             }
         }
-        
 
         // (->1) EoS Setup
 
@@ -750,9 +812,9 @@ namespace instantiator
         auto ion_volume_provided_as_read = ion_volume_fr_read["ProvidedAs"];
         if (ion_volume_provided_as_read.is_null() || ion_volume_provided_as_read == "Absent")
             ion_volume_fr = [](double nbar)
-            { 
+            {
                 (void)nbar;
-                return 0.0; 
+                return 0.0;
             };
         else if (ion_volume_provided_as_read == "ExcludedVolume")
             ion_volume_fr = [](double nbar)
@@ -1095,11 +1157,9 @@ namespace instantiator
                 {"CCDK_PS", CriticalTemperatureModel::kCCDK_PS},
                 {"AO_PS", CriticalTemperatureModel::kAO_PS},
                 {"BS_PS", CriticalTemperatureModel::kBS_PS},
-                {"BCLL_PS", CriticalTemperatureModel::kBCLL_PS}
-            };
+                {"BCLL_PS", CriticalTemperatureModel::kBCLL_PS}};
             if (crit_temp_models.find(full_name) == crit_temp_models.end())
-                RHM_THROW(std::runtime_error, "UI error: " + full_name + "is not a supported critical temperature model. Choose from \"GIPSF\", \"MSH\", \"AWP2\", \"SFB\" for n1S0," 
-                        + "\"AO\", \"TTOA\", \"BEEHS\", \"TTAV\", \"A\", \"B\", \"C\" for n3P2 or \"CCDK\", \"AO\", \"BS\", \"BCLL\" for p1S0.");
+                RHM_THROW(std::runtime_error, "UI error: " + full_name + "is not a supported critical temperature model. Choose from \"GIPSF\", \"MSH\", \"AWP2\", \"SFB\" for n1S0," + "\"AO\", \"TTOA\", \"BEEHS\", \"TTAV\", \"A\", \"B\", \"C\" for n3P2 or \"CCDK\", \"AO\", \"BS\", \"BCLL\" for p1S0.");
             return crit_temp_models[full_name];
         };
 
@@ -1247,7 +1307,7 @@ namespace instantiator
                                         }});
                 }
         }
-        
+
         auto roto_time_units = j["RHSolver"]["TimeUnits"];
         double roto_time_conversion;
         if (roto_time_units.is_null())

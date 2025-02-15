@@ -50,7 +50,7 @@ namespace auxiliaries
             /// @brief public constructor of Logger
             Logger(const std::string &header = "") : header{header} {}
             static LogLevel g_log_level;
-            static std::ostream *g_stream;
+            static std::ostream *g_stream_ptr;
             void log(std::function<bool()> &&lazy_condition, LogLevel level, std::function<std::string()> &&lazy_message, std::string appendix = "") const;
         };
     }
