@@ -64,7 +64,7 @@ int main(int argc, char **argv)
     // RUN --------------------------------------------------------------------------
 
     // EoS definition
-    
+
     auto eos_inv_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double>(
         [&](std::vector<std::vector<double>> &cache, double p)
         {
@@ -90,7 +90,7 @@ int main(int argc, char **argv)
     {
         // TOV solver
         auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::function<double(double)>>, std::vector<double>,
-                                                        const std::function<double(double)> &, double, double, double, 
+                                                        const std::function<double(double)> &, double, double, double,
                                                         double, size_t, auxiliaries::math::InterpolationMode>(tov_solver::tov_solution);
         auto tov = [&tov_cached, &eos_inv_cached, pressure](double r)
         {
@@ -112,11 +112,11 @@ int main(int argc, char **argv)
     logger.log([]()
                { return true; }, auxiliaries::io::Logger::LogLevel::kInfo,
                [&]()
-               { 
-                    std::stringstream ss;
-                    ss << std::scientific << std::setprecision(3) << "Pressure fraction is exp mapped [" << left_fraction << ", " << right_fraction << ", " << selection_size << "]"; 
-                    return ss.str();
-                });
+               {
+                   std::stringstream ss;
+                   ss << std::scientific << std::setprecision(3) << "Pressure fraction is exp mapped [" << left_fraction << ", " << right_fraction << ", " << selection_size << "]";
+                   return ss.str();
+               });
     std::cout << std::left << std::setw(indent) << "pressure_fraction" << std::setw(indent) << "pressure[df.units]" << std::setw(indent) << "M[Ms]" << std::setw(indent) << "R[km]" << '\n';
     for (size_t count = 0; count < selection_size; ++count)
     {
@@ -124,16 +124,16 @@ int main(int argc, char **argv)
         double frac = left_fraction * pow((right_fraction / left_fraction), count / (selection_size - 1.0));
         double pressure = frac * (pressure_upp - pressure_low) + pressure_low;
         auto point = get_m_r_at_pressure(pressure);
-        if(restrict_stable_branch && count != 0)
+        if (restrict_stable_branch && count != 0)
             // Early exit if dM/dP < 0 with M/Ms > 1.8
             if (y.back() > point[1] * gev_over_msol && point[1] * gev_over_msol > 1.8)
-                {
-                    logger.log([]()
-                               { return true; }, auxiliaries::io::Logger::LogLevel::kInfo,
-                               [&]()
-                               { return std::string("Reached potential unstable configuration at ") + std::to_string(point[1] * gev_over_msol) + " Ms"; });
-                    break;
-                }
+            {
+                logger.log([]()
+                           { return true; }, auxiliaries::io::Logger::LogLevel::kInfo,
+                           [&]()
+                           { return std::string("Reached potential unstable configuration at ") + std::to_string(point[1] * gev_over_msol) + " Ms"; });
+                break;
+            }
         x.push_back(point[0] / km_gev);
         y.push_back(point[1] * gev_over_msol);
         z.push_back(pressure / pressure_conversion);
