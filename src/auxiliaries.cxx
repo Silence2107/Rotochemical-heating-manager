@@ -90,7 +90,7 @@ std::string auxiliaries::io::retrieve_cleared_line(const std::string &line)
 }
 
 auxiliaries::io::Logger::LogLevel auxiliaries::io::Logger::g_log_level;
-std::ostream *auxiliaries::io::Logger::g_stream;
+std::ostream *auxiliaries::io::Logger::g_stream_ptr;
 
 void auxiliaries::io::Logger::log(std::function<bool()> &&lazy_condition, LogLevel level, std::function<std::string()> &&lazy_message, std::string appendix) const
 {
@@ -106,7 +106,7 @@ void auxiliaries::io::Logger::log(std::function<bool()> &&lazy_condition, LogLev
         if (appendix != "")
             appendix.insert(0, ", ");
         
-        *auxiliaries::io::Logger::g_stream << "[" << log_level_map.at(level) << "] <" << header << appendix << "> : " << lazy_message() << '\n';
+        *auxiliaries::io::Logger::g_stream_ptr << "[" << log_level_map.at(level) << "] <" << header << appendix << "> : " << lazy_message() << '\n';
     }
 }
 
