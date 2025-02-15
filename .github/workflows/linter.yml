@@ -1,26 +1,44 @@
-name: cpp-linter
+name: pre-commit
+
 on:
   pull_request:
-    branches: [main, master]
-    paths: ['**.c', '**.cpp', '**.h', '**.hpp', '**.cxx', '**.hxx', '**.cc', '**.hh', '**CMakeLists.txt', 'meson.build', '**.cmake']
   push:
-    branches: [main, master]
-    paths: ['**.c', '**.cpp', '**.h', '**.hpp', '**.cxx', '**.hxx', '**.cc', '**.hh', '**CMakeLists.txt', 'meson.build', '**.cmake']
+    branches: [main]
 
 jobs:
-  cpp-linter:
+  pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: cpp-linter/cpp-linter-action@v2
-        id: linter
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Add clang repositories & install packages
+        run: |
+            wget https://apt.llvm.org/llvm.sh
+            chmod +x llvm.sh
+            sudo ./llvm.sh 13 all
+      - name: Install Cmake
+        run: |
+            sudo apt-get install -y cmake
+      - name: Relink binaries
+        run: |
+            sudo rm /usr/bin/clang-format
+            sudo ln -s /usr/bin/clang-format-13 /usr/bin/clang-format
+            sudo ln -s /usr/bin/clang-tidy-13 /usr/bin/clang-tidy
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - name: Check code style first phase
+        uses: pre-commit/action@v2.0.3
+        id: phase1
+      - name: Update pull request with fixed formatting
+        if: always() && (steps.phase1.outcome == 'failure')
+        uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          style: 'file'  # Use .clang-format config file
-          tidy-checks: '' # Use .clang-tidy config file
-          # only 'update' a single comment in a pull request thread.
-          thread-comments: ${{ github.event_name == 'pull_request' && 'update' }}
-      - name: Fail fast?!
-        if: steps.linter.outputs.checks-failed > 0
-        run: exit 1
+          add_options: '-u'
+      - name: Check code style second phase
+        if: always() && (steps.phase1.outcome == 'failure')
+        uses: pre-commit/action@v2.0.3
+        id: phase2
+      - name: Close pull request if still bad
+        if: always() && (steps.phase1.outcome == 'failure' && steps.phase2.outcome == 'failure')
+        uses: peter-evans/close-pull@v2
+        with:
+          comment: "Automated fixes were unable to conform code to required code style. Manual intervention required."
+        
