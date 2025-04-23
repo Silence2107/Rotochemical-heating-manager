@@ -69,12 +69,12 @@ int main(int argc, char **argv)
     // TOV solver
 
     auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::function<double(double)>>, std::vector<double>,
-                                                    const std::function<double(double)> &, double, double, double,
+                                                    const std::function<double(double)> &, double, double, double, double,
                                                     double, size_t, auxiliaries::math::InterpolationMode>(tov_solver::tov_solution);
     auto tov = [&tov_cached, &eos_inv_cached](double r)
     {
         // TOV solution cached
-        return tov_cached(eos_inv_cached, r, center_pressure, radius_step, surface_pressure, tov_adapt_limit, radial_interp_mode);
+        return tov_cached(eos_inv_cached, r, center_pressure, radius_step, surface_pressure, pressure_low, tov_adapt_limit, radial_interp_mode);
     };
 
     auto nbar = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double>(
@@ -152,12 +152,12 @@ int main(int argc, char **argv)
         {
             // TOV solver
             auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::function<double(double)>>, std::vector<double>,
-                                                            const std::function<double(double)> &, double, double, double,
+                                                            const std::function<double(double)> &, double, double, double, double,
                                                             double, size_t, auxiliaries::math::InterpolationMode>(tov_solver::tov_solution);
             auto tov = [&tov_cached, &eos_inv_cached, pressure](double r)
             {
                 // TOV solution cached
-                return tov_cached(eos_inv_cached, r, pressure, radius_step, surface_pressure, tov_adapt_limit, radial_interp_mode);
+                return tov_cached(eos_inv_cached, r, pressure, radius_step, surface_pressure, pressure_low, tov_adapt_limit, radial_interp_mode);
             };
 
             double r_ns = tov(0.0)[4];
@@ -228,7 +228,7 @@ int main(int argc, char **argv)
             auto tov_at_transition = [&](double r)
             {
                 // TOV solution cached
-                return tov_cached(eos_inv_cached, r, quark_transition_pressure, radius_step, surface_pressure, tov_adapt_limit, radial_interp_mode);
+                return tov_cached(eos_inv_cached, r, quark_transition_pressure, radius_step, surface_pressure, pressure_low, tov_adapt_limit, radial_interp_mode);
             };
             double r_ns_at_transition = tov_at_transition(0.0)[4];
             double m_ns_at_transition = tov_at_transition(r_ns_at_transition)[0];

@@ -7,7 +7,7 @@
 #include <limits>
 #include <cmath>
 
-std::vector<double> tov_solver::tov_solution(std::vector<std::function<double(double)>> &cache, const std::function<double(double)> &eos_inv, double r, double center_pressure, double radius_step, double surface_pressure, size_t adaption_limit, auxiliaries::math::InterpolationMode mode)
+std::vector<double> tov_solver::tov_solution(std::vector<std::function<double(double)>> &cache, const std::function<double(double)> &eos_inv, double r, double center_pressure, double radius_step, double surface_pressure, double lowest_pressure, size_t adaption_limit, auxiliaries::math::InterpolationMode mode)
 {
 	using constants::scientific::G;
 	using constants::scientific::Pi;
@@ -15,19 +15,17 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::function<double(do
 	// Here I apply RK4 to coupled equations {m'=f(p,r), p'=g(p,m,r)}
 	// For reference, see "Computational Quantum Mechanics" by Joshua Izaac, Jingbo Wang, section 5.9 and https://www.myphysicslab.com/explain/runge-kutta-en.html
 
-	auto m_prime = [&eos_inv](double p, double r)
+	auto m_prime = [&eos_inv, lowest_pressure](double p, double r)
 	{
+		// p < lowest_pressure is handled by main loop
 		double rho = eos_inv(p);
-		if (rho < 0)
-			RHM_THROW(std::runtime_error, "Negative density encountered.");
 		return 4 * Pi * r * r * rho;
 	};
 
-	auto p_prime = [&eos_inv, radius_step](double p, double m, double r)
+	auto p_prime = [&eos_inv, radius_step, lowest_pressure](double p, double m, double r)
 	{
+		// p < lowest_pressure is handled by main loop
 		double rho = eos_inv(p);
-		if (rho < 0)
-			RHM_THROW(std::runtime_error, "Negative density encountered.");
 		// zero radius approx -- explicitly get rid of singularity
 		if (r < radius_step / 2)
 			return -(4 * Pi * G * r) * (rho + p) * (rho / 3 + p);
@@ -58,39 +56,47 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::function<double(do
 			// while pressure is above desided minima i.e. were not on surface (see below)
 			// and we didn't exceed adaption limit
 			// then proceed
-			std::vector<double> m_rk(4), p_rk(4); // RK4 variables
+			size_t rk_size = 4;
+			std::vector<double> m_rk(rk_size), p_rk(rk_size); // RK4 variables
 
+			bool adaption_flag = false;
 			// RK4 algorithm follows
-			try
+			auto weights = std::vector<double>({0.5, 0.5, 1});
+			for (size_t rk_index = 0; rk_index < rk_size; ++rk_index)
 			{
-				m_rk[0] = m_prime(p, r);
-				p_rk[0] = p_prime(p, m, r);
-
-				m_rk[1] = m_prime(p + adaptive_radius_step / 2 * p_rk[0], r + adaptive_radius_step / 2);
-				p_rk[1] = p_prime(p + adaptive_radius_step / 2 * p_rk[0], m + adaptive_radius_step / 2 * m_rk[0], r + adaptive_radius_step / 2);
-
-				m_rk[2] = m_prime(p + adaptive_radius_step / 2 * p_rk[1], r + adaptive_radius_step / 2);
-				p_rk[2] = p_prime(p + adaptive_radius_step / 2 * p_rk[1], m + adaptive_radius_step / 2 * m_rk[1], r + adaptive_radius_step / 2);
-
-				m_rk[3] = m_prime(p + adaptive_radius_step * p_rk[2], r + adaptive_radius_step);
-				p_rk[3] = p_prime(p + adaptive_radius_step * p_rk[2], m + adaptive_radius_step * m_rk[2], r + adaptive_radius_step);
+				double p_cur = p,
+					   m_cur = m,
+					   r_cur = r;
+				if (rk_index > 0)
+				{
+					p_cur += weights[rk_index - 1] * adaptive_radius_step * p_rk[rk_index - 1];
+					m_cur += weights[rk_index - 1] * adaptive_radius_step * m_rk[rk_index - 1];
+					r_cur += weights[rk_index - 1] * adaptive_radius_step;
+				}
+				if (p_cur < lowest_pressure)
+				{
+					adaption_flag = true;
+					break;
+				}
+				m_rk[rk_index] = m_prime(p_cur, r_cur);
+				p_rk[rk_index] = p_prime(p_cur, m_cur, r_cur);
 			}
-			catch (std::runtime_error &e)
+
+			if (adaption_flag)
 			{
-				// if we encounter negative density, reevaluate with smaller step
+				// if we wander outside EoS, reevaluate with smaller step
 				adaptive_radius_step /= 2;
 				++adaption_count;
 				logger.log([&]()
-						   { return true; }, auxiliaries::io::Logger::LogLevel::kTrace,
-						   [&]()
-						   { return "Too rapid RK4. Adaption #" + std::to_string(adaption_count) + "/" + std::to_string(adaption_limit) + " at r[km] = " + std::to_string(r / constants::conversion::km_gev); }, "TOV loop");
+							{ return true; }, auxiliaries::io::Logger::LogLevel::kTrace,
+							[&]()
+							{ return "Too rapid RK4. Adaption #" + std::to_string(adaption_count) + "/" + std::to_string(adaption_limit) + " at r[km] = " + std::to_string(r / constants::conversion::km_gev); }, "TOV loop");
 				continue;
 			}
-
 			p += adaptive_radius_step / 6 * (p_rk[0] + 2 * p_rk[1] + 2 * p_rk[2] + p_rk[3]);
-			if (p < 0.0)
+			if (p < lowest_pressure)
 			{
-				// if we encounter negative pressure, reevaluate with smaller step
+				// if we wander outside EoS, reevaluate with smaller step
 				p -= adaptive_radius_step / 6 * (p_rk[0] + 2 * p_rk[1] + 2 * p_rk[2] + p_rk[3]);
 				adaptive_radius_step /= 2;
 				++adaption_count;

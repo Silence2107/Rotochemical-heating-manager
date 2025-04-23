@@ -256,7 +256,17 @@ namespace instantiator
         // read datafile
         static auto table = auxiliaries::io::read_tabulated_file(eos_datafile, eos_datafile_cols, eos_datafile_rows);
 
-        // nbars should be ordered (might not fail)
+        // reflect on table instatiation
+        logger.log([]()
+                   { return table.size() == 0; },
+                   auxiliaries::io::Logger::LogLevel::kError, []()
+                   { return "Failed to read EoS table."; });
+        logger.log([]()
+                   { return true; },
+                   auxiliaries::io::Logger::LogLevel::kInfo, []()
+                   { return "EoS table read with dimensions [" + std::to_string(table.at(0).size()) + " x " + std::to_string(table.size()) + "]."; });
+
+        // nbars must be ordered
         logger.log([nbar_index]()
                    { 
                         const auto &nbars = table.at(nbar_index);
@@ -271,9 +281,8 @@ namespace instantiator
                                 return true;
                         }
                         return false; },
-                   auxiliaries::io::Logger::LogLevel::kInfo, []()
+                   auxiliaries::io::Logger::LogLevel::kError, []()
                    { return "Number density column is not strictly sorted. Unpredictable behaviour may arise."; });
-
         // data_reader takes input vector and outputs vector of outputs from EoS datafile
         static auto data_reader = auxiliaries::math::CachedFunc<std::vector<auxiliaries::math::CachedInterpolatorWrap>,
                                                                 double, const std::vector<double> &, size_t>(
@@ -290,15 +299,10 @@ namespace instantiator
                 }
                 // unpack input and convert to datafile units
                 double nbar = input[0] / nbar_conversion;
-                // return cached interpolation functions, with extrapolation enabled for now
-                try
-                {
-                    return cache[index](table.at(nbar_index), table.at(index), eos_datafile_interp_mode, nbar, true, true);
-                }
-                catch (std::exception &e)
-                {
-                    RHM_THROW(std::runtime_error, "Bad EoS request. " + e.what());
-                } });
+                // return cached interpolation functions, with extrapolation enabled. 
+                // May therefore only fail if input is too short for interpolation
+                return cache[index](table.at(nbar_index), table.at(index), eos_datafile_interp_mode, nbar, true, true);
+});
 
         // energy density function of baryonic density (natural units)
         auto energy_density_index = j["EoSSetup"]["Quantities"]["EnergyDensity"]["Column"];
