@@ -263,6 +263,17 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
     double nbar_sf_shift, const std::function<double(double)> &exp_phi, const std::function<double(double)> &superfluid_p_temp,
     const std::function<double(double)> &superfluid_n_temp)
 {
+    // n <-> p + l + nu_l
+    // neutron, proton species must be defined in the map
+    if (!k_fermi_of_nbar.count(constants::species::neutron) ||
+        !k_fermi_of_nbar.count(constants::species::proton))
+    {
+        return [](double, const auxiliaries::phys::Species &, double, double)
+        {
+            return 0.0;
+        };
+    }
+
     return [=](double r, const auxiliaries::phys::Species &lepton_flavour, double t, double T)
     {
         using namespace constants::scientific;
@@ -273,20 +284,16 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         // core process
         if (nbar_val < nbar_sf_shift)
             return 0.0;
-        double pf_l, pf_n, pf_p, mst_n, mst_p, mst_l;
-        try
-        {
-            pf_l = k_fermi_of_nbar.at(lepton_flavour)(nbar_val);
-            pf_n = k_fermi_of_nbar.at(neutron)(nbar_val);
-            pf_p = k_fermi_of_nbar.at(proton)(nbar_val);
-            mst_n = m_stars_of_nbar.at(neutron)(nbar_val);
-            mst_p = m_stars_of_nbar.at(proton)(nbar_val);
-            mst_l = m_stars_of_nbar.at(lepton_flavour)(nbar_val);
-        }
-        catch (const std::out_of_range &e)
-        {
+        // lepton flavour must be defined in the map
+        if (!k_fermi_of_nbar.count(lepton_flavour))
             return 0.0;
-        }
+            
+        double pf_l = k_fermi_of_nbar.at(lepton_flavour)(nbar_val),
+               pf_n = k_fermi_of_nbar.at(neutron)(nbar_val),
+               pf_p = k_fermi_of_nbar.at(proton)(nbar_val),
+               mst_n = m_stars_of_nbar.at(neutron)(nbar_val),
+               mst_p = m_stars_of_nbar.at(proton)(nbar_val),
+               mst_l = m_stars_of_nbar.at(lepton_flavour)(nbar_val);
         double T_loc = T / exp_phi(r);
         double k0 = pow(3 * Pi * Pi * N_sat, 1.0 / 3);
         if (pf_l + pf_p - pf_n <= 0)
@@ -427,6 +434,17 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
     double nbar_sf_shift, const std::function<double(double)> &exp_phi,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
+    // n + N1 <-> p + N2 + l + nu_l
+    // neutron, proton species must be defined in the map
+    if (!k_fermi_of_nbar.count(constants::species::neutron) ||
+        !k_fermi_of_nbar.count(constants::species::proton))
+    {
+        return [](double, const auxiliaries::phys::Species &, double, double)
+        {
+            return 0.0;
+        };
+    }
+
     return [=](double r, const auxiliaries::phys::Species &lepton_flavour, double t, double T)
     {
         using namespace constants::scientific;
@@ -437,20 +455,16 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         // core process
         if (nbar_val < nbar_sf_shift)
             return 0.0;
-        double pf_l, pf_n, pf_p, mst_n, mst_p, mst_l;
-        try
-        {
-            pf_l = k_fermi_of_nbar.at(lepton_flavour)(nbar_val);
-            pf_n = k_fermi_of_nbar.at(neutron)(nbar_val);
-            pf_p = k_fermi_of_nbar.at(proton)(nbar_val);
-            mst_n = m_stars_of_nbar.at(neutron)(nbar_val);
-            mst_p = m_stars_of_nbar.at(proton)(nbar_val);
-            mst_l = m_stars_of_nbar.at(lepton_flavour)(nbar_val);
-        }
-        catch (const std::out_of_range &e)
-        {
+        // lepton flavour must be defined in the map
+        if (!k_fermi_of_nbar.count(lepton_flavour))
             return 0.0;
-        }
+        
+        double pf_l = k_fermi_of_nbar.at(lepton_flavour)(nbar_val),
+               pf_n = k_fermi_of_nbar.at(neutron)(nbar_val),
+               pf_p = k_fermi_of_nbar.at(proton)(nbar_val),
+               mst_n = m_stars_of_nbar.at(neutron)(nbar_val),
+               mst_p = m_stars_of_nbar.at(proton)(nbar_val),
+               mst_l = m_stars_of_nbar.at(lepton_flavour)(nbar_val);
         if (pf_l == 0)
             return 0.0;
         double T_loc = T / exp_phi(r);
@@ -516,6 +530,17 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
     const std::function<double(double)> &ion_volume_frac, double nbar_sf_shift, const std::function<double(double)> &exp_phi,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
+    // h + h <-> h + h + nu_l + bar_nu_l
+    // neutron, proton species must be defined in the map
+    if (!k_fermi_of_nbar.count(constants::species::neutron) ||
+        !k_fermi_of_nbar.count(constants::species::proton))
+    {
+        return [](double, double, double)
+        {
+            return 0.0;
+        };
+    }
+
     return [=](double r, double t, double T)
     {
         using namespace constants::scientific;
@@ -523,18 +548,10 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf_n, pf_p, mst_n, mst_p;
-        try
-        {
-            pf_n = k_fermi_of_nbar.at(neutron)(nbar_val);
-            pf_p = k_fermi_of_nbar.at(proton)(nbar_val);
-            mst_n = m_stars_of_nbar.at(neutron)(nbar_val);
-            mst_p = m_stars_of_nbar.at(proton)(nbar_val);
-        }
-        catch (const std::out_of_range &e)
-        {
-            return 0.0;
-        }
+        double pf_n = k_fermi_of_nbar.at(neutron)(nbar_val),
+               pf_p = k_fermi_of_nbar.at(proton)(nbar_val),
+               mst_n = m_stars_of_nbar.at(neutron)(nbar_val),
+               mst_p = m_stars_of_nbar.at(proton)(nbar_val);
         double alpha_nn = 0.59, alpha_np = 1.06, alpha_pp = 0.11,
                beta_nn = 0.56, beta_np = 0.66, beta_pp = 0.7;
         double T_loc = T / exp_phi(r);
@@ -617,16 +634,11 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf, mst;
-        try
-        {
-            pf = k_fermi_of_nbar.at(hadron)(nbar_val);
-            mst = m_stars_of_nbar.at(hadron)(nbar_val);
-        }
-        catch (const std::out_of_range &e)
-        {
+        if (!k_fermi_of_nbar.count(hadron))
             return 0.0;
-        }
+
+        double pf = k_fermi_of_nbar.at(hadron)(nbar_val),
+               mst = m_stars_of_nbar.at(hadron)(nbar_val);
         double a_s, a_t;
         if (hadron == neutron)
         {
@@ -702,6 +714,17 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
     const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap)
 {
+    // d <-> u + l + nu_l, sum over all lepton flavours
+    // u, d species must be defined in the map
+    if (!k_fermi_of_nbar.count(constants::species::uquark) ||
+        !k_fermi_of_nbar.count(constants::species::dquark))
+    {
+        return [](double, double, double)
+        {
+            return 0.0;
+        };
+    }
+
     return [=](double r, double t, double T)
     {
         using namespace constants::scientific;
@@ -709,23 +732,13 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf_u, pf_d;
-        try
-        {
-            pf_u = k_fermi_of_nbar.at(uquark)(nbar_val);
-            pf_d = k_fermi_of_nbar.at(dquark)(nbar_val);
-        }
-        catch (const std::out_of_range &e)
-        {
-            return 0.0;
-        }
+        double pf_u = k_fermi_of_nbar.at(uquark)(nbar_val),
+               pf_d = k_fermi_of_nbar.at(dquark)(nbar_val);
         // placeholders for future use
         double pf_l = 0.0;
         // rough estimate for the strong coupling
         double alpha_c = 1.0;
         double T_loc = T / exp_phi(r);
-
-        // ud
 
         // 914/315 G_F^2 \cos^2 \theta_c = 3.726E-10 GeV^{-4}, therefore the prefactor
         double dens_ud = 3.726E-10 * alpha_c * pf_u * pf_d * pow(T_loc, 6);
@@ -748,6 +761,17 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
     const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap)
 {
+    // s <-> u + l + nu_l, sum over all lepton flavours
+    // u, s species must be defined in the map
+    if (!k_fermi_of_nbar.count(constants::species::uquark) ||
+        !k_fermi_of_nbar.count(constants::species::squark))
+    {
+        return [](double, double, double)
+        {
+            return 0.0;
+        };
+    }
+
     return [=](double r, double t, double T)
     {
         using namespace constants::scientific;
@@ -755,16 +779,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf_u, pf_s;
-        try
-        {
-            pf_u = k_fermi_of_nbar.at(uquark)(nbar_val);
-            pf_s = k_fermi_of_nbar.at(squark)(nbar_val);
-        }
-        catch (const std::out_of_range &e)
-        {
-            return 0.0;
-        }
+        double pf_u = k_fermi_of_nbar.at(uquark)(nbar_val),
+               pf_s = k_fermi_of_nbar.at(squark)(nbar_val);
         if (pf_s == 0)
             return 0.0;
         // placeholders for future use
@@ -810,6 +826,17 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
     const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap)
 {
+    // d + q1 <-> u + q2 + e + nu_e
+    // u, d species must be defined in the map
+    if (!k_fermi_of_nbar.count(constants::species::uquark) ||
+        !k_fermi_of_nbar.count(constants::species::dquark))
+    {
+        return [](double, double, double)
+        {
+            return 0.0;
+        };
+    }
+
     return [=](double r, double t, double T)
     {
         using namespace constants::scientific;
@@ -817,16 +844,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf_u, pf_d;
-        try
-        {
-            pf_u = k_fermi_of_nbar.at(uquark)(nbar_val);
-            pf_d = k_fermi_of_nbar.at(dquark)(nbar_val);
-        }
-        catch (const std::out_of_range &e)
-        {
-            return 0.0;
-        }
+        double pf_u = k_fermi_of_nbar.at(uquark)(nbar_val),
+               pf_d = k_fermi_of_nbar.at(dquark)(nbar_val);
         double alpha_c = 1.0;
         double T_loc = T / exp_phi(r);
 
@@ -846,6 +865,17 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
     const std::function<double(double)> &exp_phi, const std::function<double(double)> &superconduct_q_gap)
 {
+    // s + q1 <-> u + q2 + e + nu_e
+    // u, s species must be defined in the map
+    if (!k_fermi_of_nbar.count(constants::species::uquark) ||
+        !k_fermi_of_nbar.count(constants::species::squark))
+    {
+        return [](double, double, double)
+        {
+            return 0.0;
+        };
+    }
+
     return [=](double r, double t, double T)
     {
         using namespace constants::scientific;
@@ -853,16 +883,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf_u, pf_d, pf_s;
-        try
-        {
-            pf_u = k_fermi_of_nbar.at(uquark)(nbar_val);
-            pf_s = k_fermi_of_nbar.at(squark)(nbar_val);
-        }
-        catch (const std::out_of_range &e)
-        {
-            return 0.0;
-        }
+        double pf_u = k_fermi_of_nbar.at(uquark)(nbar_val),
+               pf_s = k_fermi_of_nbar.at(squark)(nbar_val);
         if (pf_s == 0)
             return 0.0;
         double alpha_c = 1.0;
@@ -892,15 +914,17 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::qu
 
         double nbar_val = nbar_of_r(r);
         double pf_u, pf_d;
-        try
-        {
+
+        if (k_fermi_of_nbar.count(uquark))
             pf_u = k_fermi_of_nbar.at(uquark)(nbar_val);
+        else
+            pf_u = 0.0;
+
+        if (k_fermi_of_nbar.count(dquark))
             pf_d = k_fermi_of_nbar.at(dquark)(nbar_val);
-        }
-        catch (const std::out_of_range &e)
-        {
-            return 0.0;
-        }
+        else
+            pf_d = 0.0;
+
         double alpha_c = 1.0;
         double T_loc = T / exp_phi(r);
 
@@ -920,6 +944,16 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::el
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
     const std::function<double(double)> &exp_phi)
 {
+    // e + e <-> e + e + nu_e + bar_nu_e
+    // electron species must be defined in the map
+    if (!k_fermi_of_nbar.count(constants::species::electron))
+    {
+        return [](double, double, double)
+        {
+            return 0.0;
+        };
+    }
+
     return [=](double r, double t, double T)
     {
         using namespace constants::scientific;
@@ -927,15 +961,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::el
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        double pf_e;
-        try
-        {
-            pf_e = k_fermi_of_nbar.at(electron)(nbar_val);
-        }
-        catch (const std::out_of_range &e)
-        {
-            return 0.0;
-        }
+        double pf_e = k_fermi_of_nbar.at(electron)(nbar_val);
         double k0 = pow(3 * Pi * Pi * N_sat, 1.0 / 3);
         double T_loc = T / exp_phi(r);
 
