@@ -8,7 +8,6 @@
 #include <map>
 #include <string>
 #include <cmath>
-#include <stdexcept>
 #include <algorithm>
 #include <limits>
 // #include <iostream>
@@ -662,7 +661,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
             a_t = 3.18;
         }
         else
-            RHM_THROW(std::runtime_error, "Hadron PBF is not implemented for " + hadron.name() + ".");
+            RHM_ERROR("Hadron PBF is not implemented for " + hadron.name() + ".");
         double T_loc = T / exp_phi(r);
         int n_flavours = 3;
         double base_dens = 1.17E21 * (mst / hadron.mass()) * (pf / hadron.mass()) * n_flavours *

@@ -9,7 +9,6 @@
 #include <vector>
 #include <functional>
 #include <cmath>
-#include <stdexcept>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -69,7 +68,7 @@ int main(int argc, char **argv)
         [&](std::vector<std::vector<double>> &cache, double p)
         {
             if (p < pressure_low || p > pressure_upp)
-                RHM_THROW(std::runtime_error, "Data request out of range.");
+                RHM_ERROR("Data request out of range.");
             if (cache.empty() || cache[0].size() != discr_size_EoS)
             {                                                                                        // then fill/refill cache
                 cache = std::vector<std::vector<double>>(2, std::vector<double>(discr_size_EoS, 0)); // initialize 2xdiscr_size_EoS matrix
