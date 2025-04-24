@@ -10,6 +10,8 @@
 #include <fstream>
 #include <sstream>
 #include <map>
+#include <ctime>
+#include <iomanip>
 
 std::vector<std::vector<double>> auxiliaries::io::read_tabulated_file(const std::string &path, std::pair<size_t, size_t> columns, std::pair<size_t, size_t> rows, double empty_value)
 {
@@ -97,7 +99,7 @@ void auxiliaries::io::Logger::log(std::function<bool()> &&lazy_condition, LogLev
     static const std::map<auxiliaries::io::Logger::LogLevel, std::string> log_level_map = {
         {LogLevel::kTrace, "TRACE"},
         {LogLevel::kDebug, "DEBUG"},
-        {LogLevel::kInfo, "INFO"},
+        {LogLevel::kInfo, " INFO"},
         {LogLevel::kError, "ERROR"}};
     if (level >= auxiliaries::io::Logger::g_log_level)
     {
@@ -105,8 +107,13 @@ void auxiliaries::io::Logger::log(std::function<bool()> &&lazy_condition, LogLev
             return;
         if (appendix != "")
             appendix.insert(0, ", ");
-        
-        *auxiliaries::io::Logger::g_stream_ptr << "[" << log_level_map.at(level) << "] <" << header << appendix << "> : " << lazy_message() << '\n';
+        // current time 
+        std::time_t t = std::time(nullptr);
+        std::tm tm = *std::localtime(&t);
+
+        *auxiliaries::io::Logger::g_stream_ptr << std::setfill('0') << std::setw(2) << tm.tm_hour << ":" << std::setfill('0') << std::setw(2) << tm.tm_min << ":" << std::setfill('0') << std::setw(2) << tm.tm_sec;
+        *auxiliaries::io::Logger::g_stream_ptr << " [" << log_level_map.at(level) << "] <" << header << appendix << "> : " << lazy_message() << std::endl;
+        // stream is flushed immediately. Otherwise stuck programs might not be able to communicate their issues
     }
 }
 

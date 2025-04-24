@@ -215,6 +215,8 @@ namespace instantiator
                 if (!log_stream.is_open())
                     RHM_ERROR("UI error: Log file could not be created.");
                 auxiliaries::io::Logger::g_stream_ptr = &log_stream;
+                // add a newline to separate from previous log
+                *auxiliaries::io::Logger::g_stream_ptr << std::endl;
             }
         }
 
