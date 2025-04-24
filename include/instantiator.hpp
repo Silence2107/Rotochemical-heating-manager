@@ -140,6 +140,10 @@ namespace instantiator
         using namespace instantiator;
         using json = nlohmann::json;
 
+        // startup logger globals before the inputfile is read -- errors must be displayed properly
+        auxiliaries::io::Logger::g_log_level = auxiliaries::io::Logger::LogLevel::kError;
+        auxiliaries::io::Logger::g_stream_ptr = &std::cout;
+
         // bunch of simplifying definitions
         // using keys = std::vector<std::string>;
         auto get_interpolation_mode = [](const std::string &mode)
@@ -185,7 +189,7 @@ namespace instantiator
             else
                 RHM_ERROR("UI error: Log level may only be provided as a string of \"Error\", \"Info\", \"Debug\" or \"Trace\".");
         }
-        // initialize logger ONCE
+        // finally instantiate logger
         auxiliaries::io::Logger::g_log_level = log_level;
         // have a stream variable in case we would want to extend the logger later
         auxiliaries::io::Logger::g_stream_ptr = &std::cout;
