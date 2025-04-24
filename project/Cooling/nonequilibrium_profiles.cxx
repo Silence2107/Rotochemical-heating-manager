@@ -25,7 +25,8 @@
 
 int main(int argc, char **argv)
 {
-    argparse::ArgumentParser parser("nonequilibrium_profiles", "Evaluates radial temperature profiles with time based on EoS", "Argparse powered by SiLeader");
+    std::string program_name = "nonequilibrium_profiles";
+    argparse::ArgumentParser parser(program_name, "Evaluates radial temperature profiles with time based on EoS", "Argparse powered by SiLeader");
 
     parser.addArgument({"--inputfile"}, "json input file path (required)");
 #if RHM_HAS_ROOT
@@ -40,7 +41,7 @@ int main(int argc, char **argv)
     using namespace instantiator;
     instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV", "COOL"});
 
-    auxiliaries::io::Logger logger(__func__);
+    auxiliaries::io::Logger logger(program_name);
 
 #if RHM_HAS_ROOT
     std::string pdf_path = args.safeGet<std::string>("pdf_path", "CoolingProfiles.pdf");
@@ -289,7 +290,7 @@ int main(int argc, char **argv)
                            [&]()
                            {
                                std::stringstream ss;
-                               ss << std::scientific << std::setprecision(3) << "Target profile difference exceeded (" << max_diff << " > " << cooling_max_diff_per_t_step << "), adapting (raise CoolingSolver.StepTolerance/NewtonTolerance if this halts progress)";
+                               ss << std::scientific << std::setprecision(3) << "At t = " << 1.0E6 * t_curr / (constants::conversion::myr_over_s * constants::conversion::gev_s) << " [yr] target profile difference exceeded(" << max_diff << " > " << cooling_max_diff_per_t_step << "), adapting (raise CoolingSolver.StepTolerance/NewtonTolerance if this halts progress)";
                                return ss.str();
                            },
                            "non-eq. cooling");
@@ -325,6 +326,16 @@ int main(int argc, char **argv)
             }
             write_time *= write_time_expansion;
             saved_times.push_back(t_curr * 1E6 / (myr_over_s * gev_s));
+
+            logger.log([&]()
+                       { return true; }, auxiliaries::io::Logger::LogLevel::kInfo,
+                       [&]()
+                       {
+                           std::stringstream ss;
+                           ss << std::scientific << std::setprecision(3) << "Profile saved at t = " << saved_times.back() << " [yr]";
+                           return ss.str();
+                       },
+                       "T(r, t) save loop");
         }
     }
 

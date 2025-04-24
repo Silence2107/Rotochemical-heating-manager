@@ -27,7 +27,8 @@
 
 int main(int argc, char **argv)
 {
-    argparse::ArgumentParser parser("cooling_npemuds_rotochemical", "Solves the cooling equation coupled with chemical imbalances based on EoS", "Argparse powered by SiLeader");
+    std::string program_name = "cooling_npemuds_rotochemical";
+    argparse::ArgumentParser parser(program_name, "Solves the cooling equation coupled with chemical imbalances based on EoS", "Argparse powered by SiLeader");
 
     parser.addArgument({"--inputfile"}, "json input file path (required)");
 #if RHM_HAS_ROOT
@@ -41,6 +42,8 @@ int main(int argc, char **argv)
     using namespace instantiator;
     instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV", "COOL", "RH"});
 
+    auxiliaries::io::Logger logger(program_name);
+
 #if RHM_HAS_ROOT
     std::string pdf_path = args.safeGet<std::string>("pdf_path", "Cooling-with-RH.pdf");
     TFile *rootfile = nullptr;
@@ -50,6 +53,10 @@ int main(int argc, char **argv)
 
     bool save_chemical_imbalances = args.has("save_chemical_imbalances");
 
+    logger.log([]()
+               { return true; }, auxiliaries::io::Logger::LogLevel::kInfo,
+               [&]()
+               { return "Instantiation complete"; });
     // RUN --------------------------------------------------------------------------
 
     // EoS definition
@@ -644,6 +651,17 @@ int main(int argc, char **argv)
         surface_temp.push_back(auxiliaries::phys::te_tb_relation(values[0], r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k);
         others[0].push_back(photon_luminosity(t_curr, values[0]) * constants::conversion::gev_s / constants::conversion::erg_over_gev);
         others[1].push_back((-rotochemical_vector_rhs(t_curr, previous_values)[0] * heat_capacity(t_curr, values[0]) - photon_luminosity(t_curr, values[0])) * constants::conversion::gev_s / constants::conversion::erg_over_gev);
+        
+        logger.log([&]()
+                   { return time.size() % 100 == 0; }, auxiliaries::io::Logger::LogLevel::kInfo,
+                   [&]()
+                   {
+                       std::stringstream ss;
+                       ss << std::scientific << std::setprecision(3) << std::to_string(time.size()) + " counts past" << " with t = " << time.back() << " [yr]";
+                       return ss.str();
+                   },
+                   "T(t) loop");
+
         if (save_chemical_imbalances)
         {
             for (size_t i = 0; i < rh_particles.size(); ++i)

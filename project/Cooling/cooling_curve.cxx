@@ -26,7 +26,8 @@
 
 int main(int argc, char **argv)
 {
-    argparse::ArgumentParser parser("cooling_curve", "Evaluates surface temperature time dependency based on EoS", "Argparse powered by SiLeader");
+    std::string program_name = "cooling_curve";
+    argparse::ArgumentParser parser(program_name, "Evaluates surface temperature time dependency based on EoS", "Argparse powered by SiLeader");
 
     parser.addArgument({"--inputfile"}, "json input file path (required)");
 #if RHM_HAS_ROOT
@@ -38,7 +39,7 @@ int main(int argc, char **argv)
     using namespace instantiator;
     instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV", "COOL"});
 
-    auxiliaries::io::Logger logger(__func__);
+    auxiliaries::io::Logger logger(program_name);
 
 #if RHM_HAS_ROOT
     std::string pdf_path = args.safeGet<std::string>("pdf_path", "Cooling.pdf");
@@ -301,7 +302,7 @@ int main(int argc, char **argv)
                            [&]()
                            { 
                                 std::stringstream ss;
-                                ss << std::scientific << std::setprecision(3) << "Target profile difference exceeded (" << max_diff << " > " << cooling_max_diff_per_t_step << "), adapting (raise CoolingSolver.StepTolerance/NewtonTolerance if this halts progress)";
+                                ss << std::scientific << std::setprecision(3) << "At t = " << 1.0E6 * t_curr / (constants::conversion::myr_over_s * constants::conversion::gev_s) << " [yr] target profile difference exceeded(" << max_diff << " > " << cooling_max_diff_per_t_step << "), adapting (raise CoolingSolver.StepTolerance/NewtonTolerance if this halts progress)";
                                 return ss.str();
                             }, "non-eq. cooling");
                 logger.log([&]()
@@ -338,7 +339,7 @@ int main(int argc, char **argv)
                            [&]()
                            { 
                                 std::stringstream ss;
-                                ss << std::scientific << std::setprecision(3) << "Target temperature difference exceeded (" << max_diff << " > " << cooling_max_diff_per_t_step << "), adapting (raise CoolingSolver.StepTolerance/NewtonTolerance if this halts progress)";
+                                ss << std::scientific << std::setprecision(3) << "At t = " << 1.0E6 * t_curr / (constants::conversion::myr_over_s * constants::conversion::gev_s) << " [yr] target temperature difference exceeded (" << max_diff << " > " << cooling_max_diff_per_t_step << "), adapting (raise CoolingSolver.StepTolerance/NewtonTolerance if this halts progress)";
                                 return ss.str();
                             }, "eq. cooling");
                 logger.log([&]()
@@ -363,6 +364,14 @@ int main(int argc, char **argv)
         others[0].push_back(photon_luminosity(t_curr, temp_curr) * constants::conversion::gev_s / constants::conversion::erg_over_gev);
         others[1].push_back(neutrino_lum * constants::conversion::gev_s / constants::conversion::erg_over_gev);
 
+        logger.log([&]()
+                   { return time.size() % 100 == 0; }, auxiliaries::io::Logger::LogLevel::kInfo,
+                   [&]()
+                   { 
+                        std::stringstream ss;
+                        ss << std::scientific << std::setprecision(3) << std::to_string(time.size()) + " counts past" << " with t = " << time.back() << " [yr]";
+                        return ss.str();
+                   }, "T(t) loop");
         // print
         std::cout << std::left << std::setw(indent) << time.back() << std::setw(indent) << surface_temp.back() << std::setw(indent) << others[0].back() << std::setw(indent) << others[1].back() << '\n';
     }

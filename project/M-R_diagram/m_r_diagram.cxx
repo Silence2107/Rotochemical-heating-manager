@@ -25,7 +25,8 @@
 
 int main(int argc, char **argv)
 {
-    argparse::ArgumentParser parser("m_r_diagram_inversed_eos", "Maps central pressures selection to corresponding mass and radius based on EoS", "Argparse powered by SiLeader");
+    std::string program_name = "m_r_diagram";
+    argparse::ArgumentParser parser(program_name, "Maps central pressures selection to corresponding mass and radius based on EoS", "Argparse powered by SiLeader");
 
     parser.addArgument({"--inputfile"}, "json input file path (required)");
 #if RHM_HAS_ROOT
@@ -41,7 +42,7 @@ int main(int argc, char **argv)
     using namespace instantiator;
     instantiator::instantiate_system(args.get<std::string>("inputfile"), {});
 
-    auxiliaries::io::Logger logger(__func__);
+    auxiliaries::io::Logger logger(program_name);
 
 #if RHM_HAS_ROOT
     std::string pdf_path = args.safeGet<std::string>("pdf_path", "M-R-diagram.pdf");
@@ -137,7 +138,7 @@ int main(int argc, char **argv)
         y.push_back(point[1] * gev_over_msol);
         z.push_back(pressure / pressure_conversion);
         logger.log([&]()
-                   { return count % 100 == 0; }, auxiliaries::io::Logger::LogLevel::kDebug,
+                   { return count % 100 == 0; }, auxiliaries::io::Logger::LogLevel::kInfo,
                    [&]()
                    { return std::to_string(count) + " counts past"; }, "M-R loop");
         logger.log([&]()
@@ -147,7 +148,7 @@ int main(int argc, char **argv)
         logger.log([&]()
                    { return y.back() > 3.0; }, auxiliaries::io::Logger::LogLevel::kDebug,
                    [&]()
-                   { return "NS mass exceeds 3 Ms. Consider halting the calculation (perhaps pass --restrict_stable)"; }, "M-R loop");
+                   { return "NS mass exceeds 3 Ms. Consider halting the calculation (perhaps pass --restrict_stable or reduce --right_fraction)"; }, "M-R loop");
         std::cout << std::left << std::setw(indent) << frac << std::setw(indent) << z.back() << std::setw(indent) << y.back() << std::setw(indent) << x.back() << "\n";
     }
 

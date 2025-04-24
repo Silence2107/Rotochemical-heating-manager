@@ -26,7 +26,8 @@
 
 int main(int argc, char **argv)
 {
-    argparse::ArgumentParser parser("structure_analysis", "Extract structural information based on EoS. By default, prints the current mass and radius of the star.", "Argparse powered by SiLeader");
+    std::string program_name = "structure_analysis";
+    argparse::ArgumentParser parser(program_name, "Extract structural information based on EoS. By default, prints the current mass and radius of the star.", "Argparse powered by SiLeader");
 
     parser.addArgument({"--inputfile"}, "json input file path (required)");
     parser.addArgument({"--max_mass"}, "whether to search for max mass point on M-R curve (optional, value-free, default: disabled)", argparse::ArgumentType::StoreTrue);
@@ -41,6 +42,12 @@ int main(int argc, char **argv)
     else
         instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV"});
 
+    auxiliaries::io::Logger logger(program_name);
+
+    logger.log([]()
+               { return true; }, auxiliaries::io::Logger::LogLevel::kInfo,
+               [&]()
+               { return "Instantiation complete"; });
     // RUN --------------------------------------------------------------------------
 
     // EoS definition
@@ -188,6 +195,10 @@ int main(int argc, char **argv)
         // print max mass, corresponding radius
         std::cout << std::setw(indent) << *max_mass_it;
         std::cout << std::setw(indent) << x[std::distance(y.begin(), max_mass_it)];
+        logger.log([]()
+                   { return true; }, auxiliaries::io::Logger::LogLevel::kInfo,
+                   [&]()
+                   { return "Maximum mass resolved"; });
     }
     if (search_deconfinement)
     {
@@ -261,5 +272,9 @@ int main(int argc, char **argv)
             std::cout << std::setw(indent) << NAN;
             std::cout << std::setw(indent) << NAN;
         }
+        logger.log([]()
+                   { return true; }, auxiliaries::io::Logger::LogLevel::kInfo,
+                   [&]()
+                   { return "Deconfinement properties resolved"; });
     }
 }

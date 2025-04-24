@@ -17,7 +17,8 @@
 
 int main(int argc, char **argv)
 {
-    argparse::ArgumentParser parser("dominant_process", "Determines the dominant cooling processes for every timeslice", "Argparse powered by SiLeader");
+    std::string program_name = "dominant_process";
+    argparse::ArgumentParser parser(program_name, "Determines the dominant cooling processes for every timeslice", "Argparse powered by SiLeader");
 
     parser.addArgument({"--inputfile"}, "json input file path (required)");
     parser.addArgument({"--fraction"}, "what fraction of total luminosity is assumed significant (double, defaults to 0.1)");
@@ -25,8 +26,15 @@ int main(int argc, char **argv)
 
     using namespace instantiator;
     instantiator::instantiate_system(args.get<std::string>("inputfile"), {"TOV", "COOL"});
+
+    auxiliaries::io::Logger logger(program_name);
+
     double dominant_fraction = args.safeGet<double>("fraction", 0.1);
 
+    logger.log([]()
+               { return true; }, auxiliaries::io::Logger::LogLevel::kInfo,
+               [&]()
+               { return "Instantiation complete"; });
     // RUN --------------------------------------------------------------------------
 
     // EoS definition
@@ -354,7 +362,16 @@ int main(int argc, char **argv)
         others[0].push_back(photon_luminosity(t_curr, temp_curr) * constants::conversion::gev_s / constants::conversion::erg_over_gev);
         others[1].push_back(neutrino_lum * constants::conversion::gev_s / constants::conversion::erg_over_gev);
         others[2].push_back(neutrino_lum_dominant * constants::conversion::gev_s / constants::conversion::erg_over_gev);
-
+        
+        logger.log([&]()
+                   { return time.size() % 100 == 0; }, auxiliaries::io::Logger::LogLevel::kInfo,
+                   [&]()
+                   {
+                       std::stringstream ss;
+                       ss << std::scientific << std::setprecision(3) << std::to_string(time.size()) + " counts past" << " with t = " << time.back() << " [yr]";
+                       return ss.str();
+                   },
+                   "T(t) loop");
         // print
         std::cout << std::left << std::setw(indent) << time.back() << std::setw(indent) << surface_temp.back() << std::setw(indent) << others[0].back() << std::setw(indent) << others[1].back() << std::setw(indent) << others[2].back();
         for (auto &elem : dominant_processes)
