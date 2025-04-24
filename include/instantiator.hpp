@@ -170,6 +170,10 @@ namespace instantiator
         json j = json::parse(i);
 
         // (0) System setup
+
+        // instantiate logger
+
+        // log level
         auto log_level_read = j["System"]["LogLevel"];
         auxiliaries::io::Logger::LogLevel log_level;
         if (log_level_read.is_null())
@@ -189,10 +193,30 @@ namespace instantiator
             else
                 RHM_ERROR("UI error: Log level may only be provided as a string of \"Error\", \"Info\", \"Debug\" or \"Trace\".");
         }
-        // finally instantiate logger
         auxiliaries::io::Logger::g_log_level = log_level;
-        // have a stream variable in case we would want to extend the logger later
-        auxiliaries::io::Logger::g_stream_ptr = &std::cout;
+
+        // log stream
+        auto log_path_read = j["System"]["LogPath"];
+        if (log_path_read.is_null())
+            auxiliaries::io::Logger::g_stream_ptr = &std::cout;
+        else if (!(log_path_read.is_string()))
+            RHM_ERROR("UI error: Log path must be provided as a string.");
+        else
+        {
+            std::string log_path = log_path_read.get<std::string>();
+            if (log_path == "stdout")
+                auxiliaries::io::Logger::g_stream_ptr = &std::cout;
+            else if (log_path == "stderr")
+                auxiliaries::io::Logger::g_stream_ptr = &std::cerr;
+            else
+            {
+                // append to the file
+                static std::ofstream log_stream(log_path, std::ios::app);
+                if (!log_stream.is_open())
+                    RHM_ERROR("UI error: Log file could not be created.");
+                auxiliaries::io::Logger::g_stream_ptr = &log_stream;
+            }
+        }
 
         auxiliaries::io::Logger logger(__func__);
 
