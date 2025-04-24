@@ -108,11 +108,6 @@ void auxiliaries::io::Logger::log(std::function<bool()> &&lazy_condition, LogLev
         
         *auxiliaries::io::Logger::g_stream_ptr << "[" << log_level_map.at(level) << "] <" << header << appendix << "> : " << lazy_message() << '\n';
     }
-    if (level == LogLevel::kError)
-    {
-        *auxiliaries::io::Logger::g_stream_ptr << "Terminating on error.\n";
-        std::exit(EXIT_FAILURE);
-    }
 }
 
 double auxiliaries::math::interpolate(const std::vector<double> &input, const std::vector<double> &output,

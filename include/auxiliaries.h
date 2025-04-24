@@ -5,6 +5,7 @@
 #include <vector>
 #include <functional>
 #include <map>
+#include <iostream>
 
 /// @brief various auxiliary functionality
 namespace auxiliaries
@@ -42,13 +43,19 @@ namespace auxiliaries
             };
             /// @brief public constructor of Logger
             Logger(const std::string &header = "") : header{header} {}
+            /// @brief globally accessible log level (set by the instantiator)
             static LogLevel g_log_level;
+            /// @brief globally accessible log stream pointer (set by the instantiator)
             static std::ostream *g_stream_ptr;
+            /// @brief logger functionality
+            /// @param lazy_condition logging lambda condition, which must evaluate to true to log
+            /// @param level log level
+            /// @param lazy_message lambda, that must evaluate to the log message
+            /// @param appendix header appendix for flexibility
             void log(std::function<bool()> &&lazy_condition, LogLevel level, std::function<std::string()> &&lazy_message, std::string appendix = "") const;
         };
 
         /// @brief Syntaxic sugar to log an error and tell the compiler we are exiting.
-        /// @brief The exit here is unreachable anyway (done inside logger) and only serves to supress the poor compiler.
         /// @brief Note it is not actually enclosed by the namespace!
         /// @param message log message
 #define RHM_ERROR(message)                                                                                   \
@@ -59,7 +66,8 @@ namespace auxiliaries
         logger.log([]()                                                                                      \
                    { return true; }, auxiliaries::io::Logger::LogLevel::kError, [=]()                        \
                    { return message; });                                                                     \
-        std::exit(1);                                                                                        \
+        *auxiliaries::io::Logger::g_stream_ptr << "Terminating on error.\n";                                 \
+        std::exit(EXIT_FAILURE);                                                                             \
     } while (false)
 
     }
