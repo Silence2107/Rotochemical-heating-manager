@@ -1,7 +1,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <exception>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -40,7 +39,7 @@ int main(int argc, char **argv)
         [&](std::vector<std::vector<double>> &cache, double p)
         {
             if (p < pressure_low || p > pressure_upp)
-                RHM_THROW(std::runtime_error, "Data request out of range.");
+                RHM_ERROR("Data request out of range.");
             if (cache.empty() || cache[0].size() != discr_size_EoS)
             {                                                                                        // then fill/refill cache
                 cache = std::vector<std::vector<double>>(2, std::vector<double>(discr_size_EoS, 0)); // initialize 2xdiscr_size_EoS matrix
@@ -101,7 +100,7 @@ int main(int argc, char **argv)
                         else if (right_val * mid_val <= 0)
                             nbar_left = nbar_mid;
                         else
-                            RHM_THROW(std::runtime_error, "Bisection method failed. Investigate manually or report to the team.");
+                            RHM_ERROR("Bisection method failed. Investigate manually or report to the team.");
                     }
                     cache[1].push_back(nbar_mid);
                 }

@@ -5,8 +5,7 @@
 #include <vector>
 #include <functional>
 #include <map>
-#include <stdexcept>
-#include <exception>
+#include <iostream>
 
 /// @brief various auxiliary functionality
 namespace auxiliaries
@@ -28,17 +27,12 @@ namespace auxiliaries
         /// @return line, cleared of auxiliary symbols, preceeding, trailing or excessive whitespaces; separation between words is done with whitespaces
         std::string retrieve_cleared_line(const std::string &line);
 
-        /// @brief A throw-like macro that acknowledges the position of the exception
-        /// @brief Note it is not actually enclosed by the namespace!
-        /// @param exceptionClass exception class
-        /// @param message exception message
-        #define RHM_THROW(exceptionClass, message) throw exceptionClass("Encountered in " + std::string(__FILE__) + "//" + std::string(__func__) + ", line " + std::to_string(__LINE__) + " : " + message)
-    
         /// @brief Logger
         class Logger
         {
         private:
             std::string header;
+
         public:
             enum class LogLevel
             {
@@ -49,10 +43,33 @@ namespace auxiliaries
             };
             /// @brief public constructor of Logger
             Logger(const std::string &header = "") : header{header} {}
+            /// @brief globally accessible log level (set by the instantiator)
             static LogLevel g_log_level;
+            /// @brief globally accessible log stream pointer (set by the instantiator)
             static std::ostream *g_stream_ptr;
+            /// @brief logger functionality
+            /// @param lazy_condition logging lambda condition, which must evaluate to true to log
+            /// @param level log level
+            /// @param lazy_message lambda, that must evaluate to the log message
+            /// @param appendix header appendix for flexibility
             void log(std::function<bool()> &&lazy_condition, LogLevel level, std::function<std::string()> &&lazy_message, std::string appendix = "") const;
         };
+
+        /// @brief Syntaxic sugar to log an error and tell the compiler we are exiting.
+        /// @brief Note it is not actually enclosed by the namespace!
+        /// @param message log message
+#define RHM_ERROR(message)                                                                                   \
+    do                                                                                                       \
+    {                                                                                                        \
+        auxiliaries::io::Logger logger(std::string(__FILE__) +                                               \
+                                       "//" + std::string(__func__) + ", line " + std::to_string(__LINE__)); \
+        logger.log([]()                                                                                      \
+                   { return true; }, auxiliaries::io::Logger::LogLevel::kError, [=]()                        \
+                   { return message; });                                                                     \
+        *auxiliaries::io::Logger::g_stream_ptr << "Terminating on error.\n";                                 \
+        std::exit(EXIT_FAILURE);                                                                             \
+    } while (false)
+
     }
 
     /// @brief Math auxiliary functionality.
@@ -212,7 +229,7 @@ namespace auxiliaries
                     return result;
                 }
                 default:
-                    RHM_THROW(std::runtime_error, "Unimplemented integration mode.");
+                    RHM_ERROR("Unimplemented integration mode.");
                 }
             };
         }
@@ -521,6 +538,5 @@ namespace auxiliaries
         /// @cite Parametrization - Yakovlev, Levenfish, 1999
         double superfluid_gap_3p2(double tau);
     }
-
 }
 #endif

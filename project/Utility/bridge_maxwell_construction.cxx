@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <functional>
 #include <cmath>
-#include <stdexcept>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -36,24 +35,24 @@ int main(int argc, char **argv)
     std::ifstream i(args.get<std::string>("inputfile"));
     if (!i.is_open())
     {
-        RHM_THROW(std::runtime_error, "UI inputfile requested, but the path is invalid.");
+        RHM_ERROR("UI inputfile requested, but the path is invalid.");
     }
     using json = nlohmann::json;
     json j = json::parse(i);
 
     auto eos_datafile = j["EoSSetup"]["Datafile"]["Path"];
     if (!(eos_datafile.is_string()))
-        RHM_THROW(std::runtime_error, "UI error: Datafile path must be provided as a string.");
+        RHM_ERROR("UI error: Datafile path must be provided as a string.");
     auto eos_datafile_rows = j["EoSSetup"]["Datafile"]["Rows"];
     if (!(eos_datafile_rows.size() == 2))
     {
         if (eos_datafile_rows.is_null())
             eos_datafile_rows = {0, 0};
         else
-            RHM_THROW(std::runtime_error, "UI error: Datafile rows must be a pair-array.");
+            RHM_ERROR("UI error: Datafile rows must be a pair-array.");
     }
     else if (!(eos_datafile_rows[0].is_number_integer() && eos_datafile_rows[1].is_number_integer()))
-        RHM_THROW(std::runtime_error, "UI error: Datafile rows must be provided as integers.");
+        RHM_ERROR("UI error: Datafile rows must be provided as integers.");
 
     auto eos_datafile_cols = j["EoSSetup"]["Datafile"]["Columns"];
     if (!(eos_datafile_cols.size() == 2))
@@ -61,27 +60,27 @@ int main(int argc, char **argv)
         if (eos_datafile_cols.is_null())
             eos_datafile_cols = {0, 0};
         else
-            RHM_THROW(std::runtime_error, "UI error: Datafile cols must be a pair-array.");
+            RHM_ERROR("UI error: Datafile cols must be a pair-array.");
     }
     else if (!(eos_datafile_cols[0].is_number_integer() && eos_datafile_cols[1].is_number_integer()))
-        RHM_THROW(std::runtime_error, "UI error: Datafile cols must be provided as integers.");
+        RHM_ERROR("UI error: Datafile cols must be provided as integers.");
 
     auto table = auxiliaries::io::read_tabulated_file(eos_datafile, eos_datafile_cols, eos_datafile_rows);
 
     // nbar column
     auto nbar_column = j["EoSSetup"]["Quantities"]["BarionicDensity"]["Column"];
     if (!(nbar_column.is_number_integer()))
-        RHM_THROW(std::runtime_error, "UI error: Barionic density column number must be provided as an integer.");
+        RHM_ERROR("UI error: Barionic density column number must be provided as an integer.");
 
     // pressure column
     auto pressure_column = j["EoSSetup"]["Quantities"]["Pressure"]["Column"];
     if (!(pressure_column.is_number_integer()))
-        RHM_THROW(std::runtime_error, "UI error: Pressure column number must be provided as an integer.");
+        RHM_ERROR("UI error: Pressure column number must be provided as an integer.");
     
     // uquark number density column
     auto uquark_density_column_read = j["EoSSetup"]["Quantities"]["NumberDensities"]["Uquark"]["Column"];
     if (!(uquark_density_column_read.is_number_integer()))
-        RHM_THROW(std::runtime_error, "UI error: Uquark density column number must be provided as an integer, which is required for PT determination.");
+        RHM_ERROR("UI error: Uquark density column number must be provided as an integer, which is required for PT determination.");
 
     // END copypaste
 
@@ -92,7 +91,7 @@ int main(int argc, char **argv)
          uquark_densities = table[uquark_density_column_read],
          pressures = table[pressure_column];
     if(nbars.size() < 4)
-        RHM_THROW(std::runtime_error, "EoS datafile must have plenty of rows to perform meaningful Maxwell brinding.");
+        RHM_ERROR("EoS datafile must have plenty of rows to perform meaningful Maxwell brinding.");
     bool ascending = (nbars[0] < nbars[1]);
     if (!ascending)
     {

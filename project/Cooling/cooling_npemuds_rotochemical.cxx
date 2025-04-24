@@ -10,7 +10,6 @@
 #include <vector>
 #include <functional>
 #include <cmath>
-#include <stdexcept>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -59,7 +58,7 @@ int main(int argc, char **argv)
         [&](std::vector<std::vector<double>> &cache, double p)
         {
             if (p < pressure_low || p > pressure_upp)
-                RHM_THROW(std::runtime_error, "Data request out of range.");
+                RHM_ERROR("Data request out of range.");
             if (cache.empty() || cache[0].size() != discr_size_EoS)
             {                                                                                        // then fill/refill cache
                 cache = std::vector<std::vector<double>>(2, std::vector<double>(discr_size_EoS, 0)); // initialize 2xdiscr_size_EoS matrix
@@ -78,12 +77,12 @@ int main(int argc, char **argv)
     // TOV solver
 
     auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::function<double(double)>>, std::vector<double>,
-                                                    const std::function<double(double)> &, double, double, double,
+                                                    const std::function<double(double)> &, double, double, double, double,
                                                     double, size_t, auxiliaries::math::InterpolationMode>(tov_solver::tov_solution);
     auto tov = [&tov_cached, &eos_inv_cached](double r)
     {
         // TOV solution cached
-        return tov_cached(eos_inv_cached, r, center_pressure, radius_step, surface_pressure, tov_adapt_limit, radial_interp_mode);
+        return tov_cached(eos_inv_cached, r, center_pressure, radius_step, surface_pressure, pressure_low, tov_adapt_limit, radial_interp_mode);
     };
 
     auto nbar = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double>(
@@ -121,7 +120,7 @@ int main(int argc, char **argv)
                         else if (right_val * mid_val <= 0)
                             nbar_left = nbar_mid;
                         else
-                            RHM_THROW(std::runtime_error, "Bisection method failed. Investigate manually or report to the team.");
+                            RHM_ERROR("Bisection method failed. Investigate manually or report to the team.");
                     }
                     cache[1].push_back(nbar_mid);
                 }
@@ -266,7 +265,7 @@ int main(int argc, char **argv)
         else
         {
             // exotic case when particle deviations are proportional
-            RHM_THROW(std::runtime_error, "Bij matrix is singular beyond expectations. Probable cause: provided system features unexpected conservation law.");
+            RHM_ERROR("Bij matrix is singular beyond expectations. Probable cause: provided system features unexpected conservation law.");
         }
     }
     else
@@ -313,7 +312,7 @@ int main(int argc, char **argv)
         else
         {
             // exotic case when particle deviations are proportional
-            RHM_THROW(std::runtime_error, "Bij matrix is singular beyond expectations. Probable cause: provided system features unexpected conservation law.");
+            RHM_ERROR("Bij matrix is singular beyond expectations. Probable cause: provided system features unexpected conservation law.");
         }
     }
     else
