@@ -1,7 +1,7 @@
 {
     "System" :
     {
-        "LogLevel" : "Error",
+        "LogLevel" : "Info",
         "LogPath": "presupplied/APR4/out.log"
     },
     "EoSSetup" : 
