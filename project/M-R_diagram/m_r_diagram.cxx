@@ -149,6 +149,14 @@ int main(int argc, char **argv)
                    { return y.back() > 3.0; }, auxiliaries::io::Logger::LogLevel::kDebug,
                    [&]()
                    { return "NS mass exceeds 3 Ms. Consider halting the calculation (perhaps pass --restrict_stable or reduce --right_fraction)"; }, "M-R loop");
+        logger.log([&]()
+                   { return true; }, auxiliaries::io::Logger::LogLevel::kTrace,
+                   [&]()
+                   { 
+                        std::stringstream ss;
+                        ss << std::to_string(count) + " counts past. ";
+                        ss << "R[km] = " << x.back() << ", M[Ms] = " << y.back();
+                        return ss.str(); }, "M-R loop");
         std::cout << std::left << std::setw(indent) << frac << std::setw(indent) << z.back() << std::setw(indent) << y.back() << std::setw(indent) << x.back() << "\n";
     }
 

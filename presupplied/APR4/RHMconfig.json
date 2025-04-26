@@ -1,7 +1,8 @@
 {
     "System" :
     {
-        "LogLevel" : "Error"
+        "LogLevel" : "Error",
+        "LogPath": "presupplied/APR4/out.log"
     },
     "EoSSetup" : 
     {
@@ -105,7 +106,7 @@
         "CenterPressure" : 
         {
             "ProvidedAs": "MassCached",
-            "CachePath": "presupplied/APR4/tov_cache.log",
+            "CachePath": "presupplied/APR4/tov_cache.txt",
             "Value": 1.4
         },
         "AdaptionLimit" : 20
