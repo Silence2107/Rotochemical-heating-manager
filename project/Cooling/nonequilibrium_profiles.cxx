@@ -255,6 +255,7 @@ int main(int argc, char **argv)
 
     double t_curr = 0, time_step = base_t_step;
     double write_time = base_t_step;
+    size_t iter_count = 0;
 
     if (print_all_time)
     {
@@ -310,6 +311,15 @@ int main(int argc, char **argv)
 
         t_curr += time_step;
         time_step *= exp_rate_estim;
+        logger.log([&]()
+                   { return true; }, auxiliaries::io::Logger::LogLevel::kTrace,
+                   [&]()
+                   { 
+                        std::stringstream ss;
+                        ss << std::scientific << std::setprecision(3) << std::to_string(iter_count + 1) + " counts past" << " with t = " << t_curr * 1E6 / (myr_over_s * gev_s) << " [yr]";
+                        return ss.str(); },
+                   "T(r, t) save loop");
+        ++iter_count;
 
         if (print_all_time)
         {

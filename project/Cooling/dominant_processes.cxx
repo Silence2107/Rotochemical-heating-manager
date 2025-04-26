@@ -266,6 +266,16 @@ int main(int argc, char **argv)
     others[1].reserve(cooling_n_points_estimate);
     others[2].reserve(cooling_n_points_estimate);
 
+    logger.log([]()
+               { return true; }, auxiliaries::io::Logger::LogLevel::kInfo,
+               [&]()
+               {
+                   double conv = 1.0E6 / (constants::conversion::myr_over_s * constants::conversion::gev_s);
+                   std::stringstream ss;
+                   ss << std::scientific << std::setprecision(3) << "Time[yr] array is exp mapped [" << base_t_step * conv << ", " << t_end * conv << ", " << cooling_n_points_estimate << "] with possible adaptions";
+                   return ss.str();
+               });
+
     size_t indent = 20;
     std::cout << "M = " << m_ns * constants::conversion::gev_over_msol << " [Ms]\n";
     std::cout << std::left << std::setw(indent) << "t[years] "
@@ -301,6 +311,23 @@ int main(int argc, char **argv)
             if (max_diff > cooling_max_diff_per_t_step || reached_adaption_limit || reached_negative_temperature)
             {
                 t_step /= 2;
+                logger.log([&]()
+                           { return max_diff > cooling_max_diff_per_t_step; }, auxiliaries::io::Logger::LogLevel::kDebug,
+                           [&]()
+                           {
+                               std::stringstream ss;
+                               ss << std::scientific << std::setprecision(3) << "At t = " << 1.0E6 * t_curr / (constants::conversion::myr_over_s * constants::conversion::gev_s) << " [yr] target profile difference exceeded(" << max_diff << " > " << cooling_max_diff_per_t_step << "), adapting (raise CoolingSolver.StepTolerance/NewtonTolerance if this halts progress)";
+                               return ss.str();
+                           },
+                           "non-eq. cooling");
+                logger.log([&]()
+                           { return reached_adaption_limit; }, auxiliaries::io::Logger::LogLevel::kDebug,
+                           [&]()
+                           { return "Adaption limit reached, adapting (raise CoolingSolver.NewtonMaxIter/NewtonTolerance if this reoccurs)"; }, "non-eq. cooling");
+                logger.log([&]()
+                           { return reached_negative_temperature; }, auxiliaries::io::Logger::LogLevel::kDebug,
+                           [&]()
+                           { return "Negative temperature reached, adapting (lower CoolingSolver.NewtonTolerance if this reoccurs)"; }, "non-eq. cooling");
                 continue;
             }
             profile = t_l_profiles[0];
@@ -325,6 +352,23 @@ int main(int argc, char **argv)
             if (max_diff > cooling_max_diff_per_t_step || reached_adaption_limit || reached_negative_temperature)
             {
                 t_step /= 2.0;
+                logger.log([&]()
+                           { return max_diff > cooling_max_diff_per_t_step; }, auxiliaries::io::Logger::LogLevel::kDebug,
+                           [&]()
+                           {
+                               std::stringstream ss;
+                               ss << std::scientific << std::setprecision(3) << "At t = " << 1.0E6 * t_curr / (constants::conversion::myr_over_s * constants::conversion::gev_s) << " [yr] target temperature difference exceeded (" << max_diff << " > " << cooling_max_diff_per_t_step << "), adapting (raise CoolingSolver.StepTolerance/NewtonTolerance if this halts progress)";
+                               return ss.str();
+                           },
+                           "eq. cooling");
+                logger.log([&]()
+                           { return reached_adaption_limit; }, auxiliaries::io::Logger::LogLevel::kDebug,
+                           [&]()
+                           { return "Adaption limit reached, adapting (raise CoolingSolver.NewtonMaxIter/NewtonTolerance if this reoccurs)"; }, "eq. cooling");
+                logger.log([&]()
+                           { return reached_negative_temperature; }, auxiliaries::io::Logger::LogLevel::kDebug,
+                           [&]()
+                           { return "Negative temperature reached, adapting (lower CoolingSolver.NewtonTolerance if this reoccurs)"; }, "eq. cooling");
                 continue;
             }
 
@@ -371,6 +415,14 @@ int main(int argc, char **argv)
                        ss << std::scientific << std::setprecision(3) << std::to_string(time.size()) + " counts past" << " with t = " << time.back() << " [yr]";
                        return ss.str();
                    },
+                   "T(t) loop");
+        logger.log([&]()
+                   { return true; }, auxiliaries::io::Logger::LogLevel::kTrace,
+                   [&]()
+                   { 
+                        std::stringstream ss;
+                        ss << std::scientific << std::setprecision(3) << std::to_string(time.size()) + " counts past" << " with t = " << time.back() << " [yr]";
+                        return ss.str(); },
                    "T(t) loop");
         // print
         std::cout << std::left << std::setw(indent) << time.back() << std::setw(indent) << surface_temp.back() << std::setw(indent) << others[0].back() << std::setw(indent) << others[1].back() << std::setw(indent) << others[2].back();
