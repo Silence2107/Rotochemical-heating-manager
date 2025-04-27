@@ -482,6 +482,21 @@ namespace instantiator
             return energy_density_conversion * eos_interpolator_cached(table.at(pressure_index), table.at(energy_density_index), eos_interp_mode, val / pressure_conversion, false, true);
         };
 
+        auxiliaries::math::InterpolationMode nbar_interp_mode;
+        auto nbar_interp_mode_read = j["TOVSolver"]["DensityInterpolation"];
+        if (eos_interp_mode_read.is_null())
+            nbar_interp_mode = auxiliaries::math::InterpolationMode::kLinear;
+        else if (!(eos_interp_mode_read.is_string()))
+            RHM_ERROR("UI error: bar. density interpolation mode must be a string.");
+        else
+            nbar_interp_mode = get_interpolation_mode(eos_interp_mode_read);
+
+        // Interpolator used for nbar(p)
+        nbar_of_pressure = [=](double val)
+        {
+            return nbar_conversion * nbar_interpolator_cached(table.at(pressure_index), table.at(nbar_index), nbar_interp_mode, val / pressure_conversion, false, true);
+        };
+
         auto radial_interp_mode_read = j["TOVSolver"]["RadialInterpolation"];
         if (radial_interp_mode_read.is_null())
             radial_interp_mode = auxiliaries::math::InterpolationMode::kCubic;
@@ -489,12 +504,6 @@ namespace instantiator
             RHM_ERROR("UI error: Radial interpolation mode must be a string.");
         else
             radial_interp_mode = get_interpolation_mode(radial_interp_mode_read);
-
-        // Interpolator used for nbar(p)
-        nbar_of_pressure = [=](double val)
-        {
-            return nbar_conversion * nbar_interpolator_cached(table.at(pressure_index), table.at(nbar_index), eos_datafile_interp_mode, val / pressure_conversion, false, true);
-        };
 
         // TOV adaption limit
         auto tov_adapt_limit_read = j["TOVSolver"]["AdaptionLimit"];
