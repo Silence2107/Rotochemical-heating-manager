@@ -57,25 +57,7 @@ int main(int argc, char **argv)
 
     // EoS definition
     
-    auto eos_inv_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double>(
-        [&](std::vector<std::vector<double>> &cache, double p)
-        {
-            if (p < pressure_low || p > pressure_upp)
-                RHM_ERROR("Data request out of range.");
-            if (cache.empty() || cache[0].size() != discr_size_EoS)
-            {                                                                                        // then fill/refill cache
-                cache = std::vector<std::vector<double>>(2, std::vector<double>(discr_size_EoS, 0)); // initialize 2xdiscr_size_EoS matrix
-                std::vector<double> x(discr_size_EoS, 0);
-                for (size_t i = 0; i < discr_size_EoS; ++i)
-                { // cache EoS for further efficiency
-                    x[i] = nbar_low * pow(nbar_upp / nbar_low, i / (discr_size_EoS - 1.0));
-                    cache[0][i] = pressure_of_nbar(x[i]);
-                    cache[1][i] = energy_density_of_nbar(x[i]);
-                }
-                eos_interpolator_cached.erase(); // clean up cached interpolator
-            }
-            return eos_interpolator(cache[0], cache[1], p);
-        });
+    auto eos_inv_cached = edensity_of_pressure;
 
     // returns {r, m} pair at given center pressure. (Hopefully) cleans up all global cache that may spoil further calls
     auto get_m_r_at_pressure = [&](double pressure)

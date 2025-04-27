@@ -96,7 +96,6 @@
     "TOVSolver" :
     {
         "LengthUnits" : "Km",
-        "EoSDiscretization" : 1000,
         "RadiusStep" : 0.01,
         "SurfacePressure" : 
         {
@@ -107,7 +106,7 @@
         {
             "ProvidedAs": "MassCached",
             "CachePath": "presupplied/APR4/tov_cache.txt",
-            "Value": 1.4
+            "Value": 2.0
         },
         "AdaptionLimit" : 20
     },
