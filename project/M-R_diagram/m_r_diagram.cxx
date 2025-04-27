@@ -82,10 +82,11 @@ int main(int argc, char **argv)
 
         double r_ns = tov(0.0)[4];
         double m_ns = tov(r_ns)[0];
+        double central_nbar = nbar_of_pressure(pressure);
         // think twice here if you need to clean up any global cache
-        // We memorized P(rho), but cleaning it is doing extra unnecessary work
+        // rho(P), nb(P) is the same between runs, so cleaning them is unnecessary work
 
-        return std::vector<double>({r_ns, m_ns});
+        return std::vector<double>({r_ns, m_ns, central_nbar});
     };
 
     size_t indent = 20;
@@ -99,7 +100,7 @@ int main(int argc, char **argv)
                    ss << std::scientific << std::setprecision(3) << "Pressure fraction is exp mapped [" << left_fraction << ", " << right_fraction << ", " << selection_size << "]";
                    return ss.str();
                });
-    std::cout << std::left << std::setw(indent) << "pressure_fraction" << std::setw(indent) << "pressure[df.units]" << std::setw(indent) << "M[Ms]" << std::setw(indent) << "R[km]" << '\n';
+    std::cout << std::left << std::setw(indent) << "pressure_fraction" << std::setw(indent) << "density_c[fm-3]" << std::setw(indent) << "M[Ms]" << std::setw(indent) << "R[km]" << '\n';
     for (size_t count = 0; count < selection_size; ++count)
     {
         using namespace constants::conversion;
@@ -118,7 +119,7 @@ int main(int argc, char **argv)
             }
         x.push_back(point[0] / km_gev);
         y.push_back(point[1] * gev_over_msol);
-        z.push_back(pressure / pressure_conversion);
+        z.push_back(point[2] * constants::conversion::fm3_gev3);
         logger.log([&]()
                    { return count % 100 == 0; }, auxiliaries::io::Logger::LogLevel::kInfo,
                    [&]()
@@ -151,16 +152,16 @@ int main(int argc, char **argv)
     gr->GetYaxis()->SetTitle("M [Ms]");
     if (rootfile)
     {
-        auto gr_p = new TGraph(z.size(), z.data(), x.data());
-        gr_p->GetXaxis()->SetTitle("P [datafile units]");
-        gr_p->GetYaxis()->SetTitle("R [km]");
+        auto gr_n = new TGraph(z.size(), z.data(), x.data());
+        gr_n->GetXaxis()->SetTitle("nb [fm-3]");
+        gr_n->GetYaxis()->SetTitle("R [km]");
         auto gr_m = new TGraph(z.size(), z.data(), y.data());
-        gr_m->GetXaxis()->SetTitle("P [datafile units]");
+        gr_m->GetXaxis()->SetTitle("nb [fm-3]");
         gr_m->GetYaxis()->SetTitle("M [Ms]");
         rootfile->cd();
         rootfile->WriteObject(gr, "m_r_diagram");
-        rootfile->WriteObject(gr_p, "r_p_diagram");
-        rootfile->WriteObject(gr_m, "m_p_diagram");
+        rootfile->WriteObject(gr_n, "r_n_diagram");
+        rootfile->WriteObject(gr_m, "m_n_diagram");
         rootfile->Close();
     }
     gr->SetLineColor(kBlue);
