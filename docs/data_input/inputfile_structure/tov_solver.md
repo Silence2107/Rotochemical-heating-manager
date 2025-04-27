@@ -11,13 +11,16 @@ In order to refer to an example, see <span style="color:blue">_presupplied/APR4/
 
 ## Description
 
-- `"EoSDiscretization"` (uint, [<span style="color:red">TOV, COOL, RH</span>]) **:** Defines discretization step for $P(\rho)$ dependence. Defaults to 1000.
 - `"AdaptionLimit"` (uint, [<span style="color:red">TOV, COOL, RH</span>]) **:** Defines how many times TOV solver will try to adapt the radial step before concluding early termination. Defaults to 20.
-```{warning}
-Early termination happens silently and is only well noticeable if the final star's radius is very low.
+```{note}
+Early termination can be overwatched in "Debug" log.
 ```
-- `"EoSInterpolation"` (string, [<span style="color:red">TOV, COOL, RH</span>]) **:** Interpolation kind to be used for discretized $P(\rho)$ dependence. Choose from ["Linear", "Cubic"], with "Cubic" being default. 
-- `"RadialInterpolation"` (string, [<span style="color:red">TOV, COOL, RH</span>]) **:** Interpolation kind to be used for discretized $m(r), P(r), n_b(r), ...$ dependences. Choose from ["Linear", "Cubic"], with "Cubic" being default. 
+- `"EoSInterpolation"` (string, [<span style="color:red">TOV, COOL, RH</span>]) **:** Interpolation kind to be used for $\rho(P)$ dependence. Choose from ["Linear", "Cubic"], with "Cubic" being default. 
+- `"DensityInterpolation"` (string, [<span style="color:red">TOV, COOL, RH</span>]) **:** Interpolation kind to be used for $n_{bar}(P)$ dependence. Choose from ["Linear", "Cubic"], with "Linear" being default.
+```{warning}
+"Cubic" mode strongly distorts the $n_{bar}-M$ relation at phase transitions, even weak ones. Select on your own risk.
+```
+- `"RadialInterpolation"` (string, [<span style="color:red">TOV, COOL, RH</span>]) **:** Interpolation kind to be used for discretized $m(r), P(r), \rho(r), ...$ dependences. Choose from ["Linear", "Cubic"], with "Cubic" being default. 
 - `"LengthUnits"` (string/double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Conversion factor from length to natural units (GeV powers). It must either be supplied as a choice from ["Gev-1", "Km", "M", "Cm"], or as an actual multiplier. Used for "RadiusStep"
 
 - `"RadiusStep"` (double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Defines radius discretization step. Units are defined by "LengthUnits" entry.

@@ -63,19 +63,16 @@ namespace instantiator
 
     // Cached EoS interpolator. Only use it if you want to erase cache
     auto eos_interpolator_cached = auxiliaries::math::CachedInterpolatorWrap(auxiliaries::math::interpolate_cached);
-    // Interpolator used for EoS P/rho
-    std::function<double(const std::vector<double> &, const std::vector<double> &, double)> eos_interpolator;
+    // Interpolator used for EoS rho(p)
+    std::function<double(double)> edensity_of_pressure;
 
-    // interpolation mode for radial functions (nbar(r), m(r), ...)
+    // interpolation mode for radial functions (m(r), rho(r), ...)
     auxiliaries::math::InterpolationMode radial_interp_mode;
 
-    // nbar(r) cached interpolator. Only use it if you want to erase cache
+    // nbar(p) cached interpolator. Only use it if you want to erase cache
     auto nbar_interpolator_cached = auxiliaries::math::CachedInterpolatorWrap(auxiliaries::math::interpolate_cached);
-    // Interpolator used for nbar(r)
-    std::function<double(const std::vector<double> &, const std::vector<double> &, double)> nbar_interpolator;
-
-    // EoS linspace discretization
-    size_t discr_size_EoS;
+    // Interpolator used for nbar(p)
+    std::function<double(double)> nbar_of_pressure;
 
     // TOV adaption limit
     size_t tov_adapt_limit;
@@ -480,9 +477,24 @@ namespace instantiator
             eos_interp_mode = get_interpolation_mode(eos_interp_mode_read);
 
         // Interpolator used for EoS P(rho)
-        eos_interpolator = [eos_interp_mode](const std::vector<double> &input, const std::vector<double> &output, double val)
+        edensity_of_pressure = [=](double val)
         {
-            return eos_interpolator_cached(input, output, eos_interp_mode, val, false, true);
+            return energy_density_conversion * eos_interpolator_cached(table.at(pressure_index), table.at(energy_density_index), eos_interp_mode, val / pressure_conversion, false, true);
+        };
+
+        auxiliaries::math::InterpolationMode nbar_interp_mode;
+        auto nbar_interp_mode_read = j["TOVSolver"]["DensityInterpolation"];
+        if (eos_interp_mode_read.is_null())
+            nbar_interp_mode = auxiliaries::math::InterpolationMode::kLinear;
+        else if (!(eos_interp_mode_read.is_string()))
+            RHM_ERROR("UI error: bar. density interpolation mode must be a string.");
+        else
+            nbar_interp_mode = get_interpolation_mode(eos_interp_mode_read);
+
+        // Interpolator used for nbar(p)
+        nbar_of_pressure = [=](double val)
+        {
+            return nbar_conversion * nbar_interpolator_cached(table.at(pressure_index), table.at(nbar_index), nbar_interp_mode, val / pressure_conversion, false, true);
         };
 
         auto radial_interp_mode_read = j["TOVSolver"]["RadialInterpolation"];
@@ -492,25 +504,6 @@ namespace instantiator
             RHM_ERROR("UI error: Radial interpolation mode must be a string.");
         else
             radial_interp_mode = get_interpolation_mode(radial_interp_mode_read);
-
-        // Interpolator used for nbar(r)
-        nbar_interpolator = [](const std::vector<double> &input, const std::vector<double> &output, double val)
-        {
-            return nbar_interpolator_cached(input, output, radial_interp_mode, val, false, true);
-        };
-
-        // EoS linspace discretization
-        auto discr_size_EoS_read = j["TOVSolver"]["EoSDiscretization"];
-        if (discr_size_EoS_read.is_null())
-            discr_size_EoS = 1000;
-        else if (!(discr_size_EoS_read.is_number_integer()))
-            RHM_ERROR("UI error: EoS discretization must be provided as an integer.");
-        else
-        {
-            discr_size_EoS = discr_size_EoS_read.get<size_t>();
-            if (discr_size_EoS <= 2)
-                RHM_ERROR("UI error: EoS discretization must be much larger than 2.");
-        }
 
         // TOV adaption limit
         auto tov_adapt_limit_read = j["TOVSolver"]["AdaptionLimit"];
@@ -602,7 +595,7 @@ namespace instantiator
                 auto tov_table = auxiliaries::io::read_tabulated_file(cache_path_read.get<std::string>(), {1, 3}, {1, 0});
                 // locate the two consecutive masses that the desired mass lies between
                 auto mass_vect = tov_table.at(1);
-                auto p_vect = tov_table.at(0);
+                auto nb_vect = tov_table.at(0);
                 size_t first_index = 0;
                 for (first_index = 0; first_index < mass_vect.size() - 1; ++first_index)
                     if (mass_vect[first_index] <= desired_mass && mass_vect[first_index + 1] > desired_mass)
@@ -610,8 +603,9 @@ namespace instantiator
                 if (first_index == mass_vect.size() - 1)
                     RHM_ERROR("UI error: Desired mass is out of range of the provided TOV cache.");
                 // interpolate the density manually
-                center_pressure = p_vect[first_index] + (desired_mass - mass_vect[first_index]) * (p_vect[first_index + 1] - p_vect[first_index]) / (mass_vect[first_index + 1] - mass_vect[first_index]);
-                center_pressure *= pressure_conversion;
+                auto center_density = nb_vect[first_index] + (desired_mass - mass_vect[first_index]) * (nb_vect[first_index + 1] - nb_vect[first_index]) / (mass_vect[first_index + 1] - mass_vect[first_index]);
+                center_density *= nbar_conversion; 
+                center_pressure = pressure_of_nbar(center_density);
             }
             else
             {

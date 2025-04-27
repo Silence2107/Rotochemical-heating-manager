@@ -65,25 +65,7 @@ int main(int argc, char **argv)
 
     // EoS definition
 
-    auto eos_inv_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, double, double>(
-        [&](std::vector<std::vector<double>> &cache, double p)
-        {
-            if (p < pressure_low || p > pressure_upp)
-                RHM_ERROR("Data request out of range.");
-            if (cache.empty() || cache[0].size() != discr_size_EoS)
-            {                                                                                        // then fill/refill cache
-                cache = std::vector<std::vector<double>>(2, std::vector<double>(discr_size_EoS, 0)); // initialize 2xdiscr_size_EoS matrix
-                std::vector<double> x(discr_size_EoS, 0);
-                for (size_t i = 0; i < discr_size_EoS; ++i)
-                { // cache EoS for further efficiency
-                    x[i] = nbar_low * pow(nbar_upp / nbar_low, i / (discr_size_EoS - 1.0));
-                    cache[0][i] = pressure_of_nbar(x[i]);
-                    cache[1][i] = energy_density_of_nbar(x[i]);
-                }
-                eos_interpolator_cached.erase(); // clean up cached interpolator
-            }
-            return eos_interpolator(cache[0], cache[1], p);
-        });
+    auto eos_inv_cached = edensity_of_pressure;
 
     // returns {r, m} pair at given center pressure. (Hopefully) cleans up all global cache that may spoil further calls
     auto get_m_r_at_pressure = [&](double pressure)
@@ -100,10 +82,11 @@ int main(int argc, char **argv)
 
         double r_ns = tov(0.0)[4];
         double m_ns = tov(r_ns)[0];
+        double central_nbar = nbar_of_pressure(pressure);
         // think twice here if you need to clean up any global cache
-        // We memorized P(rho), but cleaning it is doing extra unnecessary work
+        // rho(P), nb(P) is the same between runs, so cleaning them is unnecessary work
 
-        return std::vector<double>({r_ns, m_ns});
+        return std::vector<double>({r_ns, m_ns, central_nbar});
     };
 
     size_t indent = 20;
@@ -117,7 +100,7 @@ int main(int argc, char **argv)
                    ss << std::scientific << std::setprecision(3) << "Pressure fraction is exp mapped [" << left_fraction << ", " << right_fraction << ", " << selection_size << "]";
                    return ss.str();
                });
-    std::cout << std::left << std::setw(indent) << "pressure_fraction" << std::setw(indent) << "pressure[df.units]" << std::setw(indent) << "M[Ms]" << std::setw(indent) << "R[km]" << '\n';
+    std::cout << std::left << std::setw(indent) << "pressure_fraction" << std::setw(indent) << "density_c[fm-3]" << std::setw(indent) << "M[Ms]" << std::setw(indent) << "R[km]" << '\n';
     for (size_t count = 0; count < selection_size; ++count)
     {
         using namespace constants::conversion;
@@ -136,7 +119,7 @@ int main(int argc, char **argv)
             }
         x.push_back(point[0] / km_gev);
         y.push_back(point[1] * gev_over_msol);
-        z.push_back(pressure / pressure_conversion);
+        z.push_back(point[2] * constants::conversion::fm3_gev3);
         logger.log([&]()
                    { return count % 100 == 0; }, auxiliaries::io::Logger::LogLevel::kInfo,
                    [&]()
@@ -169,16 +152,16 @@ int main(int argc, char **argv)
     gr->GetYaxis()->SetTitle("M [Ms]");
     if (rootfile)
     {
-        auto gr_p = new TGraph(z.size(), z.data(), x.data());
-        gr_p->GetXaxis()->SetTitle("P [datafile units]");
-        gr_p->GetYaxis()->SetTitle("R [km]");
+        auto gr_n = new TGraph(z.size(), z.data(), x.data());
+        gr_n->GetXaxis()->SetTitle("nb [fm-3]");
+        gr_n->GetYaxis()->SetTitle("R [km]");
         auto gr_m = new TGraph(z.size(), z.data(), y.data());
-        gr_m->GetXaxis()->SetTitle("P [datafile units]");
+        gr_m->GetXaxis()->SetTitle("nb [fm-3]");
         gr_m->GetYaxis()->SetTitle("M [Ms]");
         rootfile->cd();
         rootfile->WriteObject(gr, "m_r_diagram");
-        rootfile->WriteObject(gr_p, "r_p_diagram");
-        rootfile->WriteObject(gr_m, "m_p_diagram");
+        rootfile->WriteObject(gr_n, "r_n_diagram");
+        rootfile->WriteObject(gr_m, "m_n_diagram");
         rootfile->Close();
     }
     gr->SetLineColor(kBlue);

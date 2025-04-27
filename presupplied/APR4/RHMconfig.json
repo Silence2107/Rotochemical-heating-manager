@@ -96,7 +96,6 @@
     "TOVSolver" :
     {
         "LengthUnits" : "Km",
-        "EoSDiscretization" : 1000,
         "RadiusStep" : 0.01,
         "SurfacePressure" : 
         {
