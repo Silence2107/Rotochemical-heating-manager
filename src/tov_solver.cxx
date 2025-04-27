@@ -6,6 +6,7 @@
 #include <vector>
 #include <limits>
 #include <cmath>
+#include <sstream>
 
 std::vector<double> tov_solver::tov_solution(std::vector<std::function<double(double)>> &cache, const std::function<double(double)> &eos_inv, double r, double center_pressure, double radius_step, double surface_pressure, double lowest_pressure, size_t adaption_limit, auxiliaries::math::InterpolationMode mode)
 {
@@ -76,6 +77,15 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::function<double(do
 				if (p_cur < lowest_pressure)
 				{
 					adaption_flag = true;
+					logger.log([&]()
+							   { return true; }, auxiliaries::io::Logger::LogLevel::kTrace,
+							   [&]()
+							   { 
+									std::stringstream ss;
+									ss << "Too rapid RK4. RK weight #" + std::to_string(rk_index + 1) + "/4 wandered below lowest pressure. ";
+									ss << "r[km] = " << r / constants::conversion::km_gev << ", p[MeV/fm^3] = " << 
+									p / constants::conversion::mev_over_fm3_gev4 << ", m[Ms] = " << m * constants::conversion::gev_over_msol;
+									return ss.str(); }, "TOV loop");
 					break;
 				}
 				m_rk[rk_index] = m_prime(p_cur, r_cur);
@@ -88,7 +98,7 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::function<double(do
 				adaptive_radius_step /= 2;
 				++adaption_count;
 				logger.log([&]()
-							{ return true; }, auxiliaries::io::Logger::LogLevel::kTrace,
+							{ return true; }, auxiliaries::io::Logger::LogLevel::kDebug,
 							[&]()
 							{ return "Too rapid RK4. Adaption #" + std::to_string(adaption_count) + "/" + std::to_string(adaption_limit) + " at r[km] = " + std::to_string(r / constants::conversion::km_gev); }, "TOV loop");
 				continue;
@@ -101,7 +111,7 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::function<double(do
 				adaptive_radius_step /= 2;
 				++adaption_count;
 				logger.log([&]()
-						   { return true; }, auxiliaries::io::Logger::LogLevel::kTrace,
+						   { return true; }, auxiliaries::io::Logger::LogLevel::kDebug,
 						   [&]()
 						   { return "Surface overshoot. Adaption #" + std::to_string(adaption_count) + "/" + std::to_string(adaption_limit) + " at r[km] = " + std::to_string(r / constants::conversion::km_gev); }, "TOV loop");
 				continue;

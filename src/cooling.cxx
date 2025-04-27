@@ -10,11 +10,13 @@
 #include <cmath>
 #include <algorithm>
 #include <limits>
+#include <sstream>
 // #include <iostream>
 
 std::vector<double> cooling::solver::equilibrium_cooling(
     double t_curr, double t_step, const std::function<double(double, double)> &cooling_rhs, double initial_temperature, double newton_eps, size_t newton_iter_max)
 {
+    auxiliaries::io::Logger logger(__func__);
     // inverse euler solver; I want this method to be stable for any time step, including huge ones
     // solve T_{n+1} - T_n - dt * F(t_{n+1}, T_{n+1}) = 0 with Newton's steps
 
@@ -37,6 +39,16 @@ std::vector<double> cooling::solver::equilibrium_cooling(
             negative_temp_reached = true;
             break;
         }
+
+        logger.log([&]()
+                   { return !negative_temp_reached; }, auxiliaries::io::Logger::LogLevel::kTrace,
+                   [&]()
+                   {
+                        using namespace constants::conversion;
+                        std::stringstream ss;
+                        ss << "Newton iter. #" << std::to_string(iter + 1) << "/" << newton_iter_max << ", the temperature deviation of " << std::abs(update / initial_temperature) * 100 << " % was recorded";
+                        ss << ", T[K] = " << T_new * gev_over_k;
+                        return ss.str(); }, "Solver loop");
     } while (std::abs(update / initial_temperature) > newton_eps && ++iter < newton_iter_max);
     return {T_new, static_cast<double>(iter == newton_iter_max), static_cast<double>(negative_temp_reached)};
 }
@@ -46,6 +58,7 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
     const std::function<double(double)> &exp_lambda, const std::function<double(double)> &exp_phi, const std::vector<double> &radii, const std::vector<double> &initial_profile,
     const std::function<double(double)> &te_tb, double newton_eps, size_t newton_iter_max)
 {
+    auxiliaries::io::Logger logger(__func__);
     // biggest available radius zone (therefore i_m + 1 is the number of zones)
     size_t i_m = radii.size() - 1;
 
@@ -179,6 +192,15 @@ std::vector<std::vector<double>> cooling::solver::nonequilibrium_cooling(
                 max_diff_index = i;
             }
         }
+        logger.log([&]()
+                   { return !negative_temp_reached; }, auxiliaries::io::Logger::LogLevel::kTrace,
+                   [&]()
+                   {
+                        using namespace constants::conversion;
+                        std::stringstream ss;
+                        ss << "Newton iter. #" << std::to_string(iter + 1) << "/" << newton_iter_max << ", the largest temperature deviation of " << max_diff * 100 << " % was recorded at r[km] = " << radii[max_diff_index] / km_gev;
+                        ss << ", T[K] = " << t_profile[max_diff_index] * gev_over_k; 
+                        return ss.str(); }, "Solver loop");
         if (negative_temp_reached)
             break;
     } while (max_diff > newton_eps && ++iter < newton_iter_max);
@@ -286,7 +308,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         // lepton flavour must be defined in the map
         if (!k_fermi_of_nbar.count(lepton_flavour))
             return 0.0;
-            
+
         double pf_l = k_fermi_of_nbar.at(lepton_flavour)(nbar_val),
                pf_n = k_fermi_of_nbar.at(neutron)(nbar_val),
                pf_p = k_fermi_of_nbar.at(proton)(nbar_val),
@@ -450,14 +472,14 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
         using namespace constants::conversion;
         using namespace constants::species;
 
-        double nbar_val = nbar_of_r(r); 
+        double nbar_val = nbar_of_r(r);
         // core process
         if (nbar_val < nbar_sf_shift)
             return 0.0;
         // lepton flavour must be defined in the map
         if (!k_fermi_of_nbar.count(lepton_flavour))
             return 0.0;
-        
+
         double pf_l = k_fermi_of_nbar.at(lepton_flavour)(nbar_val),
                pf_n = k_fermi_of_nbar.at(neutron)(nbar_val),
                pf_p = k_fermi_of_nbar.at(proton)(nbar_val),
