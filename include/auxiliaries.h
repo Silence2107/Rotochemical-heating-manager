@@ -117,49 +117,68 @@ namespace auxiliaries
                 cache = defaultval;
             }
         };
-
-        /// @brief Deduction guide for CachedFunc; couldn't put it to work so far
-        // template <class Cache, class Foutput, class... Args>
-        // CachedFunc(const std::function<Foutput(Cache &, Args...)> &func) -> CachedFunc<Cache, Foutput, Args...>;
-
-        /// @brief Interpolation modes for arrays
-        enum class InterpolationMode
+        
+        /// @brief Interpolation class
+        class Interpolator
         {
-            /// @brief Linear interpolation; requires at least two points to interpolate
-            kLinear,
-            /// @brief Monotonic cubic interpolation; requires at least two points to interpolate
-            kCubic
+        public:
+            /// @brief Interpolation modes
+            enum class InterpolationMode
+            {
+                /// @brief Linear interpolation; requires at least two points to interpolate
+                kLinear,
+                /// @brief Monotonic cubic interpolation; requires at least two points to interpolate
+                kCubic
+            };
+        private:
+            /// @brief Interpolation mode
+            InterpolationMode m_mode;
+            /// @brief Input array
+            std::vector<double> m_input;
+            /// @brief Weights internal arrays
+            std::vector<std::vector<double>> m_weights;
+            /// @brief Extrapolation flag
+            bool m_extrapolate;
+            /// @brief Enable checks flag
+            bool m_enable_checks = true;
+            /// @brief Whether interpolator is instantiated
+            bool m_instantiated = false;
+
+        public:
+            /// @brief Delayed constructor
+            Interpolator() {}
+            /// @brief Immediate constructor
+            Interpolator(const std::vector<double> &input, const std::vector<double> &output, InterpolationMode mode, bool extrapolate = false, bool enable_checks = true)
+            {
+                instantiate(input, output, mode, extrapolate, enable_checks);
+            }
+            /// @brief Instantiate interpolator
+            /// @param input input array
+            /// @param output output array
+            /// @param mode interpolation mode
+            /// @param extrapolate false by default; if true, extrapolation beyond input bounds is allowed
+            /// @param enable_checks true by default. If false, no checks are performed. Performance gain is not significant, but present.
+            void instantiate(const std::vector<double> &input, const std::vector<double> &output, InterpolationMode mode, bool extrapolate = false, bool enable_checks = true);
+
+            /// @brief evaluate on the value
+            /// @param arg coordinate of point to interpolate
+            double operator()(double arg) const;
+
+            /// @brief decay to callable
+            operator std::function<double(double)>() const
+            {
+                return [this](double arg)
+                {
+                    return (*this)(arg);
+                };
+            }
+
+            /// @brief whether interpolator is instantiated
+            bool is_instantiated() const
+            {
+                return m_instantiated;
+            }
         };
-
-        /// @brief function that interpolates array based on mode provided;
-        /// Make sure to have sufficient amount of points when choosing mode;
-        /// Also make sure to have arrays sorted beforehand. Sorting will not be done here;
-        /// Note : both increasing and decreasing input arrays are supported
-        /// @param input input array to interpolate
-        /// @param output output array to interpolate
-        /// @param mode interpolation mode
-        /// @param x x-coordinate of point to interpolate
-        /// @param extrapolate false by default; if true, extrapolation beyond input bounds is allowed
-        /// @param enable_checks true by default. If false, no checks are performed. Performance gain is not significant, but present.
-        /// @return interpolated value
-        double interpolate(const std::vector<double> &input, const std::vector<double> &output, InterpolationMode mode, double x, bool extrapolate = false, bool enable_checks = true);
-
-        /// @brief function that interpolates array based on mode provided;
-        /// Make sure to have sufficient amount of points when choosing mode;
-        /// Also make sure to have arrays sorted beforehand. Sorting will not be done here;
-        /// Note : both increasing and decreasing input arrays are supported
-        /// @param cache Cache support. Wrap it with CachedFunc to use it.
-        /// @param input input array to interpolate
-        /// @param output output array to interpolate
-        /// @param mode interpolation mode
-        /// @param x x-coordinate of point to interpolate
-        /// @param extrapolate false by default; if true, extrapolation beyond input bounds is allowed
-        /// @param enable_checks true by default. If false, no checks are performed. Performance gain is not significant, but present.
-        /// @return interpolated value
-        double interpolate_cached(std::function<double(double)> &cache, const std::vector<double> &input, const std::vector<double> &output, InterpolationMode mode, double x, bool extrapolate = false, bool enable_checks = true);
-
-        /// @brief Prototype for cached interpolator
-        using CachedInterpolatorWrap = CachedFunc<std::function<double(double)>, double, const std::vector<double> &, const std::vector<double> &, InterpolationMode, double, bool, bool>;
 
         /// @brief Integration modes
         enum class IntegrationMode

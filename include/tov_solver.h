@@ -24,7 +24,7 @@ namespace tov_solver
 	/// @param mode interpolation mode for radial functions
 	/// @return [0] -> mass in given point r, [1] -> density -//-, [2] -> phi metric function -//-, [3] -> pressure -//-, [4] -> additionals(radius of NS)
 	/// @cite TOV - Oppenheimer, Volkoff, 1939
-	std::vector<double> tov_solution(std::vector<std::function<double(double)>> &cache, const std::function<double(double)> &eos_inv, double r, double center_pressure, double radius_step, double surface_pressure, double lowest_pressure, size_t adaption_limit, auxiliaries::math::InterpolationMode mode);
+	std::vector<double> tov_solution(std::vector<auxiliaries::math::Interpolator> &cache, const std::function<double(double)> &eos_inv, double r, double center_pressure, double radius_step, double surface_pressure, double lowest_pressure, size_t adaption_limit, auxiliaries::math::Interpolator::InterpolationMode mode);
 }
 
 #endif

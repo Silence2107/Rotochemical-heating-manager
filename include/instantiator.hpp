@@ -62,15 +62,15 @@ namespace instantiator
     // (2) TOV solver setup
 
     // Cached EoS interpolator. Only use it if you want to erase cache
-    auto eos_interpolator_cached = auxiliaries::math::CachedInterpolatorWrap(auxiliaries::math::interpolate_cached);
+    auto edensity_of_pressure_interpolator = auxiliaries::math::Interpolator();
     // Interpolator used for EoS rho(p)
     std::function<double(double)> edensity_of_pressure;
 
     // interpolation mode for radial functions (m(r), rho(r), ...)
-    auxiliaries::math::InterpolationMode radial_interp_mode;
+    auxiliaries::math::Interpolator::InterpolationMode radial_interp_mode;
 
     // nbar(p) cached interpolator. Only use it if you want to erase cache
-    auto nbar_interpolator_cached = auxiliaries::math::CachedInterpolatorWrap(auxiliaries::math::interpolate_cached);
+    auto nbar_of_pressure_interpolator = auxiliaries::math::Interpolator();
     // Interpolator used for nbar(p)
     std::function<double(double)> nbar_of_pressure;
 
@@ -146,9 +146,9 @@ namespace instantiator
         auto get_interpolation_mode = [](const std::string &mode)
         {
             if (mode == "Linear")
-                return auxiliaries::math::InterpolationMode::kLinear;
+                return auxiliaries::math::Interpolator::InterpolationMode::kLinear;
             else if (mode == "Cubic")
-                return auxiliaries::math::InterpolationMode::kCubic;
+                return auxiliaries::math::Interpolator::InterpolationMode::kCubic;
             else
                 RHM_ERROR("UI error: Unparsable interpolation mode provided.");
         };
@@ -247,10 +247,10 @@ namespace instantiator
         else if (!(eos_datafile_cols[0].is_number_integer() && eos_datafile_cols[1].is_number_integer()))
             RHM_ERROR("UI error: Datafile cols must be provided as integers.");
 
-        auxiliaries::math::InterpolationMode eos_datafile_interp_mode;
+        auxiliaries::math::Interpolator::InterpolationMode eos_datafile_interp_mode;
         auto eos_datafile_interp_read = j["EoSSetup"]["Datafile"]["Interpolation"];
         if (eos_datafile_interp_read.is_null())
-            eos_datafile_interp_mode = auxiliaries::math::InterpolationMode::kCubic;
+            eos_datafile_interp_mode = auxiliaries::math::Interpolator::InterpolationMode::kCubic;
         else if (!(eos_datafile_interp_read.is_string()))
             RHM_ERROR("UI error: Datafile interpolation mode may only be a string.");
         else
@@ -298,16 +298,16 @@ namespace instantiator
             RHM_ERROR("Number density column is not strictly sorted. Unpredictable behaviour may arise.");
             
         // data_reader takes input vector and outputs vector of outputs from EoS datafile
-        static auto data_reader = auxiliaries::math::CachedFunc<std::vector<auxiliaries::math::CachedInterpolatorWrap>,
+        static auto data_reader = auxiliaries::math::CachedFunc<std::vector<auxiliaries::math::Interpolator>,
                                                                 double, const std::vector<double> &, size_t>(
-            [nbar_index, eos_datafile_interp_mode](std::vector<auxiliaries::math::CachedInterpolatorWrap> &cache, const std::vector<double> &input, size_t index)
+            [nbar_index, eos_datafile_interp_mode](std::vector<auxiliaries::math::Interpolator> &cache, const std::vector<double> &input, size_t index)
             {
                 if (cache.empty())
                 {
                     // fill cache with cached interpolation functions for each column
-                    for (size_t i = 0; i < table.size(); ++i)
+                    for (size_t col = 0; col < table.size(); ++col)
                     {
-                        auto interpolator_cached = auxiliaries::math::CachedInterpolatorWrap(auxiliaries::math::interpolate_cached);
+                        auto interpolator_cached = auxiliaries::math::Interpolator(table.at(nbar_index), table.at(col), eos_datafile_interp_mode, true, true);
                         cache.push_back(interpolator_cached);
                     }
                 }
@@ -315,7 +315,7 @@ namespace instantiator
                 double nbar = input[0] / nbar_conversion;
                 // return cached interpolation functions, with extrapolation enabled.
                 // May therefore only fail if input is too short for interpolation
-                return cache[index](table.at(nbar_index), table.at(index), eos_datafile_interp_mode, nbar, true, true);
+                return cache[index](nbar);
             });
 
         // energy density function of baryonic density (natural units)
@@ -467,39 +467,41 @@ namespace instantiator
         if (j["TOVSolver"].is_null())
             RHM_ERROR("UI error: TOV solver setup is essential for any simulation and must be provided.");
 
-        auxiliaries::math::InterpolationMode eos_interp_mode;
+        auxiliaries::math::Interpolator::InterpolationMode eos_interp_mode;
         auto eos_interp_mode_read = j["TOVSolver"]["EoSInterpolation"];
         if (eos_interp_mode_read.is_null())
-            eos_interp_mode = auxiliaries::math::InterpolationMode::kCubic;
+            eos_interp_mode = auxiliaries::math::Interpolator::InterpolationMode::kCubic;
         else if (!(eos_interp_mode_read.is_string()))
             RHM_ERROR("UI error: EoS interpolation mode must be a string.");
         else
             eos_interp_mode = get_interpolation_mode(eos_interp_mode_read);
 
         // Interpolator used for EoS P(rho)
-        edensity_of_pressure = [=](double val)
+        edensity_of_pressure_interpolator.instantiate(table.at(pressure_index), table.at(energy_density_index), eos_interp_mode);
+        edensity_of_pressure = [](double p)
         {
-            return energy_density_conversion * eos_interpolator_cached(table.at(pressure_index), table.at(energy_density_index), eos_interp_mode, val / pressure_conversion, false, true);
+            return energy_density_conversion * edensity_of_pressure_interpolator(p / pressure_conversion);
         };
 
-        auxiliaries::math::InterpolationMode nbar_interp_mode;
+        auxiliaries::math::Interpolator::InterpolationMode nbar_interp_mode;
         auto nbar_interp_mode_read = j["TOVSolver"]["DensityInterpolation"];
         if (eos_interp_mode_read.is_null())
-            nbar_interp_mode = auxiliaries::math::InterpolationMode::kLinear;
+            nbar_interp_mode = auxiliaries::math::Interpolator::InterpolationMode::kLinear;
         else if (!(eos_interp_mode_read.is_string()))
             RHM_ERROR("UI error: bar. density interpolation mode must be a string.");
         else
             nbar_interp_mode = get_interpolation_mode(eos_interp_mode_read);
 
         // Interpolator used for nbar(p)
-        nbar_of_pressure = [=](double val)
+        nbar_of_pressure_interpolator.instantiate(table.at(pressure_index), table.at(nbar_index), nbar_interp_mode);
+        nbar_of_pressure = [](double p)
         {
-            return nbar_conversion * nbar_interpolator_cached(table.at(pressure_index), table.at(nbar_index), nbar_interp_mode, val / pressure_conversion, false, true);
+            return nbar_conversion * nbar_of_pressure_interpolator(p / pressure_conversion);
         };
 
         auto radial_interp_mode_read = j["TOVSolver"]["RadialInterpolation"];
         if (radial_interp_mode_read.is_null())
-            radial_interp_mode = auxiliaries::math::InterpolationMode::kCubic;
+            radial_interp_mode = auxiliaries::math::Interpolator::InterpolationMode::kCubic;
         else if (!(radial_interp_mode_read.is_string()))
             RHM_ERROR("UI error: Radial interpolation mode must be a string.");
         else
