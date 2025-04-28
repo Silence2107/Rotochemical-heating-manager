@@ -157,6 +157,7 @@ std::vector<double> tov_solver::tov_solution(std::vector<auxiliaries::math::Inte
 		for (size_t i = 0; i < 3; ++i)
 		{
 			cache[i].instantiate(df[0], df[i + 1], mode);
+			cache[i].set_name(std::vector<std::string>({"mass_of_r", "pressure_of_r", "phi_of_r"})[i]);
 		}
 
 		// make it work for now, overhaul soon..

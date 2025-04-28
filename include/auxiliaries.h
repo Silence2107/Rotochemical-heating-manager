@@ -117,7 +117,7 @@ namespace auxiliaries
                 cache = defaultval;
             }
         };
-        
+
         /// @brief Interpolation class
         class Interpolator
         {
@@ -143,6 +143,8 @@ namespace auxiliaries
             bool m_enable_checks = true;
             /// @brief Whether interpolator is instantiated
             bool m_instantiated = false;
+            /// @brief Object name, if assigned
+            std::string m_obj_name = "unassigned";
 
         public:
             /// @brief Delayed constructor
@@ -177,6 +179,12 @@ namespace auxiliaries
             bool is_instantiated() const
             {
                 return m_instantiated;
+            }
+
+            /// @brief set object name
+            void set_name(const std::string &name)
+            {
+                m_obj_name = name;
             }
         };
 

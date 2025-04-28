@@ -308,6 +308,7 @@ namespace instantiator
                     for (size_t col = 0; col < table.size(); ++col)
                     {
                         auto interpolator_cached = auxiliaries::math::Interpolator(table.at(nbar_index), table.at(col), eos_datafile_interp_mode, true, true);
+                        interpolator_cached.set_name("df_of_nbar_col#" + std::to_string(col));
                         cache.push_back(interpolator_cached);
                     }
                 }
@@ -478,6 +479,7 @@ namespace instantiator
 
         // Interpolator used for EoS P(rho)
         edensity_of_pressure_interpolator.instantiate(table.at(pressure_index), table.at(energy_density_index), eos_interp_mode);
+        edensity_of_pressure_interpolator.set_name("edensity_of_pressure");
         edensity_of_pressure = [](double p)
         {
             return energy_density_conversion * edensity_of_pressure_interpolator(p / pressure_conversion);
@@ -494,6 +496,7 @@ namespace instantiator
 
         // Interpolator used for nbar(p)
         nbar_of_pressure_interpolator.instantiate(table.at(pressure_index), table.at(nbar_index), nbar_interp_mode);
+        nbar_of_pressure_interpolator.set_name("nbar_of_pressure");
         nbar_of_pressure = [](double p)
         {
             return nbar_conversion * nbar_of_pressure_interpolator(p / pressure_conversion);
