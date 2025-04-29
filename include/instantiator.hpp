@@ -597,10 +597,10 @@ namespace instantiator
                 if (!(cache_path_read.is_string()))
                     RHM_ERROR("UI error: TOV solver center pressure cache path must be provided as a string, if cached mass is requested.");
                 // use tabulated function
-                auto tov_table = auxiliaries::io::read_tabulated_file(cache_path_read.get<std::string>(), {1, 3}, {1, 0});
+                auto tov_table = auxiliaries::io::read_tabulated_file(cache_path_read.get<std::string>(), {0, 0}, {1, 0});
                 // locate the two consecutive masses that the desired mass lies between
-                auto mass_vect = tov_table.at(1);
-                auto nb_vect = tov_table.at(0);
+                auto mass_vect = tov_table.at(2);
+                auto frac_vect = tov_table.at(0);
                 size_t first_index = 0;
                 for (first_index = 0; first_index < mass_vect.size() - 1; ++first_index)
                     if (mass_vect[first_index] <= desired_mass && mass_vect[first_index + 1] > desired_mass)
@@ -608,9 +608,8 @@ namespace instantiator
                 if (first_index == mass_vect.size() - 1)
                     RHM_ERROR("UI error: Desired mass is out of range of the provided TOV cache.");
                 // interpolate the density manually
-                auto center_density = nb_vect[first_index] + (desired_mass - mass_vect[first_index]) * (nb_vect[first_index + 1] - nb_vect[first_index]) / (mass_vect[first_index + 1] - mass_vect[first_index]);
-                center_density *= nbar_conversion; 
-                center_pressure = pressure_of_nbar(center_density);
+                auto pressure_fraction = frac_vect[first_index] + (desired_mass - mass_vect[first_index]) * (frac_vect[first_index + 1] - frac_vect[first_index]) / (mass_vect[first_index + 1] - mass_vect[first_index]);
+                center_pressure = pressure_low + pressure_fraction * (pressure_upp - pressure_low);
             }
             else
             {
