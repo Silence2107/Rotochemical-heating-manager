@@ -63,9 +63,9 @@ int main(int argc, char **argv)
     auto get_m_r_at_pressure = [&](double pressure)
     {
         // TOV solver
-        auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::function<double(double)>>, std::vector<double>,
+        auto tov_cached = auxiliaries::math::CachedFunc<std::vector<auxiliaries::math::Interpolator>, std::vector<double>,
                                                         const std::function<double(double)> &, double, double, double, 
-                                                        double, size_t, auxiliaries::math::InterpolationMode>(tov_solver::tov_solution);
+                                                        double, size_t, auxiliaries::math::Interpolator::InterpolationMode>(tov_solver::tov_solution);
         auto tov = [&tov_cached, &eos_inv_cached, pressure](double r)
         {
             // TOV solution cached

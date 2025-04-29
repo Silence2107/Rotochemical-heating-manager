@@ -8,7 +8,7 @@
 #include <cmath>
 #include <sstream>
 
-std::vector<double> tov_solver::tov_solution(std::vector<std::function<double(double)>> &cache, const std::function<double(double)> &eos_inv, double r, double center_pressure, double radius_step, double surface_pressure, double lowest_pressure, size_t adaption_limit, auxiliaries::math::InterpolationMode mode)
+std::vector<double> tov_solver::tov_solution(std::vector<auxiliaries::math::Interpolator> &cache, const std::function<double(double)> &eos_inv, double r, double center_pressure, double radius_step, double surface_pressure, double lowest_pressure, size_t adaption_limit, auxiliaries::math::Interpolator::InterpolationMode mode)
 {
 	using constants::scientific::G;
 	using constants::scientific::Pi;
@@ -152,14 +152,16 @@ std::vector<double> tov_solver::tov_solution(std::vector<std::function<double(do
 		for (auto &elem : df[3])
 			elem += phi_shift;
 
-		auto interpolators = std::vector<auxiliaries::math::CachedInterpolatorWrap>(3, auxiliaries::math::CachedInterpolatorWrap(auxiliaries::math::interpolate_cached));
+		cache = std::vector<auxiliaries::math::Interpolator>(4, auxiliaries::math::Interpolator());
 
 		for (size_t i = 0; i < 3; ++i)
-			cache.push_back([=](double r) mutable
-							{ return interpolators[i](df[0], df[i + 1], mode, r, false, true); });
+		{
+			cache[i].instantiate(df[0], df[i + 1], mode);
+			cache[i].set_name(std::vector<std::string>({"mass_of_r", "pressure_of_r", "phi_of_r"})[i]);
+		}
 
-		cache.push_back([=](double) mutable
-						{ return df[0].back(); });
+		// make it work for now, overhaul soon..
+		cache[3].instantiate({df[0].front(), df[0].back()}, {df[0].back(), df[0].back()}, mode);
 	}
 
 	// Interpolation

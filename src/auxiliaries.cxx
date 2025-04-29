@@ -107,7 +107,7 @@ void auxiliaries::io::Logger::log(std::function<bool()> &&lazy_condition, LogLev
             return;
         if (appendix != "")
             appendix.insert(0, ", ");
-        // current time 
+        // current time
         std::time_t t = std::time(nullptr);
         std::tm tm = *std::localtime(&t);
 
@@ -117,32 +117,123 @@ void auxiliaries::io::Logger::log(std::function<bool()> &&lazy_condition, LogLev
     }
 }
 
-double auxiliaries::math::interpolate(const std::vector<double> &input, const std::vector<double> &output,
-                                      auxiliaries::math::InterpolationMode mode, double x, bool extrapolate, bool enable_checks)
+void auxiliaries::math::Interpolator::instantiate(const std::vector<double> &input, const std::vector<double> &output, auxiliaries::math::Interpolator::InterpolationMode mode, bool extrapolate, bool enable_checks)
 {
     if (enable_checks)
     {
         if (input.size() != output.size())
-            RHM_ERROR("Input and output arrays have different sizes.");
+            RHM_ERROR("Input and output arrays have different sizes. Object name: " + m_obj_name +
+                      ", input size: " + std::to_string(input.size()) + ", output size: " + std::to_string(output.size()));
     }
-    // determine if input is increasing or decreasing
-    bool decreasingly_sorted = (input[0] > input[1]) ? true : false;
-    if (!extrapolate && enable_checks)
-        if ((!decreasingly_sorted && (x < input.front() || x > input.back())) || (decreasingly_sorted && (x > input.front() || x < input.back())))
-            RHM_ERROR("Searched value is out of range.");
+    m_input = input;
+    m_mode = mode;
+    m_extrapolate = extrapolate;
+    m_enable_checks = enable_checks;
+    // applicable to all modes, m_weights[0] shall be output values
+    m_weights.push_back(output);
+    switch (mode)
+    {
+    case auxiliaries::math::Interpolator::InterpolationMode::kLinear:
+    {
+        if (enable_checks)
+            if (input.size() < 2)
+                RHM_ERROR("Cannot perform linear interpolation with less than 2 points. Object name: " + m_obj_name +
+                          ", input size: " + std::to_string(input.size()));
+        std::vector<double> linear_coeffs(input.size() - 1);
+        for (size_t i = 0; i < input.size() - 1; ++i)
+        {
+            linear_coeffs[i] = (output[i + 1] - output[i]) / (input[i + 1] - input[i]);
+        }
+        // 1+1 coefficients for linear interpolation
+        m_weights.push_back(linear_coeffs);
+        break;
+    }
+    // This interpolation mode became possible only thanks to https://signalsmith-audio.co.uk/writing/2021/monotonic-smooth-interpolation/
+    case auxiliaries::math::Interpolator::InterpolationMode::kCubic:
+    {
+        if (enable_checks)
+            if (input.size() < 2)
+                RHM_ERROR("Cannot perform cubic interpolation with less than 2 points. Object name: " + m_obj_name +
+                          ", input size: " + std::to_string(input.size()));
+        std::vector<double> linear_coeffs(input.size()),
+            quadratic_coeffs(input.size() - 1),
+            cubic_coeffs(input.size() - 1),
+            slopes(input.size() - 1);
+        for (size_t i = 0; i < input.size() - 1; ++i)
+        {
+            slopes[i] = (output[i + 1] - output[i]) / (input[i + 1] - input[i]);
+        }
+        // deal with linear coefficients, which correspond to the slopes at the nodes
+        for (size_t i = 0; i < input.size(); ++i)
+        {
+            // edge cases shall have natural slopes
+            if (i == 0)
+            {
+                linear_coeffs[i] = slopes.front();
+                continue;
+            }
+            else if (i == input.size() - 1)
+            {
+                linear_coeffs[i] = slopes.back();
+                continue;
+            }
+            // we enforce monotonicity by imposing extremum at discrete slope sign change
+            else if (slopes[i - 1] * slopes[i] <= 0)
+            {
+                linear_coeffs[i] = 0;
+                continue;
+            }
+            // averaging slopes with weights
+            else
+                linear_coeffs[i] = (slopes[i - 1] * (input[i + 1] - input[i]) + slopes[i] * (input[i] - input[i - 1])) / (input[i + 1] - input[i - 1]);
 
-    // find index of x in input sorted array in reasonable time
+            // In the latter case, make sure linear coefficients are not too large to avoid overshooting.
+            // Note that the signs of the slopes and linear_coeffs are at this point the same.
+            if (linear_coeffs[i] / slopes[i] > 3 || linear_coeffs[i] / slopes[i - 1] > 3)
+                linear_coeffs[i] = 3 * (linear_coeffs[i] > 0) * std::min(std::abs(slopes[i]), std::abs(slopes[i - 1]));
+        }
+        // deal with the rest
+        for (size_t i = 0; i < input.size() - 1; ++i)
+        {
+            cubic_coeffs[i] = (linear_coeffs[i] + linear_coeffs[i + 1] - 2 * slopes[i]) / pow(input[i + 1] - input[i], 2);
+            quadratic_coeffs[i] = (3 * slopes[i] - linear_coeffs[i + 1] - 2 * linear_coeffs[i]) / (input[i + 1] - input[i]);
+        }
+        // 1+3 coefficients for cubic interpolation
+        m_weights.push_back(linear_coeffs);
+        m_weights.push_back(quadratic_coeffs);
+        m_weights.push_back(cubic_coeffs);
+        break;
+    }
+    default:
+        RHM_ERROR("Unknown interpolation mode.");
+    }
+    m_instantiated = true;
+}
+
+double auxiliaries::math::Interpolator::operator()(double arg) const
+{
+    if (m_enable_checks && !m_instantiated)
+        RHM_ERROR("Uninitialized interpolator invoked. This error signifies a serious bug in the production. Object name: " + m_obj_name);
+    bool decreasingly_sorted = (m_input.front() > m_input.back());
+    if (m_enable_checks && !m_extrapolate)
+        if ((!decreasingly_sorted && (arg < m_input.front() || arg > m_input.back())) || (decreasingly_sorted && (arg > m_input.front() || arg < m_input.back())))
+        {
+            std::stringstream ss;
+            ss << std::scientific << std::setprecision(3) << "Searched value is out of the interpolator's range. Object name: " << m_obj_name << ", input range: [" << (decreasingly_sorted ? m_input.back() : m_input.front()) << ", " << (decreasingly_sorted ? m_input.front() : m_input.back()) << "], passed arg: " << arg;
+            std::string msg = ss.str();
+            RHM_ERROR(msg);
+        }
     size_t low_pos;
     if (!decreasingly_sorted)
-        low_pos = std::upper_bound(input.begin(), input.end(), x) -
-                  input.begin();
+        low_pos = std::upper_bound(m_input.begin(), m_input.end(), arg) -
+                  m_input.begin();
     else
-        low_pos = std::upper_bound(input.begin(), input.end(), x, std::greater<double>()) -
-                  input.begin();
+        low_pos = std::upper_bound(m_input.begin(), m_input.end(), arg, std::greater<double>()) -
+                  m_input.begin();
     // extrapolation: in case x is out of range, we extrapolate from the nearest polinomial
-    if (extrapolate)
+    if (m_extrapolate)
     {
-        if (low_pos == input.size())
+        if (low_pos == m_input.size())
             --low_pos;
         if (low_pos == 0)
             ++low_pos;
@@ -150,209 +241,25 @@ double auxiliaries::math::interpolate(const std::vector<double> &input, const st
     // Conventional definition of low_pos : x is within [input[low_pos], input[low_pos+1]), if not extrapolating
     --low_pos;
     // if x is equal to input[i], return output[i]
-    if (x == input[low_pos])
-        return output[low_pos];
+    if (arg == m_input[low_pos])
+        return m_weights[0][low_pos];
 
-    // interpolate
-    switch (mode)
+    // resolve shift from the passed arg
+    double s = arg - m_input[low_pos];
+    switch (m_mode)
     {
-    case auxiliaries::math::InterpolationMode::kLinear:
+    case auxiliaries::math::Interpolator::InterpolationMode::kLinear:
     {
-        if (enable_checks)
-            if (input.size() < 2)
-                RHM_ERROR("Cannot perform linear interpolation with less than 2 points.");
-        return output[low_pos] + (output[low_pos + 1] - output[low_pos]) * (x - input[low_pos]) / (input[low_pos + 1] - input[low_pos]);
+        return m_weights[0][low_pos] + m_weights[1][low_pos] * s;
     }
-    break;
-    case auxiliaries::math::InterpolationMode::kCubic:
+    case auxiliaries::math::Interpolator::InterpolationMode::kCubic:
     {
-        if (enable_checks)
-            if (input.size() < 5)
-                RHM_ERROR("Cannot perform cubic interpolation with less than 5 points.");
-        auto tridiagonal_solve = [](const std::vector<double> &subdiag, const std::vector<double> &diag, const std::vector<double> &superdiag, const std::vector<double> &rhs)
-        {
-            auxiliaries::math::MatrixD A(diag.size(), diag.size(), 0.0);
-            for (size_t i = 0; i < diag.size(); ++i)
-            {
-                A.at(i, i) = diag[i];
-                if (i < diag.size() - 1)
-                    A.at(i, i + 1) = superdiag[i];
-                if (i > 0)
-                    A.at(i, i - 1) = subdiag[i - 1];
-            }
-            return A.tridiagonal_solve(rhs);
-        };
-        // Solve for quadratic coefficients
-        std::vector<double> subdiag(input.size() - 4);
-        std::vector<double> diag(input.size() - 3);
-        std::vector<double> superdiag(input.size() - 4);
-        std::vector<double> rhs(input.size() - 3);
-        for (size_t i = 0; i < input.size() - 4; ++i)
-        {
-            subdiag[i] = (input[i + 2] - input[i + 1]);
-            superdiag[i] = (input[i + 2] - input[i + 1]);
-        }
-        for (size_t i = 0; i < input.size() - 3; ++i)
-        {
-            diag[i] = 2 * (input[i + 2] - input[i]);
-            rhs[i] = 3 * ((output[i + 2] - output[i + 1]) / (input[i + 2] - input[i + 1]) - (output[i + 1] - output[i]) / (input[i + 1] - input[i]));
-        }
-        std::vector<double> quadratic_coeffs = tridiagonal_solve(subdiag, diag, superdiag, rhs);
-        quadratic_coeffs.insert(quadratic_coeffs.begin(), 0);
-        quadratic_coeffs.push_back(0);
-        // Solve for cubic and linear coefficients
-        std::vector<double> cubic_coeffs(input.size() - 1), linear_coeffs(input.size() - 1);
-        for (size_t i = 0; i < input.size() - 2; ++i)
-        {
-            cubic_coeffs[i] = (quadratic_coeffs[i + 1] - quadratic_coeffs[i]) / (3 * (input[i + 1] - input[i]));
-            linear_coeffs[i] = (output[i + 1] - output[i]) / (input[i + 1] - input[i]) - (input[i + 1] - input[i]) * (2 * quadratic_coeffs[i] + quadratic_coeffs[i + 1]) / 3;
-        }
-        linear_coeffs[input.size() - 2] = linear_coeffs[input.size() - 3] + 2 * (input[input.size() - 2] - input[input.size() - 3]) * quadratic_coeffs[input.size() - 3] + 3 * (input[input.size() - 2] - input[input.size() - 3]) * (input[input.size() - 2] - input[input.size() - 3]) * cubic_coeffs[input.size() - 3];
-        cubic_coeffs[input.size() - 2] = (output[input.size() - 1] - output[input.size() - 2] - linear_coeffs[input.size() - 2] * (input[input.size() - 1] - input[input.size() - 2])) / ((input[input.size() - 1] - input[input.size() - 2]) * (input[input.size() - 1] - input[input.size() - 2]) * (input[input.size() - 1] - input[input.size() - 2]));
-        return cubic_coeffs[low_pos] * (x - input[low_pos]) * (x - input[low_pos]) * (x - input[low_pos]) + quadratic_coeffs[low_pos] * (x - input[low_pos]) * (x - input[low_pos]) + linear_coeffs[low_pos] * (x - input[low_pos]) + output[low_pos];
+        return m_weights[0][low_pos] + m_weights[1][low_pos] * s +
+               m_weights[2][low_pos] * s * s + m_weights[3][low_pos] * s * s * s;
     }
-    break;
     default:
         RHM_ERROR("Unknown interpolation mode.");
     }
-
-}
-
-double auxiliaries::math::interpolate_cached(std::function<double(double)> &cache, const std::vector<double> &input, const std::vector<double> &output, auxiliaries::math::InterpolationMode mode, double x, bool extrapolate, bool enable_checks)
-{
-    // determine if input is increasing or decreasing
-    bool decreasingly_sorted = (input[0] > input[1]) ? true : false;
-    if (!extrapolate && enable_checks)
-        if ((!decreasingly_sorted && (x < input.front() || x > input.back())) || (decreasingly_sorted && (x > input.front() || x < input.back())))
-            RHM_ERROR("Searched value is out of range.");
-    if (!cache) // if a callable is not stored, cache one
-    {
-        if (enable_checks)
-        {
-            if (input.size() != output.size())
-                RHM_ERROR("Input and output arrays have different sizes.");
-        }
-
-        // interpolate
-        switch (mode)
-        {
-        case auxiliaries::math::InterpolationMode::kLinear:
-        {
-            if (enable_checks)
-                if (input.size() < 2)
-                    RHM_ERROR("Cannot perform linear interpolation with less than 2 points.");
-            cache = [=](double x)
-            {
-                // find index of x in input sorted array in reasonable time
-                size_t low_pos;
-                if (!decreasingly_sorted)
-                    low_pos = std::upper_bound(input.begin(), input.end(), x) -
-                              input.begin();
-                else
-                    low_pos = std::upper_bound(input.begin(), input.end(), x, std::greater<double>()) -
-                              input.begin();
-                // extrapolation: in case x is out of range, we extrapolate from the nearest polinomial
-                if (extrapolate)
-                {
-                    if (low_pos == input.size())
-                        --low_pos;
-                    if (low_pos == 0)
-                        ++low_pos;
-                }
-                // Conventional definition of low_pos : x is within [input[low_pos], input[low_pos+1]), if not extrapolating
-                --low_pos;
-                // if x is equal to input[i], return output[i]
-                if (x == input[low_pos])
-                    return output[low_pos];
-
-                return output[low_pos] + (output[low_pos + 1] - output[low_pos]) * (x - input[low_pos]) / (input[low_pos + 1] - input[low_pos]);
-            };
-        }
-        break;
-        // This interpolation mode became possible only thanks to https://signalsmith-audio.co.uk/writing/2021/monotonic-smooth-interpolation/
-        case auxiliaries::math::InterpolationMode::kCubic:
-        {
-            if (enable_checks)
-                if (input.size() < 2)
-                    RHM_ERROR("Cannot perform cubic interpolation with less than 2 points.");
-            std::vector<double> linear_coeffs(input.size()),
-                quadratic_coeffs(input.size() - 1),
-                cubic_coeffs(input.size() - 1),
-                slopes(input.size() - 1);
-            for (size_t i = 0; i < input.size() - 1; ++i)
-            {
-                slopes[i] = (output[i + 1] - output[i]) / (input[i + 1] - input[i]);
-            }
-            // deal with linear coefficients, which correspond to the slopes at the nodes
-            for (size_t i = 0; i < input.size(); ++i)
-            {
-                // edge cases shall have natural slopes
-                if (i == 0)
-                {
-                    linear_coeffs[i] = slopes.front();
-                    continue;
-                }
-                else if (i == input.size() - 1)
-                {
-                    linear_coeffs[i] = slopes.back();
-                    continue;
-                }
-                // we enforce monotonicity by imposing extremum at discrete slope sign change
-                else if (slopes[i - 1] * slopes[i] <= 0)
-                {
-                    linear_coeffs[i] = 0;
-                    continue;
-                }
-                // averaging slopes with weights
-                else
-                    linear_coeffs[i] = (slopes[i - 1] * (input[i + 1] - input[i]) + slopes[i] * (input[i] - input[i - 1])) / (input[i + 1] - input[i - 1]);
-
-                // In the latter case, make sure linear coefficients are not too large to avoid overshooting.
-                // Note that the signs of the slopes and linear_coeffs are at this point the same.
-                if (linear_coeffs[i] / slopes[i] > 3 || linear_coeffs[i] / slopes[i - 1] > 3)
-                    linear_coeffs[i] = 3 * (linear_coeffs[i] > 0) * std::min(std::abs(slopes[i]), std::abs(slopes[i - 1]));
-            }
-            // deal with the rest
-            for (size_t i = 0; i < input.size() - 1; ++i)
-            {
-                cubic_coeffs[i] = (linear_coeffs[i] + linear_coeffs[i + 1] - 2 * slopes[i]) / pow(input[i + 1] - input[i], 2);
-                quadratic_coeffs[i] = (3 * slopes[i] - linear_coeffs[i + 1] - 2 * linear_coeffs[i]) / (input[i + 1] - input[i]);
-            }
-            cache = [=](double x)
-            {
-                // find index of x in input sorted array in reasonable time
-                size_t low_pos;
-                if (!decreasingly_sorted)
-                    low_pos = std::upper_bound(input.begin(), input.end(), x) -
-                              input.begin();
-                else
-                    low_pos = std::upper_bound(input.begin(), input.end(), x, std::greater<double>()) -
-                              input.begin();
-                // extrapolation: in case x is out of range, we extrapolate from the nearest polinomial
-                if (extrapolate)
-                {
-                    if (low_pos == input.size())
-                        --low_pos;
-                    if (low_pos == 0)
-                        ++low_pos;
-                }
-                // Conventional definition of low_pos : x is within [input[low_pos], input[low_pos+1]), if not extrapolating
-                --low_pos;
-                // if x is equal to input[i], return output[i]
-                if (x == input[low_pos])
-                    return output[low_pos];
-
-                double s = x - input[low_pos];
-
-                return cubic_coeffs[low_pos] * s * s * s + quadratic_coeffs[low_pos] * s * s + linear_coeffs[low_pos] * s + output[low_pos];
-            };
-        }
-        break;
-        default:
-            RHM_ERROR("Unknown interpolation mode.");
-        }
-    }
-    return cache(x);
 }
 
 auxiliaries::phys::Species::Species(auxiliaries::phys::Species::ParticleType type, auxiliaries::phys::Species::ParticleClassification classification, const std::string &name, double mass, double qcharge, double bcharge)
