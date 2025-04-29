@@ -26,8 +26,10 @@ namespace instantiator
         pressure_conversion,
         nbar_conversion;
 
-    // filereader
-    // SHADOWED -- GETS INSTANTIANED BY THE EXTERNAL INPUTFILE
+    // eos datafile table
+    std::vector<std::vector<double>> eos_table;
+    // filereader (takes {nbar}, column, returns an interpolated value)
+    std::function<double(const std::vector<double> &, size_t)> data_reader;
 
     // energy density function of baryonic density (natural units)
     std::function<double(double)> energy_density_of_nbar;
@@ -281,43 +283,37 @@ namespace instantiator
             RHM_ERROR("UI error: Unparsable conversion unit provided for barionic density.");
 
         // read datafile
-        static auto table = auxiliaries::io::read_tabulated_file(eos_datafile, eos_datafile_cols, eos_datafile_rows);
+        static auto eos_table = auxiliaries::io::read_tabulated_file(eos_datafile, eos_datafile_cols, eos_datafile_rows);
 
         // reflect on table instatiation
-        if (table.size() == 0)
+        if (eos_table.size() == 0)
             RHM_ERROR("Failed to read EoS table.");
         logger.log([]()
                    { return true; },
                    auxiliaries::io::Logger::LogLevel::kInfo, []()
-                   { return "EoS table read with dimensions [" + std::to_string(table.at(0).size()) + " x " + std::to_string(table.size()) + "]."; });
+                   { return "EoS table read with dimensions [" + std::to_string(eos_table.at(0).size()) + " x " + std::to_string(eos_table.size()) + "]."; });
 
         // nbars must be ordered
-        const auto &nbars = table.at(nbar_index);
+        const auto &nbars = eos_table.at(nbar_index);
         if (!std::is_sorted(nbars.begin(), nbars.end(), [](double a, double b) {return a >= b;}) && 
                 !std::is_sorted(nbars.begin(), nbars.end(), [](double a, double b) {return a <= b;}))
             RHM_ERROR("Number density column is not strictly sorted. Unpredictable behaviour may arise.");
-            
-        // data_reader takes input vector and outputs vector of outputs from EoS datafile
-        static auto data_reader = auxiliaries::math::CachedFunc<std::vector<auxiliaries::math::Interpolator>,
-                                                                double, const std::vector<double> &, size_t>(
-            [nbar_index, eos_datafile_interp_mode](std::vector<auxiliaries::math::Interpolator> &cache, const std::vector<double> &input, size_t index)
-            {
-                if (cache.empty())
-                {
-                    // fill cache with cached interpolation functions for each column
-                    for (size_t col = 0; col < table.size(); ++col)
-                    {
-                        auto interpolator_cached = auxiliaries::math::Interpolator(table.at(nbar_index), table.at(col), eos_datafile_interp_mode, true, true);
-                        interpolator_cached.set_name("df_of_nbar_col#" + std::to_string(col));
-                        cache.push_back(interpolator_cached);
-                    }
-                }
-                // unpack input and convert to datafile units
-                double nbar = input[0] / nbar_conversion;
-                // return cached interpolation functions, with extrapolation enabled.
-                // May therefore only fail if input is too short for interpolation
-                return cache[index](nbar);
-            });
+
+        auto data_reader_cache = std::vector<auxiliaries::math::Interpolator>();
+        for (size_t col = 0; col < eos_table.size(); ++col)
+        {
+            auto column_interpolator = auxiliaries::math::Interpolator(eos_table.at(nbar_index), eos_table.at(col), eos_datafile_interp_mode, true, true);
+            column_interpolator.set_name("df_of_nbar_col#" + std::to_string(col));
+            data_reader_cache.push_back(column_interpolator);
+        }
+        data_reader = [data_reader_cache, nbar_index, eos_datafile_interp_mode](const std::vector<double> &input, size_t index)
+        {
+            // unpack input and convert to datafile units
+            double nbar = input[0] / nbar_conversion;
+            // return cached interpolation functions, with extrapolation enabled.
+            // May therefore only fail if input is too short for interpolation
+            return data_reader_cache[index](nbar);
+        };
 
         // energy density function of baryonic density (natural units)
         auto energy_density_index = j["EoSSetup"]["Quantities"]["EnergyDensity"]["Column"];
@@ -353,11 +349,11 @@ namespace instantiator
         // energy density should be ordered along nbars (might not fail)
         logger.log([energy_density_index, nbar_index]()
                    { 
-                        const auto &edensities = table.at(energy_density_index);
+                        const auto &edensities = eos_table.at(energy_density_index);
                         if (edensities.size() < 2)
                             return false;
                         bool decreasing = edensities.front() > edensities.back();
-                        bool nbars_decreasing = table.at(nbar_index).front() > table.at(nbar_index).back();
+                        bool nbars_decreasing = eos_table.at(nbar_index).front() > eos_table.at(nbar_index).back();
                         if (decreasing != nbars_decreasing)
                             return true;
                         for (size_t i = 0; i < edensities.size() - 1; ++i)
@@ -405,11 +401,11 @@ namespace instantiator
         // pressure should maintained mechanical stability (might be ignored in some cases)
         logger.log([pressure_index, nbar_index]()
                    { 
-                        const auto &pressures = table.at(pressure_index);
+                        const auto &pressures = eos_table.at(pressure_index);
                         if (pressures.size() < 2)
                             return false;
                         bool decreasing = pressures.front() > pressures.back();
-                        bool nbars_decreasing = table.at(nbar_index).front() > table.at(nbar_index).back();
+                        bool nbars_decreasing = eos_table.at(nbar_index).front() > eos_table.at(nbar_index).back();
                         if (decreasing != nbars_decreasing)
                             return true;
                         for (size_t i = 0; i < pressures.size() - 1; ++i)
@@ -429,7 +425,7 @@ namespace instantiator
              nbar_upp_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["Upp"],
              nbar_sf_shift_read = j["EoSSetup"]["Quantities"]["BarionicDensity"]["SuperfluidShift"];
         if (nbar_low_read.is_null())
-            nbar_low = std::min(table.at(nbar_index).front(), table.at(nbar_index).back()) * nbar_conversion;
+            nbar_low = std::min(eos_table.at(nbar_index).front(), eos_table.at(nbar_index).back()) * nbar_conversion;
         else
         {
             if (!(nbar_low_read.is_number()))
@@ -438,7 +434,7 @@ namespace instantiator
                 nbar_low = nbar_low_read.get<double>() * nbar_conversion;
         }
         if (nbar_upp_read.is_null())
-            nbar_upp = std::max(table.at(nbar_index).front(), table.at(nbar_index).back()) * nbar_conversion;
+            nbar_upp = std::max(eos_table.at(nbar_index).front(), eos_table.at(nbar_index).back()) * nbar_conversion;
         else
         {
             if (!(nbar_upp_read.is_number()))
@@ -478,7 +474,7 @@ namespace instantiator
             eos_interp_mode = get_interpolation_mode(eos_interp_mode_read);
 
         // Interpolator used for EoS P(rho)
-        edensity_of_pressure_interpolator.instantiate(table.at(pressure_index), table.at(energy_density_index), eos_interp_mode);
+        edensity_of_pressure_interpolator.instantiate(eos_table.at(pressure_index), eos_table.at(energy_density_index), eos_interp_mode);
         edensity_of_pressure_interpolator.set_name("edensity_of_pressure");
         edensity_of_pressure = [](double p)
         {
@@ -495,7 +491,7 @@ namespace instantiator
             nbar_interp_mode = get_interpolation_mode(eos_interp_mode_read);
 
         // Interpolator used for nbar(p)
-        nbar_of_pressure_interpolator.instantiate(table.at(pressure_index), table.at(nbar_index), nbar_interp_mode);
+        nbar_of_pressure_interpolator.instantiate(eos_table.at(pressure_index), eos_table.at(nbar_index), nbar_interp_mode);
         nbar_of_pressure_interpolator.set_name("nbar_of_pressure");
         nbar_of_pressure = [](double p)
         {

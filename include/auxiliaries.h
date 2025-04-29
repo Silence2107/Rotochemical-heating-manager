@@ -73,51 +73,9 @@ namespace auxiliaries
     }
 
     /// @brief Math auxiliary functionality.
-    /// @brief Includes interpolation, integration, caching functionality and matrix operations
+    /// @brief Includes interpolation, integration, matrix operations
     namespace math
     {
-        /// @brief Allows to wrap std::function of general form so that to support caching.
-        /// @tparam Cache  Cache type;
-        /// Cache is supposed to be a first parameter of a function (non-const reference!);
-        /// User is supposed to write cache usage inside the function manually;
-        /// After wrapping, cache is fully handled by the class, with possible changes at each call
-        /// @tparam Foutput Function's output type
-        /// @tparam ...Args Function arguments besides cache
-        /// You are supposed to put them after Cache&amp; parameter
-        template <class Cache, class Foutput, class... Args>
-        class CachedFunc
-        {
-        private:
-            std::function<Foutput(Cache &, Args...)> func; // callable that may use caching
-            Cache cache;                                   // data which should be saved
-        public:
-            /// @brief public constructor of CachedFunc
-            CachedFunc(const std::function<Foutput(Cache &, Args...)> &func, Cache defaultcache = Cache()) : func{func}
-            {
-                erase(defaultcache);
-            }
-            /// @brief Invokes wrapped function based on cache and provided arguments
-            /// @param ...args Function arguments besides cache
-            /// @return Foutput from this invocation
-            Foutput operator()(Args... args)
-            {
-                return func(cache, args...);
-            }
-            /// @brief Returns wrapped function as std::function, with cache running under the hood
-            /// @return std::function<Foutput(Args...)>
-            operator std::function<Foutput(Args...)>()
-            {
-                return [this](Args... args)
-                { return func(this->cache, args...); };
-            }
-            /// @brief Erases cache
-            /// @param defaultval Value that is substituted inside the cache; equals 'Cache()' by default, pass your version if needed/required
-            void erase(Cache defaultval = Cache())
-            {
-                cache = defaultval;
-            }
-        };
-
         /// @brief Interpolation class
         class Interpolator
         {
