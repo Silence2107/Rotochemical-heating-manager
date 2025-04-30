@@ -56,32 +56,24 @@ int main(int argc, char **argv)
 
     // TOV solver
 
-    auto tov_cached = auxiliaries::math::CachedFunc<std::vector<auxiliaries::math::Interpolator>, std::vector<double>,
-                                                    const std::function<double(double)> &, double, double, double, double,
-                                                    double, size_t, auxiliaries::math::Interpolator::InterpolationMode>(tov_solver::tov_solution);
-    auto tov = [&tov_cached, &eos_inv_cached](double r)
-    {
-        // TOV solution cached
-        return tov_cached(eos_inv_cached, r, center_pressure, radius_step, surface_pressure, pressure_low, tov_adapt_limit, radial_interp_mode);
-    };
+    auto tov_df = tov_solver::tov_solution(eos_inv_cached, center_pressure, radius_step, surface_pressure, pressure_low, tov_adapt_limit);
 
-    auto nbar = [&](double r)
-    {
-        return nbar_of_pressure(tov(r)[3]);
-    };
+    std::vector<double> df_nbar(tov_df[0].size()), df_exp_phi(tov_df[0].size()), df_exp_lambda(tov_df[0].size());
 
-    double r_ns = tov(0.0)[4];
-    double m_ns = tov(r_ns)[0];
-    /*
-    auto exp_phi = [&tov](double r)
+    double r_ns = tov_df[0].back();
+    double m_ns = tov_df[1].back();
+    for (size_t i = 0; i < tov_df[0].size(); ++i)
     {
-        return std::exp(tov(r)[2]);
-    };
-
-    auto exp_lambda = [&tov](double r)
-    {
-        return pow(1 - 2 * constants::scientific::G * tov(r)[0] / r, -0.5);
-    };*/
+        df_nbar[i] = nbar_of_pressure(tov_df[2][i]);
+        df_exp_phi[i] = std::exp(tov_df[3][i]);
+        if (i == 0)
+            df_exp_lambda[i] = 1.0;
+        else
+            df_exp_lambda[i] = std::pow(1 - 2 * constants::scientific::G * tov_df[1][i] / tov_df[0][i], -0.5);
+    }
+    auto nbar = auxiliaries::math::Interpolator(tov_df[0], df_nbar, radial_interp_mode);
+    // auto exp_phi = auxiliaries::math::Interpolator(tov_df[0], df_exp_phi, radial_interp_mode);
+    // auto exp_lambda = auxiliaries::math::Interpolator(tov_df[0], df_exp_lambda, radial_interp_mode);
 
     size_t indent = 20;
     std::cout << std::left << std::setw(indent) << "Mass[Ms]" << std::setw(indent) << "Radius[km]";
@@ -100,17 +92,10 @@ int main(int argc, char **argv)
         auto get_m_r_at_pressure = [&](double pressure)
         {
             // TOV solver
-            auto tov_cached = auxiliaries::math::CachedFunc<std::vector<auxiliaries::math::Interpolator>, std::vector<double>,
-                                                            const std::function<double(double)> &, double, double, double, double,
-                                                            double, size_t, auxiliaries::math::Interpolator::InterpolationMode>(tov_solver::tov_solution);
-            auto tov = [&tov_cached, &eos_inv_cached, pressure](double r)
-            {
-                // TOV solution cached
-                return tov_cached(eos_inv_cached, r, pressure, radius_step, surface_pressure, pressure_low, tov_adapt_limit, radial_interp_mode);
-            };
+            auto tov_df = tov_solver::tov_solution(eos_inv_cached, pressure, radius_step, surface_pressure, pressure_low, tov_adapt_limit);
 
-            double r_ns = tov(0.0)[4];
-            double m_ns = tov(r_ns)[0];
+            double r_ns = tov_df[0].back();
+            double m_ns = tov_df[1].back();
             // think twice here if you need to clean up any global cache
             // We memorized P(rho), but cleaning it is doing extra unnecessary work
 
@@ -173,14 +158,9 @@ int main(int argc, char **argv)
                 }
             double q_onset_pressure = pressure_of_nbar(q_onset_density);
 
-            tov_cached.erase();
-            auto tov_at_transition = [&](double r)
-            {
-                // TOV solution cached
-                return tov_cached(eos_inv_cached, r, q_onset_pressure, radius_step, surface_pressure, pressure_low, tov_adapt_limit, radial_interp_mode);
-            };
-            double r_ns_at_transition = tov_at_transition(0.0)[4];
-            double m_ns_at_transition = tov_at_transition(r_ns_at_transition)[0];
+            auto tov_df_at_transition = tov_solver::tov_solution(eos_inv_cached, q_onset_pressure, radius_step, surface_pressure, pressure_low, tov_adapt_limit);
+            // double r_ns_at_transition = tov_df_at_transition[0].back();
+            double m_ns_at_transition = tov_df_at_transition[1].back();
             // print quark onset mass
             std::cout << std::setw(indent) << m_ns_at_transition * constants::conversion::gev_over_msol;
 

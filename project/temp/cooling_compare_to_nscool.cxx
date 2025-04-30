@@ -53,32 +53,24 @@ int main(int argc, char **argv)
 
     // TOV solver
 
-    auto tov_cached = auxiliaries::math::CachedFunc<std::vector<auxiliaries::math::Interpolator>, std::vector<double>,
-                                                    const std::function<double(double)> &, double, double, double, double,
-                                                    double, size_t, auxiliaries::math::Interpolator::InterpolationMode>(tov_solver::tov_solution);
-    auto tov = [&tov_cached, &eos_inv_cached](double r)
-    {
-        // TOV solution cached
-        return tov_cached(eos_inv_cached, r, center_pressure, radius_step, surface_pressure, pressure_low, tov_adapt_limit, radial_interp_mode);
-    };
+    auto tov_df = tov_solver::tov_solution(eos_inv_cached, center_pressure, radius_step, surface_pressure, pressure_low, tov_adapt_limit);
 
-    auto nbar = [&](double r)
-    {
-        return nbar_of_pressure(tov(r)[3]);
-    };
+    std::vector<double> df_nbar(tov_df[0].size()), df_exp_phi(tov_df[0].size()), df_exp_lambda(tov_df[0].size());
 
-    double r_ns = tov(0.0)[4];
-    double m_ns = tov(r_ns)[0];
-
-    auto exp_phi = [&tov](double r)
+    double r_ns = tov_df[0].back();
+    double m_ns = tov_df[1].back();
+    for (size_t i = 0; i < tov_df[0].size(); ++i)
     {
-        return std::exp(tov(r)[2]);
-    };
-
-    auto exp_lambda = [&tov](double r)
-    {
-        return pow(1 - 2 * constants::scientific::G * tov(r)[0] / r, -0.5);
-    };
+        df_nbar[i] = nbar_of_pressure(tov_df[2][i]);
+        df_exp_phi[i] = std::exp(tov_df[3][i]);
+        if (i == 0)
+            df_exp_lambda[i] = 1.0;
+        else
+            df_exp_lambda[i] = std::pow(1 - 2 * constants::scientific::G * tov_df[1][i] / tov_df[0][i], -0.5);
+    }
+    auto nbar = auxiliaries::math::Interpolator(tov_df[0], df_nbar, radial_interp_mode);
+    auto exp_phi = auxiliaries::math::Interpolator(tov_df[0], df_exp_phi, radial_interp_mode);
+    auto exp_lambda = auxiliaries::math::Interpolator(tov_df[0], df_exp_lambda, radial_interp_mode);
 
     // cooling settings
 

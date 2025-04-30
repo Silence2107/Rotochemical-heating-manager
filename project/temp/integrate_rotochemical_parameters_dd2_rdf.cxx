@@ -75,8 +75,8 @@ int main(int argc, char **argv)
         return nbar_of_pressure(tov(r)[3]);
     };
 
-    double r_ns = tov(0.0)[4];
-    double m_ns = tov(r_ns)[0];
+    double r_ns = tov_df[0].back();
+    double m_ns = tov_df[1].back();
 
     auto exp_phi = [&tov](double r)
     {

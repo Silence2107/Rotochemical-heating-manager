@@ -39,39 +39,38 @@ int main(int argc, char **argv)
 
     // TOV solver
 
-    auto tov_cached = auxiliaries::math::CachedFunc<std::vector<std::vector<double>>, std::vector<double>,
-                                                    const std::function<double(double)> &, double, double, double, double, size_t>(tov_solver::tov_solution);
-    auto tov = [&tov_cached, &eos_inv_cached, center_pressure](double r)
+    auto tov_df = tov_solver::tov_solution(eos_inv_cached, center_pressure, radius_step, surface_pressure, pressure_low, tov_adapt_limit);
+
+    std::vector<double> df_nbar(tov_df[0].size()), df_exp_phi(tov_df[0].size()), df_exp_lambda(tov_df[0].size()), df_pressure(tov_df[0].size());
+
+    double r_ns = tov_df[0].back();
+    double m_ns = tov_df[1].back();
+    for (size_t i = 0; i < tov_df[0].size(); ++i)
     {
-        // TOV solution cached
-        return tov_cached(eos_inv_cached, r, center_pressure, radius_step, surface_pressure, tov_adapt_limit);
-    };
-
-    auto nbar = [&](double r)
-    {
-        return nbar_of_pressure(tov(r)[3]);
-    };
-
-    // run
-
-    double r_ns = tov(0.0)[4];
-    double m_ns = tov(r_ns)[0];
+        df_pressure[i] = tov_df[2][i];
+        df_nbar[i] = nbar_of_pressure(tov_df[2][i]);
+        df_exp_phi[i] = std::exp(tov_df[3][i]);
+        if (i == 0)
+            df_exp_lambda[i] = 1.0;
+        else
+            df_exp_lambda[i] = std::pow(1 - 2 * constants::scientific::G * tov_df[1][i] / tov_df[0][i], -0.5);
+    }
+    auto nbar = auxiliaries::math::Interpolator(tov_df[0], df_nbar, radial_interp_mode);
+    auto exp_phi = auxiliaries::math::Interpolator(tov_df[0], df_exp_phi, radial_interp_mode);
+    auto exp_lambda = auxiliaries::math::Interpolator(tov_df[0], df_exp_lambda, radial_interp_mode);
+    auto pressure_of_r = auxiliaries::math::Interpolator(tov_df[0], df_pressure, radial_interp_mode);
 
     std::cout << "M / M_sol " << m_ns * constants::conversion::gev_over_msol << "\n";
 
-    auto exp_lambda = [&tov](double r)
-    {
-        return pow(1 - 2 * constants::scientific::G * tov(r)[0] / r, -0.5);
-    };
     for (auto species = number_densities_of_nbar.begin(); species != number_densities_of_nbar.end(); ++species)
     {
         auto n_i = species->second;
         double omega_k_sqr = pow(2.0 / 3, 3.0) * constants::scientific::G * m_ns / (r_ns * r_ns * r_ns);
         auto integrand = [&](double r)
         {
-            return -nbar(r) * 1.0 / omega_k_sqr * (n_i(nbar(r + radius_step)) / nbar(r + radius_step) - n_i(nbar(r)) / nbar(r)) / (tov(r + radius_step)[3] / tov(r)[3] - 1);
+            return -nbar(r) * 1.0 / omega_k_sqr * (n_i(nbar(r + radius_step)) / nbar(r + radius_step) - n_i(nbar(r)) / nbar(r)) / (pressure_of_r(r + radius_step) / pressure_of_r(r) - 1);
         };
-        double I_i = auxiliaries::math::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)();
+        double I_i = auxiliaries::math::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_ns - radius_step, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)();
         std::cout << species->first.name() << " " << I_i / (constants::conversion::gev_s * constants::conversion::gev_s) << "\n";
     }
 }

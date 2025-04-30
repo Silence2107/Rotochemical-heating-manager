@@ -71,17 +71,10 @@ int main(int argc, char **argv)
     auto get_m_r_at_pressure = [&](double pressure)
     {
         // TOV solver
-        auto tov_cached = auxiliaries::math::CachedFunc<std::vector<auxiliaries::math::Interpolator>, std::vector<double>,
-                                                        const std::function<double(double)> &, double, double, double, double,
-                                                        double, size_t, auxiliaries::math::Interpolator::InterpolationMode>(tov_solver::tov_solution);
-        auto tov = [&tov_cached, &eos_inv_cached, pressure](double r)
-        {
-            // TOV solution cached
-            return tov_cached(eos_inv_cached, r, pressure, radius_step, surface_pressure, pressure_low, tov_adapt_limit, radial_interp_mode);
-        };
-
-        double r_ns = tov(0.0)[4];
-        double m_ns = tov(r_ns)[0];
+        auto tov_df = tov_solver::tov_solution(eos_inv_cached, pressure, radius_step, surface_pressure, pressure_low, tov_adapt_limit);
+        
+        double r_ns = tov_df[0].back();
+        double m_ns = tov_df[1].back();
         double central_nbar = nbar_of_pressure(pressure);
         // think twice here if you need to clean up any global cache
         // rho(P), nb(P) is the same between runs, so cleaning them is unnecessary work
