@@ -22,6 +22,18 @@ namespace tov_solver
 	/// @return vectors [0] -> radii, [1] -> mass in given point r, [2] -> pressure -//-, [3] -> phi metric function -//-
 	/// @cite TOV - Oppenheimer, Volkoff, 1939
 	std::vector<std::vector<double>> tov_solution(const std::function<double(double)> &eos_inv, double center_pressure, double radius_step, double surface_pressure, double lowest_pressure, size_t adaption_limit);
+
+	/// @brief Solves for dimensionless auxiliary function for tidal deformability based on TOV solution and distance from centre of NS r (GeV^-1);
+	/// dy(r)/dr = -y(r)^2/r -y(r)F(r)/r - Q(r)/r, where F(r) = [1 - 4piGr^2(rho(r) - p(r))] * [1 - 2Gm(r)/r]^-1;
+	/// Q(r) = 4piGr^2[5rho(r) + 9p(r) + (rho(r) + p(r))*drho/dp - 6/(4piGr^2)] * [1 - 2Gm(r)/r]^-1
+	///     − (4G^2m^2(r) / r^2) * [1 + (4pir^3 p(r)) / m(r)]^2 * [1 - 2Gm(r) / r]^-2
+	/// @param edensity_of_r energy density (GeV^4) at given r (GeV^-1)
+	/// @param pressure_of_r pressure (GeV^4) at given r (GeV^-1)
+	/// @param mass_of_r enclosed mass (GeV) at given r (GeV^-1)
+	/// @param radius_step RK4 radius step
+	/// @param r_ns radius of the neutron star (GeV^-1)
+	/// @cite Leung, Chu et al, 2022
+	std::vector<std::vector<double>> tidal_solution(const std::function<double(double)> &edensity_of_r, const std::function<double(double)> &pressure_of_r, const std::function<double(double)> &mass_of_r, double radius_step, double r_ns);
 }
 
 #endif
