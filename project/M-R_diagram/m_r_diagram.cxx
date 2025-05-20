@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 
     auto eos_inv_cached = edensity_of_pressure;
 
-    // returns {r, m} pair at given center pressure. (Hopefully) cleans up all global cache that may spoil further calls
+    // returns {r, m, n_c} triple at given center pressure. (Hopefully) cleans up all global cache that may spoil further calls
     auto get_m_r_at_pressure = [&](double pressure)
     {
         // TOV solver
@@ -83,7 +83,7 @@ int main(int argc, char **argv)
     };
 
     size_t indent = 20;
-    std::vector<double> x, y, z;
+    std::vector<double> radii, masses, densities;
     // assemble data for different center pressures
     logger.log([]()
                { return true; }, auxiliaries::io::Logger::LogLevel::kInfo,
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
         auto point = get_m_r_at_pressure(pressure);
         if (restrict_stable_branch && count != 0)
             // Early exit if dM/dP < 0 with M/Ms > 1.8
-            if (y.back() > point[1] * gev_over_msol && point[1] * gev_over_msol > 1.8)
+            if (masses.back() > point[1] * gev_over_msol && point[1] * gev_over_msol > 1.8)
             {
                 logger.log([]()
                            { return true; }, auxiliaries::io::Logger::LogLevel::kInfo,
@@ -110,19 +110,19 @@ int main(int argc, char **argv)
                            { return std::string("Reached potential unstable configuration at ") + std::to_string(point[1] * gev_over_msol) + " Ms"; });
                 break;
             }
-        x.push_back(point[0] / km_gev);
-        y.push_back(point[1] * gev_over_msol);
-        z.push_back(point[2] * constants::conversion::fm3_gev3);
+        radii.push_back(point[0] / km_gev);
+        masses.push_back(point[1] * gev_over_msol);
+        densities.push_back(point[2] * constants::conversion::fm3_gev3);
         logger.log([&]()
                    { return count % 100 == 0; }, auxiliaries::io::Logger::LogLevel::kInfo,
                    [&]()
                    { return std::to_string(count) + " counts past"; }, "M-R loop");
         logger.log([&]()
-                   { return x.back() > 50.0; }, auxiliaries::io::Logger::LogLevel::kDebug,
+                   { return radii.back() > 50.0; }, auxiliaries::io::Logger::LogLevel::kDebug,
                    [&]()
                    { return "NS radius exceeds 50 km. Consider entering stiffer area (perhaps raise --left_fraction)"; }, "M-R loop");
         logger.log([&]()
-                   { return y.back() > 3.0; }, auxiliaries::io::Logger::LogLevel::kDebug,
+                   { return masses.back() > 3.0; }, auxiliaries::io::Logger::LogLevel::kDebug,
                    [&]()
                    { return "NS mass exceeds 3 Ms. Consider halting the calculation (perhaps pass --restrict_stable or reduce --right_fraction)"; }, "M-R loop");
         logger.log([&]()
@@ -131,24 +131,24 @@ int main(int argc, char **argv)
                    { 
                         std::stringstream ss;
                         ss << std::to_string(count) + " counts past. ";
-                        ss << "R[km] = " << x.back() << ", M[Ms] = " << y.back();
+                        ss << "R[km] = " << radii.back() << ", M[Ms] = " << masses.back();
                         return ss.str(); }, "M-R loop");
-        std::cout << std::left << std::setw(indent) << frac << std::setw(indent) << z.back() << std::setw(indent) << y.back() << std::setw(indent) << x.back() << "\n";
+        std::cout << std::left << std::setw(indent) << frac << std::setw(indent) << densities.back() << std::setw(indent) << masses.back() << std::setw(indent) << radii.back() << "\n";
     }
 
 #if RHM_HAS_ROOT
     // draw
     TCanvas *c1 = new TCanvas("c1", "c1");
-    auto gr = new TGraph(x.size(), x.data(), y.data());
+    auto gr = new TGraph(radii.size(), radii.data(), masses.data());
 
     gr->GetXaxis()->SetTitle("R [km]");
     gr->GetYaxis()->SetTitle("M [Ms]");
     if (rootfile)
     {
-        auto gr_n = new TGraph(z.size(), z.data(), x.data());
+        auto gr_n = new TGraph(densities.size(), densities.data(), radii.data());
         gr_n->GetXaxis()->SetTitle("nb [fm-3]");
         gr_n->GetYaxis()->SetTitle("R [km]");
-        auto gr_m = new TGraph(z.size(), z.data(), y.data());
+        auto gr_m = new TGraph(densities.size(), densities.data(), masses.data());
         gr_m->GetXaxis()->SetTitle("nb [fm-3]");
         gr_m->GetYaxis()->SetTitle("M [Ms]");
         rootfile->cd();
