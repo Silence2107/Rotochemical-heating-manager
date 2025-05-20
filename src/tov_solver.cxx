@@ -64,8 +64,8 @@ std::vector<std::vector<double>> tov_solver::tov_solution(const std::function<do
 		for (size_t rk_index = 0; rk_index < rk_size; ++rk_index)
 		{
 			double p_cur = p,
-					m_cur = m,
-					r_cur = r;
+				   m_cur = m,
+				   r_cur = r;
 			if (rk_index > 0)
 			{
 				p_cur += weights[rk_index - 1] * adaptive_radius_step * p_rk[rk_index - 1];
@@ -76,9 +76,9 @@ std::vector<std::vector<double>> tov_solver::tov_solution(const std::function<do
 			{
 				adaption_flag = true;
 				logger.log([&]()
-							{ return true; }, auxiliaries::io::Logger::LogLevel::kTrace,
-							[&]()
-							{ 
+						   { return true; }, auxiliaries::io::Logger::LogLevel::kTrace,
+						   [&]()
+						   { 
 								std::stringstream ss;
 								ss << "Too rapid RK4. RK weight #" + std::to_string(rk_index + 1) + "/4 wandered below lowest pressure. ";
 								ss << "r[km] = " << r / constants::conversion::km_gev << ", p[MeV/fm^3] = " << 
@@ -96,9 +96,9 @@ std::vector<std::vector<double>> tov_solver::tov_solution(const std::function<do
 			adaptive_radius_step /= 2;
 			++adaption_count;
 			logger.log([&]()
-						{ return true; }, auxiliaries::io::Logger::LogLevel::kDebug,
-						[&]()
-						{ return "Too rapid RK4. Adaption #" + std::to_string(adaption_count) + "/" + std::to_string(adaption_limit) + " at r[km] = " + std::to_string(r / constants::conversion::km_gev); }, "TOV loop");
+					   { return true; }, auxiliaries::io::Logger::LogLevel::kDebug,
+					   [&]()
+					   { return "Too rapid RK4. Adaption #" + std::to_string(adaption_count) + "/" + std::to_string(adaption_limit) + " at r[km] = " + std::to_string(r / constants::conversion::km_gev); }, "TOV loop");
 			continue;
 		}
 		p += adaptive_radius_step / 6 * (p_rk[0] + 2 * p_rk[1] + 2 * p_rk[2] + p_rk[3]);
@@ -109,9 +109,9 @@ std::vector<std::vector<double>> tov_solver::tov_solution(const std::function<do
 			adaptive_radius_step /= 2;
 			++adaption_count;
 			logger.log([&]()
-						{ return true; }, auxiliaries::io::Logger::LogLevel::kDebug,
-						[&]()
-						{ return "Surface overshoot. Adaption #" + std::to_string(adaption_count) + "/" + std::to_string(adaption_limit) + " at r[km] = " + std::to_string(r / constants::conversion::km_gev); }, "TOV loop");
+					   { return true; }, auxiliaries::io::Logger::LogLevel::kDebug,
+					   [&]()
+					   { return "Surface overshoot. Adaption #" + std::to_string(adaption_count) + "/" + std::to_string(adaption_limit) + " at r[km] = " + std::to_string(r / constants::conversion::km_gev); }, "TOV loop");
 			continue;
 		}
 		double linear_coeff = 1;
@@ -141,14 +141,77 @@ std::vector<std::vector<double>> tov_solver::tov_solution(const std::function<do
 	}
 
 	logger.log([&]()
-				{ return adaption_count >= adaption_limit; }, auxiliaries::io::Logger::LogLevel::kDebug,
-				[&]()
-				{ return "TOV exits early (adaption limit exceeded). Perhaps raise TOVSolver.AdaptionLimit"; });
+			   { return adaption_count >= adaption_limit; }, auxiliaries::io::Logger::LogLevel::kDebug,
+			   [&]()
+			   { return "TOV exits early (adaption limit exceeded). Perhaps raise TOVSolver.AdaptionLimit"; });
 
 	// shift phi function so that to satisfy phi(R) condition
 	double phi_shift = 1.0 / 2 * log(1 - 2 * G * df[1].back() / df[0].back()) - df[3].back();
 	for (auto &elem : df[3])
 		elem += phi_shift;
 
+	return df;
+}
+
+std::vector<std::vector<double>> tov_solver::tidal_solution(const std::function<double(double)> &edensity_of_r, const std::function<double(double)> &pressure_of_r, const std::function<double(double)> &mass_of_r, double radius_step, double r_ns)
+{
+	using constants::scientific::G;
+	using constants::scientific::Pi;
+	auxiliaries::io::Logger logger(__func__);
+	// Apply RK4 to y' = f(y,r) w/ y(0) = 2
+
+	// derivative step
+	double epsilon = std::numeric_limits<double>::epsilon();
+	double r_step = sqrt(epsilon) * (radius_step + sqrt(epsilon));
+
+	// I will not proof it against singularity at r = 0, instead I will sidestep slightly away from it
+	auto f = [&](double y, double r)
+	{
+		double rho = edensity_of_r(r);
+		double p = pressure_of_r(r);
+		double m = mass_of_r(r);
+		double sound_speed_m2 = 0;
+		if (r + r_step < r_ns)
+			sound_speed_m2 = (edensity_of_r(r + r_step) - rho) / (pressure_of_r(r + r_step) - p);
+		else
+			sound_speed_m2 = (edensity_of_r(r - r_step) - rho) / (pressure_of_r(r - r_step) - p);
+
+		double local_compres_x2 = 2 * G * m / r;
+		double exp2lambda = 1.0 / (1 - local_compres_x2);
+
+		double F = exp2lambda * (1 + 4 * Pi * G * r * r * (p - rho));
+		double Q = (4 * Pi * G * r * r * (5 * rho + 9 * p + (rho + p) * sound_speed_m2) - 6) * exp2lambda -
+				   pow(local_compres_x2 * (1 + 4 * Pi * r * r * r * p / m) * exp2lambda, 2.0);
+		return (-y * y - y * F - Q) / r;
+	};
+
+	std::vector<std::vector<double>> df(2, std::vector<double>());
+	double y(2.0), r(radius_step / 10.0); // initial values
+	df[0].push_back(r);
+	df[1].push_back(y);
+
+	while (r + radius_step < r_ns)
+	{
+		size_t rk_size = 4;
+		std::vector<double> y_rk(rk_size); // RK4 variables
+
+		auto weights = std::vector<double>({0.5, 0.5, 1});
+		for (size_t rk_index = 0; rk_index < rk_size; ++rk_index)
+		{
+			double y_cur = y,
+				   r_cur = r;
+			if (rk_index > 0)
+			{
+				y_cur += weights[rk_index - 1] * radius_step * y_rk[rk_index - 1];
+				r_cur += weights[rk_index - 1] * radius_step;
+			}
+			y_rk[rk_index] = f(y_cur, r_cur);
+		}
+		y += radius_step / 6 * (y_rk[0] + 2 * y_rk[1] + 2 * y_rk[2] + y_rk[3]);
+		r += radius_step;
+		// memorize results
+		df[0].push_back(r);
+		df[1].push_back(y);
+	}
 	return df;
 }
