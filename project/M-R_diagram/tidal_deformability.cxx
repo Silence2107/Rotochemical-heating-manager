@@ -35,7 +35,7 @@ int main(int argc, char **argv)
 #endif
     parser.addArgument({"--left_fraction"}, "least fraction of central pressure to consider (optional, default: 0.0001)");
     parser.addArgument({"--right_fraction"}, "greatest fraction of central pressure to consider (optional, default: 0.999)");
-    parser.addArgument({"--selection_size"}, "number of points to discretize pressure interval (optional, default: 5000)");
+    parser.addArgument({"--selection_size"}, "number of points to discretize pressure interval (optional, default: 500)");
     parser.addArgument({"--restrict_stable"}, "whether to exit early upon reaching dM/dP < 0 with M > 1.8Ms (optional, value-free, default: false)", argparse::ArgumentType::StoreTrue);
     auto args = parser.parseArgs(argc, argv);
 
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
 
     double left_fraction = args.safeGet<double>("left_fraction", 0.0001);
     double right_fraction = args.safeGet<double>("right_fraction", 0.999);
-    size_t selection_size = args.safeGet<size_t>("selection_size", 5000);
+    size_t selection_size = args.safeGet<size_t>("selection_size", 500);
     bool restrict_stable_branch = args.has("restrict_stable");
 
     logger.log([]()
@@ -88,8 +88,7 @@ int main(int argc, char **argv)
 
         auto tidal_df = tov_solver::tidal_solution(edensity_of_r, pressure_of_r, mass_of_r, radius_step, r_ns);
         // extrapolate tidal deformability to the surface
-        auto tidal_Y_of_r = auxiliaries::math::Interpolator(tidal_df[0], tidal_df[1], radial_interp_mode, true);
-        double tidal_Y_at_surface = tidal_Y_of_r(r_ns);
+        double tidal_Y_at_surface = tidal_df[1].back();
         double compression = constants::scientific::G * m_ns / r_ns;
 
         // Leung, Chu et al, 2022 for reference

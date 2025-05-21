@@ -160,13 +160,13 @@ std::vector<std::vector<double>> tov_solver::tidal_solution(const std::function<
 	auxiliaries::io::Logger logger(__func__);
 	// Apply RK4 to y' = f(y,r) w/ y(0) = 2
 
-	// derivative step
-	double epsilon = std::numeric_limits<double>::epsilon();
-	double r_step = sqrt(epsilon) * (radius_step + sqrt(epsilon));
+	// derivative step (keep it large enough; in case PT occurs, it will smoothen the curve)
+	double r_step = 2 * radius_step; 
 
-	// I will not proof it against singularity at r = 0, instead I will sidestep slightly away from it
 	auto f = [&](double y, double r)
 	{
+		if (r < r_step)
+			return 0.0; // zero radius approx -- explicitly get rid of singularity
 		double rho = edensity_of_r(r);
 		double p = pressure_of_r(r);
 		double m = mass_of_r(r);
@@ -186,7 +186,7 @@ std::vector<std::vector<double>> tov_solver::tidal_solution(const std::function<
 	};
 
 	std::vector<std::vector<double>> df(2, std::vector<double>());
-	double y(2.0), r(radius_step / 10.0); // initial values
+	double y(2.0), r(0.0); // initial values
 	df[0].push_back(r);
 	df[1].push_back(y);
 
@@ -213,5 +213,9 @@ std::vector<std::vector<double>> tov_solver::tidal_solution(const std::function<
 		df[0].push_back(r);
 		df[1].push_back(y);
 	}
+	// extrapolate to the surface
+	double linear_coeff = (df[1].back() - df[1][df[1].size() - 2]) / (df[0].back() - df[0][df[1].size() - 2]);
+	df[1].push_back(df[1].back() + linear_coeff * (r_ns - df[0].back()));
+	df[0].push_back(r_ns);
 	return df;
 }
