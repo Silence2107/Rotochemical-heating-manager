@@ -160,9 +160,8 @@ std::vector<std::vector<double>> tov_solver::tidal_solution(const std::function<
 	auxiliaries::io::Logger logger(__func__);
 	// Apply RK4 to y' = f(y,r) w/ y(0) = 2
 
-	// derivative step
-	double epsilon = std::numeric_limits<double>::epsilon();
-	double r_step = sqrt(epsilon) * (radius_step + sqrt(epsilon));
+	// derivative step (keep it large enough; in case PT occurs, it will smoothen the curve)
+	double r_step = 2 * radius_step; 
 
 	auto f = [&](double y, double r)
 	{
