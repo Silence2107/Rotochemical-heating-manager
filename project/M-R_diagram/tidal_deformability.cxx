@@ -88,8 +88,7 @@ int main(int argc, char **argv)
 
         auto tidal_df = tov_solver::tidal_solution(edensity_of_r, pressure_of_r, mass_of_r, radius_step, r_ns);
         // extrapolate tidal deformability to the surface
-        auto tidal_Y_of_r = auxiliaries::math::Interpolator(tidal_df[0], tidal_df[1], radial_interp_mode, true);
-        double tidal_Y_at_surface = tidal_Y_of_r(r_ns);
+        double tidal_Y_at_surface = tidal_df[1].back();
         double compression = constants::scientific::G * m_ns / r_ns;
 
         // Leung, Chu et al, 2022 for reference
