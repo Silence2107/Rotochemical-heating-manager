@@ -19,15 +19,23 @@ std::vector<std::vector<double>> auxiliaries::io::read_tabulated_file(const std:
     if (!fstr.is_open())
         RHM_ERROR("Cannot open file " + path + ". ");
     std::vector<std::vector<double>> table;
-    std::vector<std::string> lines;
+    std::vector<std::string> relevant_lines;
     std::string line;
+    size_t line_count = 0;
     while (std::getline(fstr, line))
-        lines.push_back(line);
+    {
+        // first line reached && did we not exceed the last line yet
+        if ((line_count >= rows.first) && (rows.second == 0 || line_count < rows.second))
+        {
+            relevant_lines.push_back(line);
+        }
+        ++line_count;
+    }
     if (rows.second == 0)
-        rows.second = lines.size();
+        rows.second = relevant_lines.size() + rows.first; 
     if (columns.second == 0)
     {
-        std::string cleared_line = auxiliaries::io::retrieve_cleared_line(lines[rows.first]);
+        std::string cleared_line = auxiliaries::io::retrieve_cleared_line(relevant_lines[0]);
         std::stringstream ss(cleared_line);
         std::string str;
         while (ss >> str)
@@ -38,7 +46,7 @@ std::vector<std::vector<double>> auxiliaries::io::read_tabulated_file(const std:
     std::vector<std::vector<std::string>> str_data(rows.second - rows.first, std::vector<std::string>(columns.second - columns.first));
     for (size_t i = rows.first; i < rows.second; ++i)
     {
-        std::string cleared_line = auxiliaries::io::retrieve_cleared_line(lines[i]);
+        std::string cleared_line = auxiliaries::io::retrieve_cleared_line(relevant_lines[i - rows.first]);
         std::stringstream ss(cleared_line);
         for (size_t j = 0; j < columns.second; ++j)
         {
