@@ -33,8 +33,13 @@ std::vector<std::vector<double>> auxiliaries::io::read_tabulated_file(const std:
 
         ++line_count;
     }
+    // handle row number special cases
     if (rows.second == 0)
         rows.second = relevant_lines.size() + rows.first; 
+    if (rows.first >= rows.second)
+        RHM_ERROR("Invalid rows range (" + std::to_string(rows.first) + ", " + std::to_string(rows.second) + ") extracted from input file at " + path + ".");
+
+    // handle column number special cases
     if (columns.second == 0)
     {
         std::string cleared_line = auxiliaries::io::retrieve_cleared_line(relevant_lines[0]);
@@ -43,8 +48,9 @@ std::vector<std::vector<double>> auxiliaries::io::read_tabulated_file(const std:
         while (ss >> str)
             ++columns.second;
     }
-    if (rows.second <= rows.first || columns.second <= columns.first)
-        RHM_ERROR("Invalid rows or columns count extracted from input file at " + path + ".");
+    if (columns.first >= columns.second)
+        RHM_ERROR("Invalid columns range (" + std::to_string(columns.first) + ", " + std::to_string(columns.second) + ") extracted from input file at " + path + ".");
+        
     std::vector<std::vector<std::string>> str_data(rows.second - rows.first, std::vector<std::string>(columns.second - columns.first));
     for (size_t i = rows.first; i < rows.second; ++i)
     {
