@@ -24,11 +24,13 @@ std::vector<std::vector<double>> auxiliaries::io::read_tabulated_file(const std:
     size_t line_count = 0;
     while (std::getline(fstr, line))
     {
-        // first line reached && did we not exceed the last line yet
-        if ((line_count >= rows.first) && (rows.second == 0 || line_count < rows.second))
-        {
+        // if the last line is reached, stop reading
+        if (line_count >= rows.second && rows.second != 0)
+            break;
+        // if the first line is reached, while the last is not yet reached, memorize
+        if (line_count >= rows.first)
             relevant_lines.push_back(line);
-        }
+
         ++line_count;
     }
     if (rows.second == 0)
