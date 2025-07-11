@@ -86,40 +86,211 @@ int main(int argc, char **argv)
     auto exp_lambda = auxiliaries::math::Interpolator(tov_df[0], df_exp_lambda, radial_interp_mode);
     auto pressure_of_r = auxiliaries::math::Interpolator(tov_df[0], df_pressure, radial_interp_mode);
 
-    // Identify particle list, supplied by the user
-    std::vector<auxiliaries::phys::Species> rh_particles;
-
-    for (auto it = dni_to_dmuj.begin(); it != dni_to_dmuj.end(); ++it)
-    {
-        auto key = it->first.first;
-        if (std::find(rh_particles.begin(), rh_particles.end(), key) == rh_particles.end())
-        {
-            rh_particles.push_back(key);
-        }
-    }
-
     // integrate the bij integrand over volume
-    auxiliaries::math::MatrixD bij(rh_particles.size(), rh_particles.size(), 0);
 
-    for (size_t i = 0; i < rh_particles.size(); ++i)
+    // instantiate bij; bee is only integrated over hadronic phase
+    double b_ee = auxiliaries::math::integrate_volume<>(
+               std::function<double(double)>([&nbar, &exp_phi](double r)
+                                             {  
+                    using namespace constants::species;
+                    try
+                    {
+                        return dni_to_dmuj[{electron, electron}](nbar(r)) / exp_phi(r) * (number_densities_of_nbar[neutron](nbar(r)) != 0);
+                    }
+                    catch(const std::exception& e)
+                    {
+                        return 0.0;
+                    } }),
+               0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)(),
+           b_em = auxiliaries::math::integrate_volume<>(
+               std::function<double(double)>([&nbar, &exp_phi](double r)
+                                             {  
+                    using namespace constants::species;
+                    try
+                    {
+                        return dni_to_dmuj[{electron, muon}](nbar(r)) / exp_phi(r);
+                    }
+                    catch(const std::exception& e)
+                    {
+                        return 0.0;
+                    } }),
+               0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)(),
+           b_mm = auxiliaries::math::integrate_volume<>(
+               std::function<double(double)>([&nbar, &exp_phi](double r)
+                                                {  
+                        using namespace constants::species;
+                        try
+                        {
+                            return dni_to_dmuj[{muon, muon}](nbar(r)) / exp_phi(r);
+                        }
+                        catch(const std::exception& e)
+                        {
+                            return 0.0;
+                        } }),
+               0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)(),
+           b_uu = auxiliaries::math::integrate_volume<>(
+               std::function<double(double)>([&nbar, &exp_phi](double r)
+                                             {
+                    using namespace constants::species;
+                    try
+                    {
+                        return dni_to_dmuj[{uquark, uquark}](nbar(r)) / exp_phi(r);
+                    }
+                    catch(const std::exception& e)
+                    {
+                        return 0.0;
+                    } }),
+               0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)(),
+           b_us = auxiliaries::math::integrate_volume<>(
+               std::function<double(double)>([&nbar, &exp_phi](double r)
+                                             {
+                    using namespace constants::species;
+                    try
+                    {
+                        return dni_to_dmuj[{uquark, squark}](nbar(r)) / exp_phi(r);
+                    }
+                    catch(const std::exception& e)
+                    {
+                        return 0.0;
+                    } }),
+               0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)(),
+           b_ss = auxiliaries::math::integrate_volume<>(
+               std::function<double(double)>([&nbar, &exp_phi](double r)
+                                             { 
+                    using namespace constants::species;
+                    try
+                    {
+                        return dni_to_dmuj[{squark, squark}](nbar(r)) / exp_phi(r);
+                    }
+                    catch(const std::exception& e)
+                    {
+                        return 0.0;
+                    } }),
+               0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)();
+    // std::cout << "b_ee = " << b_ee << " b_em = " << b_em << " b_mm = " << b_mm << " b_uu = " << b_uu << " b_us = " << b_us << " b_ss = " << b_ss << std::endl;
+    // We have explicit expressions for inverted bij, so let's calculate them
+    double z_npe, z_npm, z_np, z_due, z_us, z_sue;
+    /*
+    z_npe = -b_mm / [b_em * b_em - b_ee * b_mm],
+    z_np = b_em / [b_em * b_em - b_ee * b_mm],
+    z_npm = -b_ee / [b_em * b_em - b_ee * b_mm],
+    z_due = -b_ss / [b_us * b_us - b_uu * b_ss],
+    z_us = b_us / [b_us * b_us - b_uu * b_ss],
+    z_sue = (b_uu + b_us) / [b_us * b_us - b_uu * b_ss];
+    */
+
+    // partial pivoting would be nicer, but let's stick to comparing with zeros for now
+    if (b_ee * b_mm - b_em * b_em == 0)
     {
-        for (size_t j = 0; j < rh_particles.size(); ++j)
+        // electron-muon subsystem is singular
+        if (b_em == 0)
         {
-            auto integrand = [&](double r)
+            // then there's definitely no cross term
+            z_np = 0;
+            if (b_ee == 0)
             {
-                return dni_to_dmuj.at({rh_particles[i], rh_particles[j]})(nbar(r)) / exp_phi(r);
-            };
-            bij.at(i, j) = auxiliaries::math::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)();
+                // then there's no electron imbalance
+                z_npe = 0;
+            }
+            else
+            {
+                z_npe = 1 / b_ee;
+            }
+
+            if (b_mm == 0)
+            {
+                // then there's no muon imbalance
+                z_npm = 0;
+            }
+            else
+            {
+                z_npm = 1 / b_mm;
+            }
+        }
+        else
+        {
+            // exotic case when particle deviations are proportional
+            RHM_ERROR("Bij matrix is singular beyond expectations. Probable cause: provided system features unexpected conservation law.");
         }
     }
+    else
+    {
+        z_npe = -b_mm / (b_em * b_em - b_ee * b_mm);
+        z_np = b_em / (b_em * b_em - b_ee * b_mm);
+        z_npm = -b_ee / (b_em * b_em - b_ee * b_mm);
+    }
 
-    // Clear empty rows, if any
-    for (size_t row = 0; row < rh_particles.size(); ++row)
+    if (b_us * b_us - b_uu * b_ss == 0)
+    {
+        // uquark-squark subsystem is singular
+        if (b_ss == 0)
+        {
+            // then b_us is zero as well
+            // there's no squark imbalance
+            z_us = 0;
+            z_sue = 0;
+            if (b_uu == 0)
+            {
+                // then there's no uquark imbalance
+                z_due = 0;
+            }
+            else
+            {
+                z_due = 1 / b_uu;
+            }
+        }
+        else if (b_uu == 0)
+        {
+            // then there's no uquark imbalance
+            z_due = 0;
+            z_us = 0;
+            if (b_ss == 0)
+            {
+                // then there's no squark imbalance
+                z_sue = 0;
+            }
+            else
+            {
+                z_sue = -1 / b_ss;
+            }
+        }
+        else
+        {
+            // exotic case when particle deviations are proportional
+            RHM_ERROR("Bij matrix is singular beyond expectations. Probable cause: provided system features unexpected conservation law.");
+        }
+    }
+    else
+    {
+        z_due = -b_ss / (b_us * b_us - b_uu * b_ss);
+        z_us = b_us / (b_us * b_us - b_uu * b_ss);
+        z_sue = (b_uu + b_us) / (b_us * b_us - b_uu * b_ss);
+    }
+
+    // Now we can construct the Z matrix that transforms particle deviations to chemical imbalances.
+    auxiliaries::math::MatrixD zij(4, 4, 0);
+
+    zij.at(0, 0) = -z_npe;
+    zij.at(0, 1) = -z_np;
+    zij.at(1, 0) = -z_np;
+    zij.at(1, 1) = -z_npm;
+    zij.at(2, 2) = -z_due;
+    zij.at(2, 3) = -z_us;
+    zij.at(3, 2) = z_us - z_due;
+    zij.at(3, 3) = -z_sue;
+
+    // Let's now clear empty rows, if any
+    auto rh_particles = std::vector<auxiliaries::phys::Species>{
+        constants::species::electron, constants::species::muon,
+        constants::species::uquark, constants::species::squark};
+    auto supported_rh_particles = rh_particles;
+
+    for (size_t row = 0; row < zij.rows(); ++row)
     {
         bool empty_row = true;
-        for (size_t col = 0; col < rh_particles.size(); ++col)
+        for (size_t col = 0; col < zij.columns(); ++col)
         {
-            if (bij.at(row, col) != 0)
+            if (zij.at(row, col) != 0)
             {
                 empty_row = false;
                 break;
@@ -127,103 +298,19 @@ int main(int argc, char **argv)
         }
         if (empty_row)
         {
-            auto bij_updated = auxiliaries::math::MatrixD(rh_particles.size() - 1, rh_particles.size() - 1, 0);
-            for (size_t i = 0; i < bij_updated.rows(); ++i)
+            auto zij_new = auxiliaries::math::MatrixD(zij.rows() - 1, zij.columns(), 0);
+            for (size_t i = 0; i < zij_new.rows(); ++i)
             {
-                for (size_t j = 0; j < bij_updated.columns(); ++j)
+                for (size_t j = 0; j < zij_new.columns(); ++j)
                 {
-                    bij_updated.at(i, j) = bij.at(i + (i >= row), j + (j >= row));
+                    zij_new.at(i, j) = zij.at(i + (i >= row), j);
                 }
             }
-            bij = bij_updated;
+            zij = zij_new;
             rh_particles.erase(rh_particles.begin() + row);
             --row;
         }
     }
-
-    // species to indices mapping
-    std::map<auxiliaries::phys::Species, size_t> species_to_index;
-    for (size_t i = 0; i < rh_particles.size(); ++i)
-    {
-        species_to_index[rh_particles[i]] = i;
-    }
-
-    // URCA reaction array
-    std::vector<std::string> available_imbalances;
-    // npe availability
-    if (std::find(rh_particles.begin(), rh_particles.end(), constants::species::neutron) != rh_particles.end() &&
-        std::find(rh_particles.begin(), rh_particles.end(), constants::species::proton) != rh_particles.end() &&
-        std::find(rh_particles.begin(), rh_particles.end(), constants::species::electron) != rh_particles.end())
-    {
-        available_imbalances.push_back("npe");
-    }
-    // npmu availability
-    if (std::find(rh_particles.begin(), rh_particles.end(), constants::species::neutron) != rh_particles.end() &&
-        std::find(rh_particles.begin(), rh_particles.end(), constants::species::proton) != rh_particles.end() &&
-        std::find(rh_particles.begin(), rh_particles.end(), constants::species::muon) != rh_particles.end())
-    {
-        available_imbalances.push_back("npm");
-    }
-    // due availability
-    if (std::find(rh_particles.begin(), rh_particles.end(), constants::species::dquark) != rh_particles.end() &&
-        std::find(rh_particles.begin(), rh_particles.end(), constants::species::uquark) != rh_particles.end() &&
-        std::find(rh_particles.begin(), rh_particles.end(), constants::species::electron) != rh_particles.end())
-    {
-        available_imbalances.push_back("due");
-    }
-    // sue availability
-    if (std::find(rh_particles.begin(), rh_particles.end(), constants::species::squark) != rh_particles.end() &&
-        std::find(rh_particles.begin(), rh_particles.end(), constants::species::uquark) != rh_particles.end() &&
-        std::find(rh_particles.begin(), rh_particles.end(), constants::species::electron) != rh_particles.end())
-    {
-        available_imbalances.push_back("sue");
-    }
-
-    // attempt to invert dni_to_dmuj
-    if (bij.det() == 0.0)
-        RHM_ERROR("Rotochemical B-matrix is singular, cannot invert.");
-    auxiliaries::math::MatrixD zij = bij.inverse();
-
-    auto zij_named = [&](const auxiliaries::phys::Species &i, const auxiliaries::phys::Species &j)
-    {
-        return zij.at(species_to_index.at(i), species_to_index.at(j));
-    };
-
-    // log zij
-    logger.log([]()
-               { return true; }, auxiliaries::io::Logger::LogLevel::kInfo,
-                [&]()
-                {
-                    std::ostringstream oss;
-                    oss << "\nRotochemical B-matrix:\n";
-                    for (size_t i = 0; i < rh_particles.size(); ++i)
-                    {
-                        for (size_t j = 0; j < rh_particles.size(); ++j)
-                            oss << std::setw(10) << std::setprecision(4) << bij.at(i, j) << " ";
-                        oss << "\n";
-                    }
-                    oss << "Rotochemical Z-matrix:\n";
-                    for (size_t i = 0; i < rh_particles.size(); ++i)
-                    {
-                        for (size_t j = 0; j < rh_particles.size(); ++j)
-                            oss << std::setw(10) << std::setprecision(4) << zij.at(i, j) << " ";
-                        oss << "\n";
-                    }
-                    return oss.str();
-                });
-
-    if (std::find(available_imbalances.begin(), available_imbalances.end(), "npe") != available_imbalances.end())
-    {    
-        auto z_npe = zij_named(constants::species::neutron, constants::species::neutron) + zij_named(constants::species::proton, constants::species::proton) + zij_named(constants::species::electron, constants::species::electron) - 2 * zij_named(constants::species::neutron, constants::species::proton);
-        logger.log([=]()
-                { return z_npe < 0.0; }, auxiliaries::io::Logger::LogLevel::kDebug,
-                [&]()
-                {
-                    return "Rotochemical stability compromised as Z(npe) = Z_nn + Z_pp + Z_ee - 2Z_np < 0.0. Expect unexpected behavior in cooling curve.";
-                });
-    }
-
-    // return 0;
 
     // cooling settings
 
@@ -279,6 +366,7 @@ int main(int argc, char **argv)
         k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap);
 
     // I_omega estimates
+
     std::map<auxiliaries::phys::Species, double> i_omegas;
 
     for (auto species = number_densities_of_nbar.begin(); species != number_densities_of_nbar.end(); ++species)
@@ -289,7 +377,7 @@ int main(int argc, char **argv)
         {
             return -nbar(r) * 1.0 / omega_k_sqr * (n_i(nbar(r + radius_step)) / nbar(r + radius_step) - n_i(nbar(r)) / nbar(r)) / (pressure_of_r(r + radius_step) / pressure_of_r(r) - 1);
         };
-        i_omegas[species->first] = auxiliaries::math::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_ns - radius_step, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular, radius_step)();
+        i_omegas[species->first] = auxiliaries::math::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_ns - radius_step, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)();
     }
     for (auto rh_species = constants::species::known_particles.begin(); rh_species != constants::species::known_particles.end(); ++rh_species)
     {
@@ -299,7 +387,7 @@ int main(int argc, char **argv)
         }
     }
 
-    auto Q_nu = [&](double r, double t, double T, const std::map<std::string, double> &etas)
+    auto Q_nu = [&](double r, double t, double T, const std::map<auxiliaries::phys::Species, double> &etas)
     {
         using namespace constants::scientific;
         using namespace constants::species;
@@ -309,15 +397,11 @@ int main(int argc, char **argv)
         for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
         {
             auto key = it->first;
-            if (key == electron)
+            if (key.classify() == auxiliaries::phys::Species::ParticleClassification::kLepton)
             {
-                result += hadron_murca_enhanced_emissivity(r, key, t, T, etas.at("npe"));
-                result += hadron_durca_enhanced_emissivity(r, key, t, T, etas.at("npe"));
-            }
-            if (key == muon)
-            {
-                result += hadron_murca_enhanced_emissivity(r, key, t, T, etas.at("npm"));
-                result += hadron_durca_enhanced_emissivity(r, key, t, T, etas.at("npm"));
+                // ignore taus
+                result += hadron_murca_enhanced_emissivity(r, key, t, T, etas.at(key));
+                result += hadron_durca_enhanced_emissivity(r, key, t, T, etas.at(key));
             }
             if (key.classify() == auxiliaries::phys::Species::ParticleClassification::kBaryon)
             {
@@ -326,10 +410,10 @@ int main(int argc, char **argv)
         }
         result += hadron_bremsstrahlung_emissivity(r, t, T);
         // quark processes
-        result += quark_ud_durca_enhanced_emissivity(r, t, T, etas.at("due")) +
-                  quark_us_durca_enhanced_emissivity(r, t, T, etas.at("sue")) +
-                  quark_ud_murca_enhanced_emissivity(r, t, T, etas.at("due")) +
-                  quark_us_murca_enhanced_emissivity(r, t, T, etas.at("sue")) +
+        result += quark_ud_durca_enhanced_emissivity(r, t, T, etas.at(uquark)) +
+                  quark_us_durca_enhanced_emissivity(r, t, T, etas.at(squark)) +
+                  quark_ud_murca_enhanced_emissivity(r, t, T, etas.at(uquark)) +
+                  quark_us_murca_enhanced_emissivity(r, t, T, etas.at(squark)) +
                   quark_bremsstrahlung_emissivity(r, t, T);
         // extra
         result += electron_bremsstrahlung_emissivity(r, t, T);
@@ -349,8 +433,8 @@ int main(int argc, char **argv)
     auto photon_luminosity = cooling::predefined::photonic::surface_luminosity(r_ns, m_ns, crust_eta);
 
     // neutrino luminosity
-    auto neutrino_luminosity = auxiliaries::math::integrate_volume<double, double, const std::map<std::string, double> &>(
-        std::function<double(double, double, double, const std::map<std::string, double> &)>(Q_nu), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p, radius_step);
+    auto neutrino_luminosity = auxiliaries::math::integrate_volume<double, double, const std::map<auxiliaries::phys::Species, double> &>(
+        std::function<double(double, double, double, const std::map<auxiliaries::phys::Species, double> &)>(Q_nu), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p, radius_step);
 
     auto heat_capacity = auxiliaries::math::integrate_volume<double, double>(
         std::function<double(double, double, double)>(fermi_specific_heat_dens), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p, radius_step);
@@ -359,114 +443,76 @@ int main(int argc, char **argv)
     {
         using namespace constants::species;
         std::vector<double> evaluated_rhs;
-        // funcs[1+] are nontrivial chem. imbalances, ordered by available_imbalances
-        std::map<std::string, double> etas{
-            {"npe", 0},
-            {"npm", 0},
-            {"due", 0},
-            {"sue", 0}};
-        for (size_t i = 0; i < available_imbalances.size(); ++i)
-        {
-            etas[available_imbalances[i]] = funcs[i + 1];
-        }
-
+        // create vector of etas with zero values for trivial etas; funcs[1+] are nontrivial etas
+        std::map<auxiliaries::phys::Species, double> etas;
         // funcs[0] is temperature
         double T = funcs[0];
 
-        using namespace constants::species;
-
-        // rotochemical heating in npemuds
-        auto diff_npe_inf = [&](double r)
+        for (size_t species_count = 0; species_count < supported_rh_particles.size(); ++species_count)
         {
-            return exp_phi(r) * (hadron_durca_rate_difference(r, constants::species::electron, t, T, etas.at("npe")) +
-                                 hadron_murca_rate_difference(r, constants::species::electron, t, T, etas.at("npe")));
-        };
-        auto diff_npm_inf = [&](double r)
-        {
-            return exp_phi(r) * (hadron_durca_rate_difference(r, constants::species::muon, t, T, etas.at("npm")) +
-                                 hadron_murca_rate_difference(r, constants::species::muon, t, T, etas.at("npm")));
-        };
-        auto diff_due_inf = [&](double r)
-        {
-            return exp_phi(r) * (quark_ud_durca_rate_difference(r, t, T, etas.at("due")) +
-                                 quark_ud_murca_rate_difference(r, t, T, etas.at("due")));
-        };
-        auto diff_sue_inf = [&](double r)
-        {
-            return exp_phi(r) * (quark_us_durca_rate_difference(r, t, T, etas.at("sue")) +
-                                 quark_us_murca_rate_difference(r, t, T, etas.at("sue")));
-        };
-        auto npe_reaction_change = auxiliaries::math::integrate_volume<>(std::function<double(double)>(diff_npe_inf), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)(),
-             npm_reaction_change = auxiliaries::math::integrate_volume<>(std::function<double(double)>(diff_npm_inf), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)(),
-             due_reaction_change = auxiliaries::math::integrate_volume<>(std::function<double(double)>(diff_due_inf), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)(),
-             sue_reaction_change = auxiliaries::math::integrate_volume<>(std::function<double(double)>(diff_sue_inf), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)();
-
-        // net particle change
-        std::map<auxiliaries::phys::Species, double> particle_change;
-
-        particle_change[electron] = npe_reaction_change + due_reaction_change + sue_reaction_change;
-        particle_change[muon] = npm_reaction_change;
-        particle_change[uquark] = due_reaction_change + sue_reaction_change;
-        particle_change[squark] = -sue_reaction_change;
-        particle_change[proton] = npe_reaction_change + npm_reaction_change;
-        particle_change[neutron] = -npe_reaction_change - npm_reaction_change;
-        particle_change[dquark] = -due_reaction_change;
-        for (auto species = rh_particles.begin(); species != rh_particles.end(); ++species)
-        {
-            if (particle_change.find(*species) == particle_change.end())
+            auto pos = std::find(rh_particles.begin(), rh_particles.end(), supported_rh_particles[species_count]);
+            if (pos != rh_particles.end())
             {
-                particle_change[*species] = 0;
+                etas[supported_rh_particles[species_count]] = funcs[pos - rh_particles.begin() + 1];
+            }
+            else
+            {
+                etas[supported_rh_particles[species_count]] = 0;
             }
         }
 
-        double rotochemical_luminosity = particle_change[electron] * etas.at("npe") + particle_change[muon] * etas.at("npm") + particle_change[uquark] * (etas.at("due") - etas.at("npe")) + particle_change[squark] * (etas.at("due") - etas.at("sue"));
+        // rotochemical heating in npemuds
+        auto diff_npl_inf = [&](double r, const auxiliaries::phys::Species &lepton)
+        {
+            return exp_phi(r) * (number_densities_of_nbar[constants::species::neutron](nbar(r)) != 0) *
+                   (hadron_durca_rate_difference(r, lepton, t, T, etas.at(lepton)) +
+                    hadron_murca_rate_difference(r, lepton, t, T, etas.at(lepton)));
+        };
+        auto diff_due_inf = [&](double r, const auxiliaries::phys::Species &species)
+        {
+            return exp_phi(r) * (quark_ud_durca_rate_difference(r, t, T, etas.at(species)) +
+                                 quark_ud_murca_rate_difference(r, t, T, etas.at(species)));
+        };
+        auto diff_sue_inf = [&](double r, const auxiliaries::phys::Species &species)
+        {
+            return exp_phi(r) * (quark_us_durca_rate_difference(r, t, T, etas.at(species)) +
+                                 quark_us_murca_rate_difference(r, t, T, etas.at(species)));
+        };
+        auto npe_reaction_change = auxiliaries::math::integrate_volume<const auxiliaries::phys::Species &>(std::function<double(double, const auxiliaries::phys::Species &)>(diff_npl_inf), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)(electron),
+             npm_reaction_change = auxiliaries::math::integrate_volume<const auxiliaries::phys::Species &>(std::function<double(double, const auxiliaries::phys::Species &)>(diff_npl_inf), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)(muon),
+             due_reaction_change = auxiliaries::math::integrate_volume<const auxiliaries::phys::Species &>(std::function<double(double, const auxiliaries::phys::Species &)>(diff_due_inf), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)(uquark),
+             sue_reaction_change = auxiliaries::math::integrate_volume<const auxiliaries::phys::Species &>(std::function<double(double, const auxiliaries::phys::Species &)>(diff_sue_inf), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)(squark);
+
+        auto e_particle_change_H = npe_reaction_change,
+             m_particle_change = npm_reaction_change,
+             u_particle_change = due_reaction_change + sue_reaction_change,
+             s_particle_change = -sue_reaction_change;
+
+        auto rotochemical_luminosity = e_particle_change_H * etas.at(electron) +
+                                       m_particle_change * etas.at(muon) +
+                                       u_particle_change * etas.at(uquark) +
+                                       s_particle_change * (etas.at(uquark) - etas.at(squark));
 
         // rhs for the temperature balance equation
         evaluated_rhs.push_back(-(photon_luminosity(t, T) + neutrino_luminosity(t, T, etas) - rotochemical_luminosity) / heat_capacity(t, T));
 
         // make particle change relevant for convoluting with Z matrix
-        std::vector<double> del_particle_changes;
-        for (const auto &species : rh_particles)
-        {
-            del_particle_changes.push_back(particle_change.at(species) - i_omegas.at(species) * omega_sqr_dot(t));
-        }
+        std::vector<double> del_particle_changes{e_particle_change_H - (i_omegas.at(electron) - i_omegas.at(uquark)) * omega_sqr_dot(t),
+                                                 m_particle_change - i_omegas.at(muon) * omega_sqr_dot(t),
+                                                 u_particle_change - i_omegas.at(uquark) * omega_sqr_dot(t),
+                                                 s_particle_change - i_omegas.at(squark) * omega_sqr_dot(t)};
 
         // rhs for the etas
-        double npe_imb_eq = 0,
-                npm_imb_eq = 0,
-                due_imb_eq = 0,
-                sue_imb_eq = 0;
-
-        for (size_t j = 0; j < zij.columns(); ++j)
+        for (size_t species_count = 0; species_count < rh_particles.size(); ++species_count)
         {
-            // if npe is available
-            if (std::find(available_imbalances.begin(), available_imbalances.end(), "npe") != available_imbalances.end())
+            auto species = rh_particles[species_count];
+            double value = 0;
+
+            for (size_t j = 0; j < zij.columns(); ++j)
             {
-                npe_imb_eq += (zij.at(species_to_index.at(neutron), j) - zij.at(species_to_index.at(proton), j) - zij.at(species_to_index.at(electron), j)) * del_particle_changes[j];
-                if (j == zij.columns() - 1)
-                    evaluated_rhs.push_back(npe_imb_eq);
+                value += zij.at(species_count, j) * del_particle_changes[j];
             }
-            // if npm is available
-            if (std::find(available_imbalances.begin(), available_imbalances.end(), "npm") != available_imbalances.end())
-            {
-                npm_imb_eq += (zij.at(species_to_index.at(neutron), j) - zij.at(species_to_index.at(proton), j) - zij.at(species_to_index.at(muon), j)) * del_particle_changes[j];
-                if (j == zij.columns() - 1)
-                    evaluated_rhs.push_back(npm_imb_eq);
-            }
-            // if due is available
-            if (std::find(available_imbalances.begin(), available_imbalances.end(), "due") != available_imbalances.end())
-            {
-                due_imb_eq += (zij.at(species_to_index.at(dquark), j) - zij.at(species_to_index.at(uquark), j) - zij.at(species_to_index.at(electron), j)) * del_particle_changes[j];
-                if (j == zij.columns() - 1)
-                    evaluated_rhs.push_back(due_imb_eq);
-            }
-            // if sue is available
-            if (std::find(available_imbalances.begin(), available_imbalances.end(), "sue") != available_imbalances.end())
-            {
-                sue_imb_eq += (zij.at(species_to_index.at(squark), j) - zij.at(species_to_index.at(uquark), j) - zij.at(species_to_index.at(electron), j)) * del_particle_changes[j];
-                if (j == zij.columns() - 1)
-                    evaluated_rhs.push_back(sue_imb_eq);
-            }
+            evaluated_rhs.push_back(value);
         }
         return evaluated_rhs;
     };
@@ -484,13 +530,13 @@ int main(int argc, char **argv)
     double t_step = base_t_step,
            t_curr = t_init;
     // instantiate initial values for (T, etas)
-    std::vector<double> previous_values(1 + available_imbalances.size(), 0);
+    std::vector<double> previous_values(1 + rh_particles.size(), 0);
     previous_values[0] = profile.end()[-2];
     // initial chemical imbalances are zero
 
     // solution arrays
     std::vector<double> time, surface_temp;
-    std::vector<std::vector<double>> others(save_chemical_imbalances ? 2 + available_imbalances.size() : 2);
+    std::vector<std::vector<double>> others(save_chemical_imbalances ? 2 + rh_particles.size() : 2);
     time.reserve(cooling_n_points_estimate);
     surface_temp.reserve(cooling_n_points_estimate);
     for (size_t i = 0; i < others.size(); ++i)
@@ -506,10 +552,10 @@ int main(int argc, char **argv)
               << std::setw(indent) << "L^inf_nu[erg/s] ";
     if (save_chemical_imbalances)
     {
-        for (auto reac = available_imbalances.begin(); reac != available_imbalances.end(); ++reac)
+        for (auto rh_species = rh_particles.begin(); rh_species != rh_particles.end(); ++rh_species)
         {
             std::stringstream ss;
-            ss << "eta^inf_" << *reac << "[K]";
+            ss << "eta^inf_" << rh_species->name() << " [K]";
             std::cout << std::left << std::setw(indent) << ss.str();
         }
     }
@@ -519,7 +565,7 @@ int main(int argc, char **argv)
     {
         auto coupled_data = cooling::solver::coupled_cooling(t_curr, t_step, rotochemical_vector_rhs, previous_values, cooling_newton_step_eps, cooling_newton_max_iter);
         auto values = coupled_data[0];
-        bool reached_adaption_limit = coupled_data[1][0];       // control for adaptive solver
+        bool reached_adaption_limit = coupled_data[1][0]; // control for adaptive solver
         bool reached_negative_temperature = coupled_data[1][1]; // exclude NaN generation to "negative" temperature
 
         double max_diff = 0;
@@ -530,23 +576,6 @@ int main(int argc, char **argv)
         if (max_diff > cooling_max_diff_per_t_step || reached_adaption_limit || reached_negative_temperature)
         {
             t_step /= 2.0;
-            logger.log([&]()
-                       { return max_diff > cooling_max_diff_per_t_step; }, auxiliaries::io::Logger::LogLevel::kDebug,
-                       [&]()
-                       {
-                           std::stringstream ss;
-                           ss << std::scientific << std::setprecision(3) << "At t = " << 1.0E6 * t_curr / (constants::conversion::myr_over_s * constants::conversion::gev_s) << " [yr] target temperature difference exceeded (" << max_diff << " > " << cooling_max_diff_per_t_step << "), adapting (raise CoolingSolver.StepTolerance/NewtonTolerance if this halts progress)";
-                           return ss.str();
-                       },
-                       "RH cooling");
-            logger.log([&]()
-                       { return reached_adaption_limit; }, auxiliaries::io::Logger::LogLevel::kDebug,
-                       [&]()
-                       { return "Adaption limit reached, adapting (raise CoolingSolver.NewtonMaxIter/NewtonTolerance if this reoccurs)"; }, "RH cooling");
-            logger.log([&]()
-                       { return reached_negative_temperature; }, auxiliaries::io::Logger::LogLevel::kDebug,
-                       [&]()
-                       { return "Negative temperature reached, adapting (lower CoolingSolver.NewtonTolerance if this reoccurs)"; }, "RH cooling");
             continue;
         }
         previous_values = values;
@@ -559,14 +588,8 @@ int main(int argc, char **argv)
         time.push_back(1.0E6 * t_curr / (constants::conversion::myr_over_s * constants::conversion::gev_s));
         surface_temp.push_back(auxiliaries::phys::te_tb_relation(values[0], r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k);
         others[0].push_back(photon_luminosity(t_curr, values[0]) * constants::conversion::gev_s / constants::conversion::erg_over_gev);
-        others[1].push_back((-rotochemical_vector_rhs(t_curr, values)[0] * heat_capacity(t_curr, values[0]) - photon_luminosity(t_curr, values[0])) * constants::conversion::gev_s / constants::conversion::erg_over_gev);
-        if (save_chemical_imbalances)
-        {
-            for (size_t i = 0; i < available_imbalances.size(); ++i)
-            {
-                others[i + 2].push_back(values[i + 1] * constants::conversion::gev_over_k);
-            }
-        }
+        others[1].push_back((-rotochemical_vector_rhs(t_curr, previous_values)[0] * heat_capacity(t_curr, values[0]) - photon_luminosity(t_curr, values[0])) * constants::conversion::gev_s / constants::conversion::erg_over_gev);
+        
         logger.log([&]()
                    { return time.size() % 100 == 0; }, auxiliaries::io::Logger::LogLevel::kInfo,
                    [&]()
@@ -576,19 +599,19 @@ int main(int argc, char **argv)
                        return ss.str();
                    },
                    "T(t) loop");
-        logger.log([&]()
-                   { return true; }, auxiliaries::io::Logger::LogLevel::kTrace,
-                   [&]()
-                   { 
-                        std::stringstream ss;
-                        ss << std::scientific << std::setprecision(3) << std::to_string(time.size()) + " counts past" << " with t = " << time.back() << " [yr]";
-                        return ss.str(); },
-                   "T(t) loop");
+
+        if (save_chemical_imbalances)
+        {
+            for (size_t i = 0; i < rh_particles.size(); ++i)
+            {
+                others[i + 2].push_back(values[i + 1] * constants::conversion::gev_over_k);
+            }
+        }
         // print
         std::cout << std::left << std::setw(indent) << time.back() << std::setw(indent) << surface_temp.back() << std::setw(indent) << others[0].back() << std::setw(indent) << others[1].back();
         if (save_chemical_imbalances)
         {
-            for (size_t i = 0; i < available_imbalances.size(); ++i)
+            for (size_t i = 0; i < rh_particles.size(); ++i)
             {
                 std::cout << std::left << std::setw(indent) << others[i + 2].back();
             }
@@ -623,15 +646,15 @@ int main(int argc, char **argv)
         rootfile->cd();
         if (save_chemical_imbalances)
         {
-            for (size_t i = 0; i < available_imbalances.size(); ++i)
+            for (size_t i = 0; i < rh_particles.size(); ++i)
             {
                 auto gr_eta = new TGraph(time.size(), time.data(), others[i + 2].data());
                 gr_eta->GetXaxis()->SetTitle("t [yr]");
                 std::stringstream ss;
-                ss << "#eta^{#infty}_{" << available_imbalances[i] << "} [K]";
+                ss << "#eta^{#infty}_{" << rh_particles[i].name() << "} [K]";
                 gr_eta->GetYaxis()->SetTitle(ss.str().c_str());
                 ss.str(std::string());
-                ss << "eta_" << available_imbalances[i];
+                ss << "eta_" << rh_particles[i].name();
                 rootfile->WriteObject(gr_eta, ss.str().c_str());
             }
         }
