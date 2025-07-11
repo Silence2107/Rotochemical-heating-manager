@@ -127,7 +127,7 @@ int main(int argc, char **argv)
 
     std::function<double(double, double, double)> hadron_PBF_emissivity_neutron = [&](double r, double t, double T)
     {
-        return hadron_PBF_emissivity(r, constants::species::proton, t, T);
+        return hadron_PBF_emissivity(r, constants::species::neutron, t, T);
     };
 
     std::map<std::string, std::function<double(double, double, double)>> processes =
@@ -310,10 +310,12 @@ int main(int argc, char **argv)
 
             for (auto it = processes.begin(); it != processes.end(); ++it)
             {
-                neutrino_luminosities[it->first] = 0.0;
-                for (size_t count = 0; count < radii.size() - 1; ++count)
-                    neutrino_luminosities[it->first] += 4 * constants::scientific::Pi * radii[count] * radii[count] * exp_lambda(radii[count]) *
-                                                        exp_phi(radii[count]) * exp_phi(radii[count]) * (radii[count + 1] - radii[count]) * it->second(radii[count], t_curr + t_step, next_T);
+                auto lum_integrand = [=](double r) -> double
+                {
+                    return it->second(r, t_curr + t_step, next_T) * exp_phi(r) * exp_phi(r);
+                };
+                neutrino_luminosities[it->first] = auxiliaries::math::integrate_volume<>(
+                    std::function<double(double)>(lum_integrand), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)();
             }
         }
         temp_curr = next_T;
