@@ -141,7 +141,7 @@ namespace instantiator
 
         // startup logger globals before the inputfile is read -- errors must be displayed properly
         auxiliaries::io::Logger::g_log_level = auxiliaries::io::Logger::LogLevel::kError;
-        auxiliaries::io::Logger::g_stream_ptr = &std::cout;
+        auxiliaries::io::Logger::g_stream_ptr = &std::cerr;
 
         // bunch of simplifying definitions
         // using keys = std::vector<std::string>;
@@ -197,7 +197,7 @@ namespace instantiator
         // log stream
         auto log_path_read = j["System"]["LogPath"];
         if (log_path_read.is_null())
-            auxiliaries::io::Logger::g_stream_ptr = &std::cout;
+            auxiliaries::io::Logger::g_stream_ptr = &std::cerr;
         else if (!(log_path_read.is_string()))
             RHM_ERROR("UI error: Log path must be provided as a string.");
         else
@@ -214,8 +214,8 @@ namespace instantiator
                 if (!log_stream.is_open())
                     RHM_ERROR("UI error: Log file could not be created.");
                 auxiliaries::io::Logger::g_stream_ptr = &log_stream;
-                // add a newline to separate from previous log
-                *auxiliaries::io::Logger::g_stream_ptr << std::endl;
+                // separate from previous log
+                *auxiliaries::io::Logger::g_stream_ptr << "--- RHM LOG START ---\n";
             }
         }
 

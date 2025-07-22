@@ -12,6 +12,7 @@
 #include <map>
 #include <ctime>
 #include <iomanip>
+#include <iostream>
 
 std::vector<std::vector<double>> auxiliaries::io::read_tabulated_file(const std::string &path, std::pair<size_t, size_t> columns, std::pair<size_t, size_t> rows, double empty_value)
 {
@@ -117,6 +118,7 @@ void auxiliaries::io::Logger::log(std::function<bool()> &&lazy_condition, LogLev
         {LogLevel::kDebug, "DEBUG"},
         {LogLevel::kInfo, " INFO"},
         {LogLevel::kError, "ERROR"}};
+    std::stringstream ss;
     if (level >= auxiliaries::io::Logger::g_log_level)
     {
         if (!lazy_condition())
@@ -127,9 +129,16 @@ void auxiliaries::io::Logger::log(std::function<bool()> &&lazy_condition, LogLev
         std::time_t t = std::time(nullptr);
         std::tm tm = *std::localtime(&t);
 
-        *auxiliaries::io::Logger::g_stream_ptr << std::setfill('0') << std::setw(2) << tm.tm_hour << ":" << std::setfill('0') << std::setw(2) << tm.tm_min << ":" << std::setfill('0') << std::setw(2) << tm.tm_sec;
-        *auxiliaries::io::Logger::g_stream_ptr << " [" << log_level_map.at(level) << "] <" << header << appendix << "> : " << lazy_message() << std::endl;
+        ss << std::setfill('0') << std::setw(2) << tm.tm_hour << ":" << std::setfill('0') << std::setw(2) << tm.tm_min << ":" << std::setfill('0') << std::setw(2) << tm.tm_sec;
+        ss << " [" << log_level_map.at(level) << "] <" << header << appendix << "> : " << lazy_message();
+        *auxiliaries::io::Logger::g_stream_ptr << ss.str() << std::endl;
         // stream is flushed immediately. Otherwise stuck programs might not be able to communicate their issues
+    }
+    if (level == LogLevel::kError)
+    {
+        // write to cerr as well, if stream is not cerr
+        if (auxiliaries::io::Logger::g_stream_ptr != &std::cerr)
+            std::cerr << ss.str();
     }
 }
 
