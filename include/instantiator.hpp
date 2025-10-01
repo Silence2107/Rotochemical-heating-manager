@@ -725,23 +725,32 @@ namespace instantiator
             }
             else if (particle_density_provided_as_read == "KFermi")
             {
+
+                double degeneracy = 1.0; // excluding spin degeneracy
+                if (particle.classify() == auxiliaries::phys::Species::ParticleClassification::kQuark)
+                    degeneracy *= 3.0; // include color degeneracy for quarks
                 number_densities_of_nbar.insert(
-                    {particle, [particle_density_column_read, particle_density_conversion](double nbar)
+                    {particle, [particle_density_column_read, particle_density_conversion, degeneracy](double nbar)
                      {
                          using constants::scientific::Pi;
-                         return pow(data_reader({nbar}, particle_density_column_read) * particle_density_conversion, 3.0) / (3.0 * Pi * Pi);
+                         return pow(data_reader({nbar}, particle_density_column_read) * particle_density_conversion, 3.0) * degeneracy / (3.0 * Pi * Pi);
                      }});
             }
             else
                 RHM_ERROR("UI error: Particle density may only be provided in \"Density\", \"DensityFraction\" or \"KFermi\" modes.");
             // assemble fermi momentum functions for fermions
             if (particle.classify() != auxiliaries::phys::Species::ParticleClassification::kMeson)
-                k_fermi_of_nbar.insert(
-                    {particle, [particle](double nbar)
+                {
+                    double degeneracy = 1.0; // excluding spin degeneracy
+                    if (particle.classify() == auxiliaries::phys::Species::ParticleClassification::kQuark)
+                        degeneracy *= 3.0; // include color degeneracy for quarks
+                    k_fermi_of_nbar.insert(
+                    {particle, [particle, degeneracy](double nbar)
                      {
                          using constants::scientific::Pi;
-                         return pow(3.0 * Pi * Pi * number_densities_of_nbar[particle](nbar), 1.0 / 3.0);
+                         return pow(3.0 * Pi * Pi / degeneracy * number_densities_of_nbar[particle](nbar), 1.0 / 3.0);
                      }});
+                }
         }
 
         // effective mass functions of baryonic density (natural units)
