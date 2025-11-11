@@ -1004,7 +1004,10 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double,
         // DISCLAIMER FOR FUTURE ME
         // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
         double base_emissivity = cooling::predefined::neutrinic::hadron_durca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, nbar_sf_shift, exp_phi, superfluid_p_temp, superfluid_n_temp)(r, lepton_flavour, t, T);
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, nbar_sf_shift, exp_phi, superfluid_p_temp, superfluid_n_temp)(r, lepton_flavour, t, std::max(T, std::abs(eta)));
+        // if eta > T, recreate polynomial dependence of T
+        if (std::abs(eta) > T)
+            base_emissivity *= pow(T / eta, 6);
         double u = eta / (constants::scientific::Pi * T);
         return base_emissivity * (1 + 1071.0 / 457 * pow(u, 2.0) + 315.0 / 457 * pow(u, 4.0) + 21.0 / 457 * pow(u, 6.0));
     };
@@ -1021,7 +1024,10 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double,
         // DISCLAIMER FOR FUTURE ME
         // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
         double base_emissivity = cooling::predefined::neutrinic::hadron_murca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, nbar_sf_shift, exp_phi, superfluid_p_temp, superfluid_n_temp)(r, lepton_flavour, t, T);
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, nbar_sf_shift, exp_phi, superfluid_p_temp, superfluid_n_temp)(r, lepton_flavour, t, std::max(T, std::abs(eta)));
+        // if eta > T, recreate polynomial dependence of T
+        if (std::abs(eta) > T)
+            base_emissivity *= pow(T / eta, 8);
         double u = eta / (constants::scientific::Pi * T);
         return base_emissivity * (1 + 22020.0 / 11513 * pow(u, 2.0) + 5670.0 / 11513 * pow(u, 4.0) + 420.0 / 11513 * pow(u, 6.0) + 9.0 / 11513 * pow(u, 8.0));
     };
@@ -1037,7 +1043,10 @@ std::function<double(double, double, double, double)> cooling::predefined::rotoc
         // DISCLAIMER FOR FUTURE ME
         // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
         double base_emissivity = cooling::predefined::neutrinic::quark_ud_durca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, T);
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, std::max(T, std::abs(eta)));
+        // if eta > T, recreate polynomial dependence of T
+        if (std::abs(eta) > T)
+            base_emissivity *= pow(T / eta, 6);
         double u = eta / (constants::scientific::Pi * T);
         return base_emissivity * (1 + 1071.0 / 457 * pow(u, 2.0) + 315.0 / 457 * pow(u, 4.0) + 21.0 / 457 * pow(u, 6.0));
     };
@@ -1053,7 +1062,10 @@ std::function<double(double, double, double, double)> cooling::predefined::rotoc
         // DISCLAIMER FOR FUTURE ME
         // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
         double base_emissivity = cooling::predefined::neutrinic::quark_us_durca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, T);
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, std::max(T, std::abs(eta)));
+        // if eta > T, recreate polynomial dependence of T
+        if (std::abs(eta) > T)
+            base_emissivity *= pow(T / eta, 6);
         double u = eta / (constants::scientific::Pi * T);
         return base_emissivity * (1 + 1071.0 / 457 * pow(u, 2.0) + 315.0 / 457 * pow(u, 4.0) + 21.0 / 457 * pow(u, 6.0));
     };
@@ -1069,7 +1081,10 @@ std::function<double(double, double, double, double)> cooling::predefined::rotoc
         // DISCLAIMER FOR FUTURE ME
         // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
         double base_emissivity = cooling::predefined::neutrinic::quark_ud_murca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, T);
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, std::max(T, std::abs(eta)));
+        // if eta > T, recreate polynomial dependence of T
+        if (std::abs(eta) > T)
+            base_emissivity *= pow(T / eta, 8);
         double u = eta / (constants::scientific::Pi * T);
         return base_emissivity * (1 + 22020.0 / 11513 * pow(u, 2.0) + 5670.0 / 11513 * pow(u, 4.0) + 420.0 / 11513 * pow(u, 6.0) + 9.0 / 11513 * pow(u, 8.0));
     };
@@ -1085,7 +1100,10 @@ std::function<double(double, double, double, double)> cooling::predefined::rotoc
         // DISCLAIMER FOR FUTURE ME
         // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
         double base_emissivity = cooling::predefined::neutrinic::quark_us_murca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, T);
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, std::max(T, std::abs(eta)));
+        // if eta > T, recreate polynomial dependence of T
+        if (std::abs(eta) > T)
+            base_emissivity *= pow(T / eta, 8);
         double u = eta / (constants::scientific::Pi * T);
         return base_emissivity * (1 + 22020.0 / 11513 * pow(u, 2.0) + 5670.0 / 11513 * pow(u, 4.0) + 420.0 / 11513 * pow(u, 6.0) + 9.0 / 11513 * pow(u, 8.0));
     };
@@ -1102,7 +1120,10 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double,
         // DISCLAIMER FOR FUTURE ME
         // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
         double base_emissivity = cooling::predefined::neutrinic::hadron_durca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, nbar_sf_shift, exp_phi, superfluid_p_temp, superfluid_n_temp)(r, lepton_flavour, t, T);
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, nbar_sf_shift, exp_phi, superfluid_p_temp, superfluid_n_temp)(r, lepton_flavour, t, std::max(T, std::abs(eta)));
+        // if eta > T, recreate polynomial dependence of T
+        if (std::abs(eta) > T)
+            base_emissivity *= pow(T / eta, 6);
         double T_loc = T / exp_phi(r);
         using constants::scientific::Pi;
         double u = eta / (Pi * T);
@@ -1122,7 +1143,10 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double,
         // DISCLAIMER FOR FUTURE ME
         // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
         double base_emissivity = cooling::predefined::neutrinic::hadron_murca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, nbar_sf_shift, exp_phi, superfluid_p_temp, superfluid_n_temp)(r, lepton_flavour, t, T);
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, nbar_sf_shift, exp_phi, superfluid_p_temp, superfluid_n_temp)(r, lepton_flavour, t, std::max(T, std::abs(eta)));
+        // if eta > T, recreate polynomial dependence of T
+        if (std::abs(eta) > T)
+            base_emissivity *= pow(T / eta, 8.0);
         double T_loc = T / exp_phi(r);
         using constants::scientific::Pi;
         double u = eta / (Pi * T);
@@ -1140,7 +1164,10 @@ std::function<double(double, double, double, double)> cooling::predefined::rotoc
         // DISCLAIMER FOR FUTURE ME
         // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
         double base_emissivity = cooling::predefined::neutrinic::quark_ud_durca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, T);
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, std::max(T, std::abs(eta)));
+        // if eta > T, recreate polynomial dependence of T
+        if (std::abs(eta) > T)
+            base_emissivity *= pow(T / eta, 6);
         double T_loc = T / exp_phi(r);
         using constants::scientific::Pi;
         double u = eta / (Pi * T);
@@ -1158,7 +1185,10 @@ std::function<double(double, double, double, double)> cooling::predefined::rotoc
         // DISCLAIMER FOR FUTURE ME
         // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
         double base_emissivity = cooling::predefined::neutrinic::quark_us_durca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, T);
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, std::max(T, std::abs(eta)));
+        // if eta > T, recreate polynomial dependence of T
+        if (std::abs(eta) > T)
+            base_emissivity *= pow(T / eta, 6);
         double T_loc = T / exp_phi(r);
         using constants::scientific::Pi;
         double u = eta / (Pi * T);
@@ -1176,7 +1206,10 @@ std::function<double(double, double, double, double)> cooling::predefined::rotoc
         // DISCLAIMER FOR FUTURE ME
         // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
         double base_emissivity = cooling::predefined::neutrinic::quark_ud_murca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, T);
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, std::max(T, std::abs(eta)));
+        // if eta > T, recreate polynomial dependence of T
+        if (std::abs(eta) > T)
+            base_emissivity *= pow(T / eta, 8);
         double T_loc = T / exp_phi(r);
         using constants::scientific::Pi;
         double u = eta / (Pi * T);
@@ -1194,7 +1227,10 @@ std::function<double(double, double, double, double)> cooling::predefined::rotoc
         // DISCLAIMER FOR FUTURE ME
         // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
         double base_emissivity = cooling::predefined::neutrinic::quark_us_murca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, T);
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, std::max(T, std::abs(eta)));
+        // if eta > T, recreate polynomial dependence of T
+        if (std::abs(eta) > T)
+            base_emissivity *= pow(T / eta, 8);
         double T_loc = T / exp_phi(r);
         using constants::scientific::Pi;
         double u = eta / (Pi * T);
