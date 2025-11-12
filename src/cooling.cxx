@@ -1040,10 +1040,14 @@ std::function<double(double, double, double, double)> cooling::predefined::rotoc
 {
     return [=](double r, double t, double T, double eta)
     {
-        // DISCLAIMER FOR FUTURE ME
-        // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
+        double max_T_eta = std::max(T, std::abs(eta));
+        // if superconductivity is strong, ignore rotochemical enhancement
+        if (superconduct_q_gap(nbar_of_r(r)) > max_T_eta)
+            return cooling::predefined::neutrinic::quark_ud_durca_emissivity(
+                k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, T);
+        // else, APPROXIMATE TREATMENT OF SUPERCONDUCTIVITY : suppression factors are taken from base emissivity, with T -> max(T,|eta|)
         double base_emissivity = cooling::predefined::neutrinic::quark_ud_durca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, std::max(T, std::abs(eta)));
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, max_T_eta);
         // if eta > T, recreate polynomial dependence of T
         if (std::abs(eta) > T)
             base_emissivity *= pow(T / eta, 6);
@@ -1059,10 +1063,14 @@ std::function<double(double, double, double, double)> cooling::predefined::rotoc
 {
     return [=](double r, double t, double T, double eta)
     {
-        // DISCLAIMER FOR FUTURE ME
-        // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
+        double max_T_eta = std::max(T, std::abs(eta));
+        // if superconductivity is strong, ignore rotochemical enhancement
+        if (superconduct_q_gap(nbar_of_r(r)) > max_T_eta)
+            return cooling::predefined::neutrinic::quark_us_durca_emissivity(
+                k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, T);
+        // else, APPROXIMATE TREATMENT OF SUPERCONDUCTIVITY : suppression factors are taken from base emissivity, with T -> max(T,|eta|)
         double base_emissivity = cooling::predefined::neutrinic::quark_us_durca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, std::max(T, std::abs(eta)));
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, max_T_eta);
         // if eta > T, recreate polynomial dependence of T
         if (std::abs(eta) > T)
             base_emissivity *= pow(T / eta, 6);
@@ -1078,10 +1086,14 @@ std::function<double(double, double, double, double)> cooling::predefined::rotoc
 {
     return [=](double r, double t, double T, double eta)
     {
-        // DISCLAIMER FOR FUTURE ME
-        // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
+        double max_T_eta = std::max(T, std::abs(eta));
+        // if superconductivity is strong, ignore rotochemical enhancement
+        if (superconduct_q_gap(nbar_of_r(r)) > max_T_eta)
+            return cooling::predefined::neutrinic::quark_ud_murca_emissivity(
+                k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, T);
+        // else, APPROXIMATE TREATMENT OF SUPERCONDUCTIVITY : suppression factors are taken from base emissivity, with T -> max(T,|eta|)
         double base_emissivity = cooling::predefined::neutrinic::quark_ud_murca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, std::max(T, std::abs(eta)));
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, max_T_eta);
         // if eta > T, recreate polynomial dependence of T
         if (std::abs(eta) > T)
             base_emissivity *= pow(T / eta, 8);
@@ -1097,10 +1109,14 @@ std::function<double(double, double, double, double)> cooling::predefined::rotoc
 {
     return [=](double r, double t, double T, double eta)
     {
-        // DISCLAIMER FOR FUTURE ME
-        // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
+        double max_T_eta = std::max(T, std::abs(eta));
+        // if superconductivity is strong, ignore rotochemical enhancement
+        if (superconduct_q_gap(nbar_of_r(r)) > max_T_eta)
+            return cooling::predefined::neutrinic::quark_us_murca_emissivity(
+                k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, T);
+        // else, APPROXIMATE TREATMENT OF SUPERCONDUCTIVITY : suppression factors are taken from base emissivity, with T -> max(T,|eta|)
         double base_emissivity = cooling::predefined::neutrinic::quark_us_murca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, std::max(T, std::abs(eta)));
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, max_T_eta);
         // if eta > T, recreate polynomial dependence of T
         if (std::abs(eta) > T)
             base_emissivity *= pow(T / eta, 8);
@@ -1161,10 +1177,13 @@ std::function<double(double, double, double, double)> cooling::predefined::rotoc
 {
     return [=](double r, double t, double T, double eta)
     {
-        // DISCLAIMER FOR FUTURE ME
-        // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
+        double max_T_eta = std::max(T, std::abs(eta));
+        // if superconductivity is strong, ignore rotochemical enhancement
+        if (superconduct_q_gap(nbar_of_r(r)) > max_T_eta)
+            return 0.0;
+        // else, APPROXIMATE TREATMENT OF SUPERCONDUCTIVITY : suppression factors are taken from base emissivity, with T -> max(T,|eta|)
         double base_emissivity = cooling::predefined::neutrinic::quark_ud_durca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, std::max(T, std::abs(eta)));
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, max_T_eta);
         // if eta > T, recreate polynomial dependence of T
         if (std::abs(eta) > T)
             base_emissivity *= pow(T / eta, 6);
@@ -1182,10 +1201,13 @@ std::function<double(double, double, double, double)> cooling::predefined::rotoc
 {
     return [=](double r, double t, double T, double eta)
     {
-        // DISCLAIMER FOR FUTURE ME
-        // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
+        double max_T_eta = std::max(T, std::abs(eta));
+        // if superconductivity is strong, ignore rotochemical enhancement
+        if (superconduct_q_gap(nbar_of_r(r)) > max_T_eta)
+            return 0.0;
+        // else, APPROXIMATE TREATMENT OF SUPERCONDUCTIVITY : suppression factors are taken from base emissivity, with T -> max(T,|eta|)
         double base_emissivity = cooling::predefined::neutrinic::quark_us_durca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, std::max(T, std::abs(eta)));
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, max_T_eta);
         // if eta > T, recreate polynomial dependence of T
         if (std::abs(eta) > T)
             base_emissivity *= pow(T / eta, 6);
@@ -1203,10 +1225,13 @@ std::function<double(double, double, double, double)> cooling::predefined::rotoc
 {
     return [=](double r, double t, double T, double eta)
     {
-        // DISCLAIMER FOR FUTURE ME
-        // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
+        double max_T_eta = std::max(T, std::abs(eta));
+        // if superconductivity is strong, ignore rotochemical enhancement
+        if (superconduct_q_gap(nbar_of_r(r)) > max_T_eta)
+            return 0.0;
+        // else, APPROXIMATE TREATMENT OF SUPERCONDUCTIVITY : suppression factors are taken from base emissivity, with T -> max(T,|eta|)
         double base_emissivity = cooling::predefined::neutrinic::quark_ud_murca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, std::max(T, std::abs(eta)));
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, max_T_eta);
         // if eta > T, recreate polynomial dependence of T
         if (std::abs(eta) > T)
             base_emissivity *= pow(T / eta, 8);
@@ -1224,10 +1249,13 @@ std::function<double(double, double, double, double)> cooling::predefined::rotoc
 {
     return [=](double r, double t, double T, double eta)
     {
-        // DISCLAIMER FOR FUTURE ME
-        // I know very well that this superfluidity treatment is not correct, but I am not ready to make it a performance bottleneck yet
+        double max_T_eta = std::max(T, std::abs(eta));
+        // if superconductivity is strong, ignore rotochemical enhancement
+        if (superconduct_q_gap(nbar_of_r(r)) > max_T_eta)
+            return 0.0;
+        // else, APPROXIMATE TREATMENT OF SUPERCONDUCTIVITY : suppression factors are taken from base emissivity, with T -> max(T,|eta|)
         double base_emissivity = cooling::predefined::neutrinic::quark_us_murca_emissivity(
-            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, std::max(T, std::abs(eta)));
+            k_fermi_of_nbar, m_stars_of_nbar, nbar_of_r, exp_phi, superconduct_q_gap)(r, t, max_T_eta);
         // if eta > T, recreate polynomial dependence of T
         if (std::abs(eta) > T)
             base_emissivity *= pow(T / eta, 8);
