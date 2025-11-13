@@ -195,12 +195,11 @@ int main(int argc, char **argv)
 
     // solution arrays
     std::vector<double> time, surface_temp;
-    std::vector<std::vector<double>> others(3);
+    std::vector<std::vector<double>> others(2);
     time.reserve(cooling_n_points_estimate);
     surface_temp.reserve(cooling_n_points_estimate);
     others[0].reserve(cooling_n_points_estimate);
     others[1].reserve(cooling_n_points_estimate);
-    others[2].reserve(cooling_n_points_estimate);
 
     logger.log([]()
                { return true; }, auxiliaries::io::Logger::LogLevel::kInfo,
@@ -218,7 +217,6 @@ int main(int argc, char **argv)
               << std::setw(indent) << "Te^inf[K] "
               << std::setw(indent) << "L^inf_ph[erg/s] "
               << std::setw(indent) << "L^inf_nu[erg/s] "
-              << std::setw(indent + 5) << "L^inf_nu_domin[erg/s]"
               << std::setw(indent) << "Dominant_processes " << '\n';
 
     while (t_curr < t_end)
@@ -227,7 +225,7 @@ int main(int argc, char **argv)
         bool reached_adaption_limit = false;       // control for adaptive solver
         bool reached_negative_temperature = false; // exclude NaN generation to "negative" temperature
 
-        std::map<std::string, double> neutrino_luminosities; // placeholder for processes neutrino luminosity estimates
+        std::vector<std::pair<std::string, double>> neutrino_luminosities; // placeholder for processes neutrino luminosity estimates
 
         // non-equilibrium stage
         if (!switch_to_equilibrium(t_curr, profile))
@@ -270,10 +268,11 @@ int main(int argc, char **argv)
 
             for (auto it = processes.begin(); it != processes.end(); ++it)
             {
-                neutrino_luminosities[it->first] = 0.0;
+                double proc_luminosity = 0.0;
                 for (size_t count = 0; count < radii.size() - 1; ++count)
-                    neutrino_luminosities[it->first] += 4 * constants::scientific::Pi * radii[count] * radii[count] * exp_lambda(radii[count]) *
-                                                        exp_phi(radii[count]) * exp_phi(radii[count]) * (radii[count + 1] - radii[count]) * it->second(radii[count], t_curr + t_step, profile[count]);
+                    proc_luminosity += 4 * constants::scientific::Pi * radii[count] * radii[count] * exp_lambda(radii[count]) *
+                                       exp_phi(radii[count]) * exp_phi(radii[count]) * (radii[count + 1] - radii[count]) * it->second(radii[count], t_curr + t_step, profile[count]);
+                neutrino_luminosities.push_back(std::make_pair(it->first, proc_luminosity));
             }
         }
 
@@ -314,37 +313,42 @@ int main(int argc, char **argv)
                 {
                     return it->second(r, t_curr + t_step, next_T) * exp_phi(r) * exp_phi(r);
                 };
-                neutrino_luminosities[it->first] = auxiliaries::math::integrate_volume<>(
-                    std::function<double(double)>(lum_integrand), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)();
+                neutrino_luminosities.push_back(std::make_pair(it->first, auxiliaries::math::integrate_volume<>(
+                    std::function<double(double)>(lum_integrand), 0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kGaussLegendre_12p)()));
             }
         }
         temp_curr = next_T;
         t_curr += t_step;
         t_step *= exp_rate_estim;
 
-        double neutrino_lum = 0.0,
-               neutrino_lum_dominant = 0.0;
-        std::vector<std::string> dominant_processes;
+        // sort neutrino luminosities
+        std::sort(neutrino_luminosities.begin(), neutrino_luminosities.end(), [](const auto& a, const auto& b) {
+            return a.second > b.second;
+        });
+
+        double neutrino_lum = 0.0;
+        std::vector<std::pair<std::string, double>> dominant_processes;
         for (auto it = neutrino_luminosities.begin(); it != neutrino_luminosities.end(); ++it)
         {
             neutrino_lum += it->second;
         }
-        for (auto it = neutrino_luminosities.begin(); it != neutrino_luminosities.end(); ++it)
-        {
-            if (dominant_fraction <= it->second / neutrino_lum)
+        if (neutrino_lum > 0.0)
+            for (auto it = neutrino_luminosities.begin(); it != neutrino_luminosities.end(); ++it)
             {
-                neutrino_lum_dominant += it->second;
-                dominant_processes.push_back(it->first);
+                if (dominant_fraction <= it->second / neutrino_lum)
+                {
+                    dominant_processes.push_back(std::make_pair(it->first, it->second));
+                }
+                else 
+                    break;
             }
-        }
 
         // save in understandable units
         time.push_back(1.0E6 * t_curr / (constants::conversion::myr_over_s * constants::conversion::gev_s));
         surface_temp.push_back(auxiliaries::phys::te_tb_relation(temp_curr, r_ns, m_ns, crust_eta) * exp_phi_at_R * constants::conversion::gev_over_k);
         others[0].push_back(photon_luminosity(t_curr, temp_curr) * constants::conversion::gev_s / constants::conversion::erg_over_gev);
         others[1].push_back(neutrino_lum * constants::conversion::gev_s / constants::conversion::erg_over_gev);
-        others[2].push_back(neutrino_lum_dominant * constants::conversion::gev_s / constants::conversion::erg_over_gev);
-        
+
         logger.log([&]()
                    { return time.size() % 100 == 0; }, auxiliaries::io::Logger::LogLevel::kInfo,
                    [&]()
@@ -363,11 +367,14 @@ int main(int argc, char **argv)
                         return ss.str(); },
                    "T(t) loop");
         // print
-        std::cout << std::left << std::setw(indent) << time.back() << std::setw(indent) << surface_temp.back() << std::setw(indent) << others[0].back() << std::setw(indent) << others[1].back() << std::setw(indent) << others[2].back();
-        for (auto &elem : dominant_processes)
+        std::cout << std::left << std::setw(indent) << time.back() << std::setw(indent) << surface_temp.back() << std::setw(indent) << others[0].back() << std::setw(indent) << others[1].back();
+        // dominant processes printout with percentages
+        std::stringstream dominant_processes_ss;
+        for (auto it = dominant_processes.begin(); it != dominant_processes.end(); ++it)
         {
-            std::cout << elem << ",";
+            dominant_processes_ss << std::setprecision(2) << "[" << (100.0 * it->second / neutrino_lum) << "%]" << it->first << ",";
         }
+        std::cout << dominant_processes_ss.str().substr(0, dominant_processes_ss.str().size() - 1);
         std::cout << '\n';
     }
 }
