@@ -9,8 +9,8 @@ on:
     # unrelated files, you can make this run only if a file within that specific
     # folder has been modified.
     #
-    # paths:
-    # - docs/**
+    paths:
+    - docs/**
 
 # This job installs dependencies, builds the book, and pushes it to `gh-pages`
 jobs:
@@ -46,7 +46,7 @@ jobs:
       # Build the book
       - name: Build the book
         run: |
-          jupyter-book build docs/
+          jupyter-book build .
 
       # https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site#publishing-with-a-custom-github-actions-workflow
 
