@@ -65,11 +65,9 @@ namespace auxiliaries
                                        "//" + std::string(__func__) + ", line " + std::to_string(__LINE__)); \
         logger.log([]()                                                                                      \
                    { return true; }, auxiliaries::io::Logger::LogLevel::kError, [=]()                        \
-                   { return message; });                                                                     \
-        *auxiliaries::io::Logger::g_stream_ptr << "Terminating on error.\n";                                 \
+                   { return message + std::string("\nTerminating on error."); });                            \
         std::exit(EXIT_FAILURE);                                                                             \
     } while (false)
-
     }
 
     /// @brief Math auxiliary functionality.

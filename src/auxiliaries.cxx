@@ -138,7 +138,7 @@ void auxiliaries::io::Logger::log(std::function<bool()> &&lazy_condition, LogLev
     {
         // write to cerr as well, if stream is not cerr
         if (auxiliaries::io::Logger::g_stream_ptr != &std::cerr)
-            std::cerr << ss.str();
+            std::cerr << ss.str() << std::endl;
     }
 }
 
