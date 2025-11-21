@@ -24,7 +24,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install -U jupyter-book<2.0
+        pip install -U jupyter-book<2.0.0
 
     # Build the book
     - name: Build the book
