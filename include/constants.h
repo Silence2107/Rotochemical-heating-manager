@@ -15,37 +15,38 @@ namespace constants
 		const double Pi = 3.14159265359;
 		/// @brief Stefan-Boltzmann constant in natural units
 		const double Sigma = Pi * Pi / 60.0;
-		/// @brief Nuclear matter saturation density in GeV^3
-		const double N_sat = 0.0012345;
-
+		/// @brief Nuclear matter saturation density in GeV^3 (attained to 0.16 fm-3)
+		const double N_sat = 0.0012293608;
 	}
 	/// @brief conversion table
 	namespace conversion
 	{
-		/// @brief Conversion from g/cm^3 to GeV^4 (e.g. energy density) in natural units
-		const double g_over_cm3_gev4 = 4.362E-18;
-		/// @brief Conversion from dyne/cm^2 to GeV^4 (e.g. pressure) in natural units
-		const double dyne_over_cm2_gev4 = 4.818E-39;
-		/// @brief Conversion from Mev/fm3 to GeV^4 (e.g. pressure/energy density) in natural units
-		const double mev_over_fm3_gev4 = 7.716E-6;
+		/// @brief fm Mev in natural units
+		const double mev_fm = 1.0 / 197.3269804;
 		/// @brief fm^3 GeV^3 in natural units
-		const double fm3_gev3 = 1.296E2;
-		/// @brief km GeV in natural units
-		const double km_gev = 5.06E18;
-		/// @brief Conversion from GeV to M_sol in natural units
-		const double gev_over_msol = 8.951E-58;
+		const double fm3_gev3 = mev_fm * mev_fm * mev_fm * 1E9;
+		/// @brief Conversion from Mev/fm3 to GeV^4 (e.g. pressure/energy density) in natural units
+		const double mev_over_fm3_gev4 = 1E-3 / fm3_gev3;
 		/// @brief Conversion from GeV to MeV in natural units
 		const double gev_over_mev = 1E3;
+		/// @brief km GeV in natural units
+		const double km_gev = mev_fm * 1E21;
+		/// @brief Conversion from g/cm^3 to GeV^4 (e.g. energy density) in natural units
+		const double g_over_cm3_gev4 = 4.31013053E-18;
+		/// @brief Conversion from dyne/cm^2 to GeV^4 (e.g. pressure) in natural units
+		const double dyne_over_cm2_gev4 = 4.7956669E-39;
+		/// @brief Conversion from GeV to M_sol in natural units
+		const double gev_over_msol = 8.9653083967E-58;
 		/// @brief Conversion from GeV^-1 to s in natural units
-		const double gev_s = 1.5192E24;
+		const double gev_s = 1.51926744E24;
 		/// @brief Conversion from GeV to K in natural units
 		const double gev_over_k = 1.1604E13;
 		/// @brief Conversion from erg to GeV in natural units
-		const double erg_over_gev = 6.2415E2;
+		const double erg_over_gev = 624.150907;
 		/// @brief Conversion from Myr to s in natural units
 		const double myr_over_s = 3.1536E13;
 		/// @brief Conversion from erg/(cm^3 s) to GeV^5 in natural units
-		const double erg_over_cm3_s_gev5 = 3.17E-63;
+		const double erg_over_cm3_s_gev5 = erg_over_gev / (gev_s * fm3_gev3) * 1E-39;
 	}
 	/// @brief predefined species
 	namespace species
