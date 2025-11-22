@@ -111,7 +111,7 @@ int main(int argc, char **argv)
             {
                 return dni_to_dmuj.at({rh_particles[i], rh_particles[j]})(nbar(r)) / exp_phi(r);
             };
-            bij.at(i, j) = auxiliaries::math::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular, radius_step / 10)();
+            bij.at(i, j) = auxiliaries::math::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular, rh_radius_step)();
         }
     }
 
@@ -301,10 +301,10 @@ int main(int argc, char **argv)
             return -p / omega_k_sqr * nbar(r) * 4 * Pi * r * r * exp_lam / P_r_prime;
         };
         // manual integration wrt Y_i
-        for (double r = radius_step / 10; r < r_ns - radius_step; r += radius_step / 10)
+        for (double r = rh_radius_step; r < r_ns - rh_radius_step; r += rh_radius_step)
         {
             double nbar_r = nbar(r),
-                   nbar_r_plus = nbar(r + radius_step / 10);
+                   nbar_r_plus = nbar(r + rh_radius_step);
             double Y_i_r = n_i(nbar_r) / nbar_r;
             double Y_i_r_plus = n_i(nbar_r_plus) / nbar_r_plus;
             double dY_i = Y_i_r_plus - Y_i_r;
@@ -318,7 +318,7 @@ int main(int argc, char **argv)
             i_omegas[*rh_species] = 0;
         }
     }
-    
+
     auto Q_nu = [&](double r, double t, double T, const std::map<std::string, double> &etas)
     {
         using namespace constants::scientific;

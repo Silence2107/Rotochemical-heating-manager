@@ -132,6 +132,9 @@ namespace instantiator
     // rotational 2 omega omega_dot dependency of time
     std::function<double(double)> omega_sqr_dot;
 
+    // spatial integration step for integral quantities in rotochemical heating
+    double rh_radius_step;
+
     /// @brief instantiate the system from json input
     /// @param json_input json inputfile path
     void instantiate_system(const std::string &json_input, const std::vector<std::string> &modules)
@@ -1396,6 +1399,41 @@ namespace instantiator
             else
                 RHM_ERROR("UI error: Rotational law and related settings must be provided in \"BeyondMagneticDipole\" mode.");
         }
+        auto rh_length_conversion_read = j["RHSolver"]["LengthUnits"];
+        double rh_length_conversion;
+        if (rh_length_conversion_read.is_number())
+            rh_length_conversion = rh_length_conversion_read.get<double>();
+        else if (rh_length_conversion_read.is_string())
+        {
+            if (cooling_length_conversion_read == "Gev-1")
+            {
+                cooling_length_conversion = 1.0;
+            }
+            else if (cooling_length_conversion_read == "Km")
+            {
+                cooling_length_conversion = constants::conversion::km_gev;
+            }
+            else if (cooling_length_conversion_read == "M")
+            {
+                cooling_length_conversion = 1E-3 * constants::conversion::km_gev;
+            }
+            else if (cooling_length_conversion_read == "Cm")
+            {
+                cooling_length_conversion = 1E-5 * constants::conversion::km_gev;
+            }
+            else
+            {
+                RHM_ERROR("UI error: Unexpected conversion unit provided for rotochemical heating integration step.");
+            }
+        }
+        else
+            RHM_ERROR("UI error: Unparsable conversion unit provided for rotochemical heating integration step.");
+
+        auto rh_radius_step_read = j["RHSolver"]["RadiusStep"];
+        if (!(rh_radius_step_read.is_number()))
+            RHM_ERROR("UI error: Rotochemical heating radius step must be provided as a number.");
+        else
+            rh_radius_step = rh_radius_step_read.get<double>() * rh_length_conversion;
     }
 }
 

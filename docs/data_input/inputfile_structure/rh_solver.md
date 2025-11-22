@@ -17,3 +17,5 @@ $$
 
 We denote $[n, P_0, \dot P_0]$ via array[1-3]. $P_0$ is measured in "TimeUnits".
 ```
+- `"RadiusStep"` (double, [<span style="color:red">RH</span>]) **:** Spatial integration step for integral quantities in rotochemical heating ($I_\Omega, B_{ij}$).
+- `"LengthUnits"` (double, [<span style="color:red">RH</span>]) **:** Conversion factor from length to natural units (GeV powers). It must either be supplied as a choice from ["Gev-1", "Km", "M", "Cm"], or as an actual multiplier. Used for "RadiusStep".
