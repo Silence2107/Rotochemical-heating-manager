@@ -135,6 +135,9 @@ namespace instantiator
     // spatial integration step for integral quantities in rotochemical heating
     double rh_radius_step;
 
+    // spatial integration step for integral quantities in rotochemical heating
+    double rh_radius_step;
+
     /// @brief instantiate the system from json input
     /// @param json_input json inputfile path
     void instantiate_system(const std::string &json_input, const std::vector<std::string> &modules)
