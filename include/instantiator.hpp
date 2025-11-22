@@ -135,9 +135,6 @@ namespace instantiator
     // spatial integration step for integral quantities in rotochemical heating
     double rh_radius_step;
 
-    // spatial integration step for integral quantities in rotochemical heating
-    double rh_radius_step;
-
     /// @brief instantiate the system from json input
     /// @param json_input json inputfile path
     void instantiate_system(const std::string &json_input, const std::vector<std::string> &modules)
@@ -301,8 +298,10 @@ namespace instantiator
 
         // nbars must be ordered
         const auto &nbars = eos_table.at(nbar_index);
-        if (!std::is_sorted(nbars.begin(), nbars.end(), [](double a, double b) {return a >= b;}) && 
-                !std::is_sorted(nbars.begin(), nbars.end(), [](double a, double b) {return a <= b;}))
+        if (!std::is_sorted(nbars.begin(), nbars.end(), [](double a, double b)
+                            { return a >= b; }) &&
+            !std::is_sorted(nbars.begin(), nbars.end(), [](double a, double b)
+                            { return a <= b; }))
             RHM_ERROR("Number density column is not strictly sorted. Unpredictable behaviour may arise.");
 
         auto data_reader_cache = std::vector<auxiliaries::math::Interpolator>();
@@ -746,17 +745,17 @@ namespace instantiator
                 RHM_ERROR("UI error: Particle density may only be provided in \"Density\", \"DensityFraction\" or \"KFermi\" modes.");
             // assemble fermi momentum functions for fermions
             if (particle.classify() != auxiliaries::phys::Species::ParticleClassification::kMeson)
-                {
-                    double degeneracy = 1.0; // excluding spin degeneracy
-                    if (particle.classify() == auxiliaries::phys::Species::ParticleClassification::kQuark)
-                        degeneracy *= 3.0; // include color degeneracy for quarks
-                    k_fermi_of_nbar.insert(
+            {
+                double degeneracy = 1.0; // excluding spin degeneracy
+                if (particle.classify() == auxiliaries::phys::Species::ParticleClassification::kQuark)
+                    degeneracy *= 3.0; // include color degeneracy for quarks
+                k_fermi_of_nbar.insert(
                     {particle, [particle, degeneracy](double nbar)
                      {
                          using constants::scientific::Pi;
                          return pow(3.0 * Pi * Pi / degeneracy * number_densities_of_nbar[particle](nbar), 1.0 / 3.0);
                      }});
-                }
+            }
         }
 
         // effective mass functions of baryonic density (natural units)
