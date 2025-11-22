@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 
     auto tov_df = tov_solver::tov_solution(eos_inv_cached, center_pressure, radius_step, surface_pressure, pressure_low, tov_adapt_limit);
 
-    std::vector<double> df_nbar(tov_df[0].size()), df_exp_phi(tov_df[0].size()), df_exp_lambda(tov_df[0].size()), df_pressure(tov_df[0].size());
+    std::vector<double> df_nbar(tov_df[0].size()), df_exp_phi(tov_df[0].size()), df_exp_lambda(tov_df[0].size()), df_pressure(tov_df[0].size()), df_edensity(tov_df[0].size());
 
     double r_ns = tov_df[0].back();
     double m_ns = tov_df[1].back();
@@ -80,11 +80,13 @@ int main(int argc, char **argv)
             df_exp_lambda[i] = 1.0;
         else
             df_exp_lambda[i] = std::pow(1 - 2 * constants::scientific::G * tov_df[1][i] / tov_df[0][i], -0.5);
+        df_edensity[i] = edensity_of_pressure(tov_df[2][i]);
     }
     auto nbar = auxiliaries::math::Interpolator(tov_df[0], df_nbar, radial_interp_mode);
     auto exp_phi = auxiliaries::math::Interpolator(tov_df[0], df_exp_phi, radial_interp_mode);
     auto exp_lambda = auxiliaries::math::Interpolator(tov_df[0], df_exp_lambda, radial_interp_mode);
     auto pressure_of_r = auxiliaries::math::Interpolator(tov_df[0], df_pressure, radial_interp_mode);
+    auto edensity_of_r = auxiliaries::math::Interpolator(tov_df[0], df_edensity, radial_interp_mode);
 
     // Identify particle list, supplied by the user
     std::vector<auxiliaries::phys::Species> rh_particles;
@@ -109,7 +111,7 @@ int main(int argc, char **argv)
             {
                 return dni_to_dmuj.at({rh_particles[i], rh_particles[j]})(nbar(r)) / exp_phi(r);
             };
-            bij.at(i, j) = auxiliaries::math::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular)();
+            bij.at(i, j) = auxiliaries::math::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_ns, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular, radius_step / 10)();
         }
     }
 
@@ -280,16 +282,34 @@ int main(int argc, char **argv)
 
     // I_omega estimates
     std::map<auxiliaries::phys::Species, double> i_omegas;
-
+    
     for (auto species = number_densities_of_nbar.begin(); species != number_densities_of_nbar.end(); ++species)
     {
         auto n_i = species->second;
         double omega_k_sqr = pow(2.0 / 3, 3.0) * constants::scientific::G * m_ns / (r_ns * r_ns * r_ns);
-        auto integrand = [&](double r)
+        
+        // integration of -P / Omega_k^2 n_B 4pir^2 exp(lambda(r)) / P'_r dY_i
+        auto integrand_wrt_Y = [&](double r)
         {
-            return -nbar(r) * 1.0 / omega_k_sqr * (n_i(nbar(r + radius_step)) / nbar(r + radius_step) - n_i(nbar(r)) / nbar(r)) / (pressure_of_r(r + radius_step) / pressure_of_r(r) - 1);
+            using namespace constants::scientific;
+            // P'_r comes from TOV
+            double p = pressure_of_r(r);
+            double rho = edensity_of_r(r);
+            double exp_lam = exp_lambda(r);
+            double m_encl = r / (2 * G) * (1 - 1 / (exp_lam * exp_lam));
+            double P_r_prime = -G * (rho + p) * (m_encl + 4 * Pi * r * r * r * p) * exp_lam * exp_lam / (r * r);
+            return -p / omega_k_sqr * nbar(r) * 4 * Pi * r * r * exp_lam / P_r_prime;
         };
-        i_omegas[species->first] = auxiliaries::math::integrate_volume<>(std::function<double(double)>(integrand), 0.0, r_ns - radius_step, exp_lambda, auxiliaries::math::IntegrationMode::kRectangular, radius_step)();
+        // manual integration wrt Y_i
+        for (double r = radius_step / 10; r < r_ns - radius_step; r += radius_step / 10)
+        {
+            double nbar_r = nbar(r),
+                   nbar_r_plus = nbar(r + radius_step / 10);
+            double Y_i_r = n_i(nbar_r) / nbar_r;
+            double Y_i_r_plus = n_i(nbar_r_plus) / nbar_r_plus;
+            double dY_i = Y_i_r_plus - Y_i_r;
+            i_omegas[species->first] += integrand_wrt_Y(r) * dY_i;
+        }
     }
     for (auto rh_species = constants::species::known_particles.begin(); rh_species != constants::species::known_particles.end(); ++rh_species)
     {
@@ -298,7 +318,7 @@ int main(int argc, char **argv)
             i_omegas[*rh_species] = 0;
         }
     }
-
+    
     auto Q_nu = [&](double r, double t, double T, const std::map<std::string, double> &etas)
     {
         using namespace constants::scientific;
