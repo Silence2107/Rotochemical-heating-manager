@@ -1405,21 +1405,21 @@ namespace instantiator
             rh_length_conversion = rh_length_conversion_read.get<double>();
         else if (rh_length_conversion_read.is_string())
         {
-            if (cooling_length_conversion_read == "Gev-1")
+            if (rh_length_conversion_read == "Gev-1")
             {
-                cooling_length_conversion = 1.0;
+                rh_length_conversion = 1.0;
             }
-            else if (cooling_length_conversion_read == "Km")
+            else if (rh_length_conversion_read == "Km")
             {
-                cooling_length_conversion = constants::conversion::km_gev;
+                rh_length_conversion = constants::conversion::km_gev;
             }
-            else if (cooling_length_conversion_read == "M")
+            else if (rh_length_conversion_read == "M")
             {
-                cooling_length_conversion = 1E-3 * constants::conversion::km_gev;
+                rh_length_conversion = 1E-3 * constants::conversion::km_gev;
             }
-            else if (cooling_length_conversion_read == "Cm")
+            else if (rh_length_conversion_read == "Cm")
             {
-                cooling_length_conversion = 1E-5 * constants::conversion::km_gev;
+                rh_length_conversion = 1E-5 * constants::conversion::km_gev;
             }
             else
             {
