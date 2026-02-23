@@ -169,7 +169,16 @@ namespace instantiator
         {
             RHM_ERROR("UI inputfile requested, but the path is invalid.");
         }
-        json j = json::parse(i);
+
+        json j;
+        try
+        {
+            j = json::parse(i);
+        }
+        catch (const json::parse_error &e)
+        {
+            RHM_ERROR("JSON parsing failed with error: " + std::string(e.what()));
+        }
 
         // (0) System setup
 
