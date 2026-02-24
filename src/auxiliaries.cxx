@@ -372,7 +372,7 @@ std::function<double(double, double, double)> auxiliaries::phys::fermi_specific_
     };
 }
 
-std::function<double(double, double, double)> auxiliaries::phys::thermal_conductivity_FI(const std::function<double(double)> &rho, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi)
+std::function<double(double, double, double)> auxiliaries::phys::thermal_conductivity_crust_Flowers_Itoh(const std::function<double(double)> &rho, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi)
 {
     return [=](double r, double t, double T)
     {
@@ -382,32 +382,17 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
                T_loc_8 = T / exp_phi(r) * (gev_over_k / 1E8);
 
         // scales, present in the calculations
-        double rho_scale_cm3_over_g = 2.0E14,
-               T_melt_8 = 2.4E5 * pow(rho_cm3_over_g, 1.0 / 3) * 1E-8;
+        double T_melt_8 = 2.4E5 * pow(rho_cm3_over_g, 1.0 / 3) * 1E-8;
 
         // units: erg / (cm * s * K) -> GeV^2
         double erg_over_cm_s_k_gev2 = erg_over_gev * gev_over_k / (gev_s * 1E-5 * km_gev);
-        // In what follows we mostly refer to F & I, with the exception of some simplifications
-        // introduced specifically for typical NS conditions.
-
-        // (1) Quantum liquid region
-
-        // usually requires to check if T < T_fp \approx mst_p \ge 0.1 M_N \sim 100 MeV, which as way above NS core temperatures
-
-        // density must usually not exceed the one where nucleon matter become subdominant,
-        // but due to consideration of either npemu or npeq matter, we shall omit this condition
-        if (rho_scale_cm3_over_g <= rho_cm3_over_g)
-        {
-            return 1E23 * (rho_cm3_over_g / 1E14) / T_loc_8 * erg_over_cm_s_k_gev2;
-        }
+        // Derivations of F & I, low density regions
 
         // (2) Liquid metal region
 
         // usually requires to check if T < T_ep = p_fe = (ne/nsat)^{1/3} 1.7 fm^{-1} =
         // = [for most EoS Tmelt < T will be under crust, so ne \ge 1E-3 nB] \gapprox
         // (Ye)^{1/3} 1.68/5 GeV \gapprox 10^{0:2} MeV <- only wrong for extremely small Ye
-        // which may occur at crust/exotic ph. However, my opinion that it's safe to
-        // extend in general.
 
         // auxiliary variables; setup for taylor expansion
         double x = 0.08594 * log(rho_cm3_over_g) - 1.7949;
@@ -420,7 +405,6 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
             y += a[index] * pow(x, 1.0 * index);
         }
 
-        // rho_scale_cm3_over_g > rho_cm3_over_g now holds
         if (T_melt_8 < T_loc_8)
         {
             return 1.0 / (1.0 / (1E14 * pow(rho_cm3_over_g, 1.0 / 3) * T_loc_8) + exp(y) * T_loc_8) * erg_over_cm_s_k_gev2;
@@ -450,13 +434,35 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
                 pow(u, 6.0) / 211680 - pow(u, 8.0) / 10886400 + pow(u, 10.0) / 526901760;
         }
 
-        // rho_scale_cm3_over_g > rho_cm3_over_g && T_melt_8 >= T_loc_8 now hold
         return 1.0 / (exp(z) * s + exp(y) * T_loc_8) * erg_over_cm_s_k_gev2;
     };
 }
 
-std::function<double(double, double, double)> auxiliaries::phys::thermal_conductivity_Shternin_Yakovlev(
-    const std::function<double(double)> &rho, const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+std::function<double(double, double, double)> auxiliaries::phys::thermal_conductivity_core_Flowers_Itoh(const std::function<double(double)> &rho, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi)
+{
+    return [=](double r, double t, double T)
+    {
+        using namespace constants::conversion;
+        using namespace constants::scientific;
+        double rho_cm3_over_g = rho(nbar_of_r(r)) / g_over_cm3_gev4,
+               T_loc_8 = T / exp_phi(r) * (gev_over_k / 1E8);
+
+        // units: erg / (cm * s * K) -> GeV^2
+        double erg_over_cm_s_k_gev2 = erg_over_gev * gev_over_k / (gev_s * 1E-5 * km_gev);
+        // Derivations of F & I, high density regions
+
+        // (1) Quantum liquid region
+
+        // usually requires to check if T < T_fp \approx mst_p \ge 0.1 M_N \sim 100 MeV, which is way above NS core temperatures
+
+        // density must usually not exceed the one where nucleon matter become subdominant,
+        // but due to consideration of either npemu or npeq matter, we shall omit this condition
+        return 1E23 * (rho_cm3_over_g / 1E14) / T_loc_8 * erg_over_cm_s_k_gev2;
+    };
+}
+
+std::function<double(double, double, double)> auxiliaries::phys::thermal_conductivity_core_Shternin_Yakovlev(
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
     const std::function<double(double)> &exp_phi, const std::function<double(double)> &superfluid_p_temp)
 {
@@ -484,72 +490,7 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
         double kf_e = k_fermi_of_nbar.at(electron)(nbar_val);
         double mst_e = m_stars_of_nbar.at(electron)(nbar_val);
         double T_loc = T / exp_phi(r);
-        // TEMPORARY CRUST --------
-        double rho_cm3_over_g = rho(nbar_of_r(r)) / g_over_cm3_gev4,
-               T_loc_8 = T / exp_phi(r) * (gev_over_k / 1E8);
-
-        // scales, present in the calculations
-        double rho_scale_cm3_over_g = 2.0E14,
-               T_melt_8 = 2.4E5 * pow(rho_cm3_over_g, 1.0 / 3) * 1E-8;
-        if (rho_scale_cm3_over_g > rho_cm3_over_g)
-        {
-            // units: erg / (cm * s * K) -> GeV^2
-            double erg_over_cm_s_k_gev2 = erg_over_gev * gev_over_k / (gev_s * 1E-5 * km_gev);
-
-            // (2) Liquid metal region
-
-            // usually requires to check if T < T_ep = p_fe = (ne/nsat)^{1/3} 1.7 fm^{-1} =
-            // = [for most EoS Tmelt < T will be under crust, so ne \ge 1E-3 nB] \gapprox
-            // (Ye)^{1/3} 1.68/5 GeV \gapprox 10^{0:2} MeV <- only wrong for extremely small Ye
-            // which may occur at crust/exotic ph. However, my opinion that it's safe to
-            // extend in general.
-
-            // auxiliary variables; setup for taylor expansion
-            double x = 0.08594 * log(rho_cm3_over_g) - 1.7949;
-
-            std::vector<double> a = {-43.8644, -11.6758, 1.2698, 0.2798, 2.5652, -0.3879};
-            double y = 0.0;
-
-            for (size_t index = 0; index < a.size(); ++index)
-            {
-                y += a[index] * pow(x, 1.0 * index);
-            }
-
-            // rho_scale_cm3_over_g > rho_cm3_over_g now holds
-            if (T_melt_8 < T_loc_8)
-            {
-                return 1.0 / (1.0 / (1E14 * pow(rho_cm3_over_g, 1.0 / 3) * T_loc_8) + exp(y) * T_loc_8) * erg_over_cm_s_k_gev2;
-            }
-
-            // (3) Solid region
-
-            // auxiliary variables; setup for taylor expansions
-
-            std::vector<double> b = {-41.1677, -7.8991, 3.4603, -0.8061};
-            double z = 0.0;
-
-            for (size_t index = 0; index < b.size(); ++index)
-            {
-                z += b[index] * pow(x, 1.0 * index);
-            }
-
-            double u = 3.6E-6 * pow(rho_cm3_over_g, 1.0 / 2) / T_loc_8;
-            double s;
-            if (u > 5)
-            {
-                s = Pi * Pi / (6 * u);
-            }
-            else
-            {
-                s = 1.0 - u / 4 + pow(u, 2.0) / 36 - pow(u, 4.0) / 3600 +
-                    pow(u, 6.0) / 211680 - pow(u, 8.0) / 10886400 + pow(u, 10.0) / 526901760;
-            }
-
-            // rho_scale_cm3_over_g > rho_cm3_over_g && T_melt_8 >= T_loc_8 now hold
-            return 1.0 / (exp(z) * s + exp(y) * T_loc_8) * erg_over_cm_s_k_gev2;
-        }
-
-        // ------------------------
+        
         // if electrons are absent
         if (kf_e == 0)
             return 0.0;

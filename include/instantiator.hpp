@@ -100,12 +100,15 @@ namespace instantiator
     // desirable relative accuracy of the cooling solvers per time step
     double cooling_max_diff_per_t_step;
 
-    // Cooling settings
+    // Miscellaneous cooling settings
     double crust_eta;
 
     std::function<double(double)> superfluid_p_temp;
     std::function<double(double)> superfluid_n_temp;
     std::function<double(double)> superconduct_q_gap;
+
+    auxiliaries::phys::CrustThermalConductivity crust_thermal_conductivity_model;
+    auxiliaries::phys::CoreThermalConductivity core_thermal_conductivity_model;
 
     // Evolution settings
     double t_init,
@@ -1165,6 +1168,39 @@ namespace instantiator
             RHM_ERROR("UI error: Light element share (crustal #eta) must be provided as a number.");
         else
             crust_eta = crust_eta_read.get<double>();
+         
+        // Thermal conductivity settings
+        // Setting in crust
+        auto thermal_conductivity_crust_read = j["EoSSetup"]["Misc"]["CrustThermalConductivity"];
+        if (thermal_conductivity_crust_read.is_null())
+            crust_thermal_conductivity_model = auxiliaries::phys::CrustThermalConductivity::kFlowers_Itoh;
+        else if (!thermal_conductivity_crust_read.is_string())
+            RHM_ERROR("UI error: Crust thermal conductivity model may only be provided as a string (model name).");
+        else
+        {
+            if (thermal_conductivity_crust_read == "FlowersItoh")
+                crust_thermal_conductivity_model = auxiliaries::phys::CrustThermalConductivity::kFlowers_Itoh;
+            else
+                RHM_ERROR("UI error: " + thermal_conductivity_crust_read.get<std::string>() + " is not a supported crust thermal conductivity model. The only choice available yet is \"FlowersItoh\".");
+        }
+        
+        // Setting in core
+        auto thermal_conductivity_core_read = j["EoSSetup"]["Misc"]["CoreThermalConductivity"];
+        if (thermal_conductivity_core_read.is_null())
+            core_thermal_conductivity_model = auxiliaries::phys::CoreThermalConductivity::kShternin_Yakovlev;
+        else if (!thermal_conductivity_core_read.is_string())
+            RHM_ERROR("UI error: Core thermal conductivity model may only be provided as a string (model name).");
+        else
+        {
+            if (thermal_conductivity_core_read == "ShterninYakovlev")
+                core_thermal_conductivity_model = auxiliaries::phys::CoreThermalConductivity::kShternin_Yakovlev;
+            else if (thermal_conductivity_core_read == "FlowersItoh")
+                core_thermal_conductivity_model = auxiliaries::phys::CoreThermalConductivity::kFlowers_Itoh;
+            else
+                RHM_ERROR("UI error: " + thermal_conductivity_core_read.get<std::string>() + " is not a supported core thermal conductivity model. Select from \"FlowersItoh\" or \"ShterninYakovlev\".");
+        }
+
+            
 
         // Critical phenomena settings
         auto superfluid_p_1s0_read = j["EoSSetup"]["Misc"]["ProtonSuperfluidity1S0"];

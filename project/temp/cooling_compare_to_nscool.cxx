@@ -140,8 +140,31 @@ int main(int argc, char **argv)
     auto fermi_specific_heat_dens = auxiliaries::phys::fermi_specific_heat_density(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_sf_shift, exp_phi, superfluid_p_temp, superfluid_n_temp, superconduct_q_gap);
 
-    auto thermal_conductivity = auxiliaries::phys::thermal_conductivity_FI(energy_density_of_nbar,
-                                                                           nbar, exp_phi);
+    std::function<double(double, double, double)> thermal_conductivity_crust, thermal_conductivity_core;
+    switch (crust_thermal_conductivity_model)
+    {            
+        case auxiliaries::phys::CrustThermalConductivity::kFlowers_Itoh:
+            thermal_conductivity_crust = auxiliaries::phys::thermal_conductivity_crust_Flowers_Itoh(energy_density_of_nbar, nbar, exp_phi);
+            break;
+    }
+    switch (core_thermal_conductivity_model)
+    {
+        case auxiliaries::phys::CoreThermalConductivity::kFlowers_Itoh:
+            thermal_conductivity_core = auxiliaries::phys::thermal_conductivity_core_Flowers_Itoh(energy_density_of_nbar, nbar, exp_phi);
+            break;
+        case auxiliaries::phys::CoreThermalConductivity::kShternin_Yakovlev:
+            thermal_conductivity_core = auxiliaries::phys::thermal_conductivity_core_Shternin_Yakovlev(k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superfluid_p_temp);
+            break;
+    }
+    auto thermal_conductivity = [&](double r, double t, double T)
+    {
+        using namespace auxiliaries::phys;
+        double nbar_val = nbar(r);
+        if (nbar_val < nbar_sf_shift)
+            return thermal_conductivity_crust(r, t, T);
+        else
+            return thermal_conductivity_core(r, t, T);
+    };
 
     // equilibrium cooling settings
 

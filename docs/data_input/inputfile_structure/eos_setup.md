@@ -86,4 +86,6 @@ Be adviced that for each particle there is an expected mandatory list of propert
     ```{note}
     There is an interplay, if one enables both 1S0 and 3P2 superfluidity for neutrons. In this case, the critical temperature will be imposed as 3P2 above SF shift and 1S0 beyond it.
     ```
+    - `"CrustThermalConductivity"` (string, [<span style="color:red">COOL, RH</span>]) **:** Thermal conductivity model selection for NS crust. The only choice currently is ["FlowersItoh" {cite}`Flowers1981`], which is also the default.
+    - `"CoreThermalConductivity"` (string, [<span style="color:red">COOL, RH</span>]) **:** Thermal conductivity model selection for NS core. Select from ["FlowersItoh" {cite}`Flowers1981`, "ShterninYakovlev" {cite}`Shternin_2007`], with "ShterninYakovlev" being default.
 
