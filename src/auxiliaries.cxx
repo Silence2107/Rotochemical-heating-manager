@@ -36,7 +36,7 @@ std::vector<std::vector<double>> auxiliaries::io::read_tabulated_file(const std:
     }
     // handle row number special cases
     if (rows.second == 0)
-        rows.second = relevant_lines.size() + rows.first; 
+        rows.second = relevant_lines.size() + rows.first;
     if (rows.first >= rows.second)
         RHM_ERROR("Invalid rows range (" + std::to_string(rows.first) + ", " + std::to_string(rows.second) + ") extracted from input file at " + path + ".");
 
@@ -51,7 +51,7 @@ std::vector<std::vector<double>> auxiliaries::io::read_tabulated_file(const std:
     }
     if (columns.first >= columns.second)
         RHM_ERROR("Invalid columns range (" + std::to_string(columns.first) + ", " + std::to_string(columns.second) + ") extracted from input file at " + path + ".");
-        
+
     std::vector<std::vector<std::string>> str_data(rows.second - rows.first, std::vector<std::string>(columns.second - columns.first));
     for (size_t i = rows.first; i < rows.second; ++i)
     {
@@ -455,8 +455,10 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
     };
 }
 
-std::function<double(double, double, double)> auxiliaries::phys::thermal_conductivity_Shternin_Yakovlev(const std::function<double(double)> &rho, const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
-            const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi)
+std::function<double(double, double, double)> auxiliaries::phys::thermal_conductivity_Shternin_Yakovlev(
+    const std::function<double(double)> &rho, const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
+    const std::function<double(double)> &exp_phi, const std::function<double(double)> &superfluid_p_temp)
 {
     // following Shternin & Yakovlev 2007, lepton carriers dominate thermal conductivity
     // Two considerations are possible: (1) only electrons, (2) electrons and muons
@@ -471,7 +473,7 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
     }
 
     return [=](double r, double t, double T)
-    {    
+    {
         using namespace constants::conversion;
         using namespace constants::scientific;
         using namespace constants::species;
@@ -488,7 +490,7 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
 
         // scales, present in the calculations
         double rho_scale_cm3_over_g = 2.0E14,
-            T_melt_8 = 2.4E5 * pow(rho_cm3_over_g, 1.0 / 3) * 1E-8;
+               T_melt_8 = 2.4E5 * pow(rho_cm3_over_g, 1.0 / 3) * 1E-8;
         if (rho_scale_cm3_over_g > rho_cm3_over_g)
         {
             // units: erg / (cm * s * K) -> GeV^2
@@ -545,15 +547,12 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
 
             // rho_scale_cm3_over_g > rho_cm3_over_g && T_melt_8 >= T_loc_8 now hold
             return 1.0 / (exp(z) * s + exp(y) * T_loc_8) * erg_over_cm_s_k_gev2;
-        
         }
 
         // ------------------------
         // if electrons are absent
         if (kf_e == 0)
             return 0.0;
-
-        
 
         // screening wave numbers
         double screening_pref = 4.0 / (137 * Pi);
@@ -570,7 +569,7 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
         }
 
         // way to calculate perpendicular frequencies
-        auto perp_freq = [&](const Species& carrier, const Species& scatterer)
+        auto perp_freq = [&](const Species &carrier, const Species &scatterer)
         {
             if (!k_fermi_of_nbar.count(carrier) || !k_fermi_of_nbar.count(scatterer))
                 return 0.0;
@@ -580,12 +579,12 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
             double mst_s = m_stars_of_nbar.at(scatterer)(nbar_val);
             if (kf_c == 0 || kf_s == 0)
                 return 0.0;
-            return 24.0 * 1.202 / (137 * 137 * Pi * Pi * Pi) * 
-                    T_loc * pow(kf_s, 2.0) * kf_c / (mst_c * q_t2);
+            return 24.0 * 1.202 / (137 * 137 * Pi * Pi * Pi) *
+                   T_loc * pow(kf_s, 2.0) * kf_c / (mst_c * q_t2);
         };
 
         // way to calculate parallel frequencies
-        auto paral_freq = [&](const Species& carrier, const Species& scatterer)
+        auto paral_freq = [&](const Species &carrier, const Species &scatterer)
         {
             if (!k_fermi_of_nbar.count(carrier) || !k_fermi_of_nbar.count(scatterer))
                 return 0.0;
@@ -595,12 +594,12 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
             double mst_s = m_stars_of_nbar.at(scatterer)(nbar_val);
             if (kf_c == 0 || kf_s == 0)
                 return 0.0;
-            return 4.0 * Pi * Pi / (137 * 137 * 5) * 
-                    pow(T_loc, 2) * pow(mst_s, 2.0) * mst_c / (kf_c * pow(q_l2, 1.5));
+            return 4.0 * Pi * Pi / (137 * 137 * 5) *
+                   pow(T_loc, 2) * pow(mst_s, 2.0) * mst_c / (kf_c * pow(q_l2, 1.5));
         };
 
         // way to calculate prime frequencies
-        auto prime_freq = [&](const Species& carrier, const Species& scatterer)
+        auto prime_freq = [&](const Species &carrier, const Species &scatterer)
         {
             if (!k_fermi_of_nbar.count(carrier) || !k_fermi_of_nbar.count(scatterer))
                 return 0.0;
@@ -610,26 +609,76 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
             double mst_s = m_stars_of_nbar.at(scatterer)(nbar_val);
             if (kf_c == 0 || kf_s == 0)
                 return 0.0;
-            return 12.0 * 18.52 / (137 * 137 * Pi * Pi * Pi) * 
-                    pow(T_loc, 5.0 / 3) * pow(kf_s, 2.0) * mst_c / (pow(q_t2, 1.0 / 3) * kf_c * q_l2);
+            return 12.0 * 18.52 / (137 * 137 * Pi * Pi * Pi) *
+                   pow(T_loc, 5.0 / 3) * pow(kf_s, 2.0) * mst_c / (pow(q_t2, 1.0 / 3) * kf_c * q_l2);
+        };
+
+        // superfluid factors
+
+        // suppression for paralel electron-proton frequency
+        auto R_paral_ep = [](double v)
+        {
+            // formula from the cited paper contained errors. This is the corrected fit
+            return (0.998 + (2.04 + 0.68 * sqrt(v) + 5.7 * pow(v, 2.0) + 1.71 * pow(v, 4.0)) * exp(-1.04 * v)) *
+                   exp(-sqrt(1.23 + v * v));
+        };
+
+        // suppression for perpendicular frequencies. r is (pfe2 + pfm2) / pfp2
+        auto R_perp = [](double v, double r)
+        {
+            double p1 = 0.48 - 0.17 * r;
+            double p3 = pow((1 - p1) * 45 * 1.202 / (4 * Pi * Pi * r), 2.0);
+            return p1 * exp(-0.14 * v * v) + (1 - p1) / sqrt(1 + p3 * v * v);
+        };
+
+        // suppression for prime frequencies. r is (pfe2 + pfm2) / pfp2
+        auto R_prime = [](double v, double r)
+        {
+            return pow(r + 1, 1.0 / 3) / pow(pow(r + 1, 2.0) - 0.757 * v + pow(0.50651 * v, 2.0), 1.0 / 6);
         };
 
         // get to calculating frequencies of collisions
-        
+
         // frequencies where muons are absent
         // electron-electron collisions
         double nu_ee_perp = perp_freq(electron, electron),
-                nu_ee_paral = paral_freq(electron, electron);
+               nu_ee_paral = paral_freq(electron, electron);
         // electron-proton collisions
         double nu_ep_perp = perp_freq(electron, proton),
-                nu_ep_paral = paral_freq(electron, proton);
-        // if muons are absent, this is all. So far this same calculation will undergo for quark core
-        if (!k_fermi_of_nbar.count(muon) || k_fermi_of_nbar.at(muon)(nbar_val) == 0)
-        {   
-            // superfluidity must be calculated here
-            // ...
-            double nu_ee = nu_ee_perp + nu_ee_paral,
-                    nu_ep = nu_ep_perp + nu_ep_paral;
+               nu_ep_paral = paral_freq(electron, proton);
+        // if muons are absent, this is all.
+        // We will so far also assume that in quark matter we too go this route
+        if (!k_fermi_of_nbar.count(muon) || k_fermi_of_nbar.at(muon)(nbar_val) == 0 ||
+            (k_fermi_of_nbar.count(uquark) && k_fermi_of_nbar.at(uquark)(nbar_val) != 0))
+        {
+            // resolve superfluidity
+            // Without muons, only 2 factors are relevant
+            double r_perp_total = 1,
+                   r_paral_ep = 1;
+            double tau_p_inv = superfluid_p_temp(nbar_val) / T_loc;
+            if (tau_p_inv > 1)
+            {
+                double proton_gap_scaled = superfluid_gap_1s0(1 / tau_p_inv);
+
+                // pfp2 / pfe2. Needs extra care in quark matter, as can zero out
+                double proton_ratio_inv = 0;
+                double kf_p = 0;
+                if (k_fermi_of_nbar.count(proton) && k_fermi_of_nbar.at(proton)(nbar_val) != 0)
+                {
+                    kf_p = k_fermi_of_nbar.at(proton)(nbar_val);
+                    proton_ratio_inv = pow(kf_p / kf_e, 2.0);
+                }
+
+                // If protons are absent, leave unmodified
+                if (proton_ratio_inv != 0)
+                {
+                    // if proton ratio is anomalously low (mixed phase?), r_perp_total grows linearly. We restrict this growth
+                    r_perp_total = std::min(R_perp(proton_gap_scaled, 1.0 / proton_ratio_inv), 1.0);
+                    r_paral_ep = R_paral_ep(proton_gap_scaled);
+                }
+            }
+            double nu_ee = nu_ee_perp * r_perp_total + nu_ee_paral,
+                   nu_ep = nu_ep_perp * r_paral_ep + nu_ep_paral * r_paral_ep;
 
             double nu_e = nu_ee + nu_ep;
 
@@ -645,37 +694,61 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
         // electron-electron collisions are calculated above
         // electron-muon collisions
         double nu_em_perp = perp_freq(electron, muon),
-                nu_em_paral = paral_freq(electron, muon),
-                nu_em_prime = prime_freq(electron, muon);
+               nu_em_paral = paral_freq(electron, muon),
+               nu_em_prime = prime_freq(electron, muon);
         // electron-proton collisions are calculated above
 
         // muon-muon collisions
         double nu_mm_perp = perp_freq(muon, muon),
-                nu_mm_paral = paral_freq(muon, muon);
+               nu_mm_paral = paral_freq(muon, muon);
         // muon-electron collisions
         double nu_me_perp = perp_freq(muon, electron),
-                nu_me_paral = paral_freq(muon, electron),
-                nu_me_prime = prime_freq(muon, electron);
+               nu_me_paral = paral_freq(muon, electron),
+               nu_me_prime = prime_freq(muon, electron);
         // muon-proton collisions
         double nu_mp_perp = perp_freq(muon, proton),
-                nu_mp_paral = paral_freq(muon, proton);
+               nu_mp_paral = paral_freq(muon, proton);
 
-        // superfluidity must be calculated here
-        // ...
+        // resolve superfluidity
+        double r_perp_total = 1,
+               r_paral_ep = 1,
+               r_prime = 1;
+        double tau_p_inv = superfluid_p_temp(nbar_val) / T_loc;
+        if (tau_p_inv > 1)
+        {
+            double proton_gap_scaled = superfluid_gap_1s0(1 / tau_p_inv);
+            // pfp2 / (pfe2 + pfm2). Exercise extra care in quark matter, where it zeroes out
+            double proton_ratio_inv = 0;
+            double kf_p = 0;
+            if (k_fermi_of_nbar.count(proton) && k_fermi_of_nbar.at(proton)(nbar_val) != 0)
+            {
+                kf_p = k_fermi_of_nbar.at(proton)(nbar_val);
+                proton_ratio_inv = pow(kf_p, 2.0) / (pow(kf_e, 2.0) + pow(kf_mu, 2.0));
+            }
+            // If protons are absent, leave unmodified
+            if (proton_ratio_inv != 0)
+            {
+                // if proton_ratio_inv is anomalously low (mixed phase?), r_perp_total grows linearly. We restrict this growth
+                r_perp_total = std::min(R_perp(proton_gap_scaled, 1.0 / proton_ratio_inv), 1.0);
+                // r_prime is restricted already even for low proton_ratio_inv
+                r_prime = R_prime(proton_gap_scaled, 1.0 / proton_ratio_inv);
+                r_paral_ep = R_paral_ep(proton_gap_scaled);
+            }
+        }
 
-        //double nu_ee_prime = prime_freq(electron, electron),
-        //        nu_mm_prime = prime_freq(muon, muon);
+        double nu_ee = nu_ee_perp * r_perp_total + nu_ee_paral,
+               nu_em = nu_em_perp * r_perp_total + nu_em_paral,
+               nu_ep = nu_ep_perp * r_perp_total + nu_ep_paral,
+               nu_mm = nu_mm_perp * r_perp_total + nu_mm_paral,
+               nu_me = nu_me_perp * r_perp_total + nu_me_paral,
+               nu_mp = nu_mp_perp * r_perp_total + nu_mp_paral;
 
-        double nu_ee = nu_ee_perp + nu_ee_paral,
-                nu_em = nu_em_perp + nu_em_paral,
-                nu_ep = nu_ep_perp + nu_ep_paral,
-                nu_mm = nu_mm_perp + nu_mm_paral,
-                nu_me = nu_me_perp + nu_me_paral,
-                nu_mp = nu_mp_perp + nu_mp_paral;
-        
-        double nu_e = nu_ee + nu_em + nu_ep, // + nu_ee_prime,
-               nu_m = nu_mm + nu_me + nu_mp; // + nu_mm_prime;
-        
+        nu_em_prime *= r_prime;
+        nu_me_prime *= r_prime;
+
+        double nu_e = nu_ee + nu_em + nu_ep,
+               nu_m = nu_mm + nu_me + nu_mp;
+
         // relaxation times
         double tau_e = (nu_m - nu_em_prime) / (nu_e * nu_m - nu_em_prime * nu_me_prime),
                tau_m = (nu_e - nu_me_prime) / (nu_e * nu_m - nu_em_prime * nu_me_prime);

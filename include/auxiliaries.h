@@ -455,14 +455,17 @@ namespace auxiliaries
         std::function<double(double, double, double)> thermal_conductivity_FI(const std::function<double(double)> &rho, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi);
 
         /// @brief Thermal conductivity of substance according to Shternin, Yakovlev, 2007
+        /// @param rho energy density of the substance [GeV^4] as a function of baryon density [GeV^3]
         /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^3]
         /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^3]
         /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
         /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
+        /// @param superfluid_p_temp proton SF critical temperature [GeV] as a function of baryon density [GeV^3]
         /// @return thermal conductivity as a function of radius, time and T^inf [natural units]
         /// @cite Expression in hadronic matter - Shternin, Yakovlev, 2007
         std::function<double(double, double, double)> thermal_conductivity_Shternin_Yakovlev(const std::function<double(double)> &rho, const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
-            const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi);
+            const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi,
+            const std::function<double(double)> &superfluid_p_temp);
 
         /// @brief Te-Tb relation
         /// @param Tb internal temperature [GeV], measured by distant observer (inf)
