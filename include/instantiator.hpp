@@ -38,19 +38,18 @@ namespace instantiator
     std::function<double(double)> pressure_of_nbar;
 
     /// @brief baryonic density limits in natural units. _low and _upp represent limits of EoS itself
-    /// while _core_limit, _crust_limit represent phase transition boundaries
+    /// while _sf_shift is core limit
     double nbar_low,
         nbar_upp,
         nbar_sf_shift;
-    /// @brief energy density limits in natural units. _low and _upp represent limits of EoS itself <para></para>
-    /// while _core_limit represents phase transition boundary
+    /// @brief energy density limits in natural units. _low and _upp represent limits of EoS itself
     double edensity_low,
         edensity_upp;
     /// @brief pressure limits in natural units. _low and _upp represent limits of EoS itself
     double pressure_low,
         pressure_upp;
 
-    // baryonic density fraction functions of baryonic density (natural units)
+    // number density functions of baryonic density (natural units)
     std::map<auxiliaries::phys::Species, std::function<double(double)>> number_densities_of_nbar;
 
     // fermi momentum functions of baryonic density (natural units)
@@ -458,11 +457,10 @@ namespace instantiator
         }
         if (modules_has("COOL"))
         {
-            if (nbar_sf_shift_read.is_number())
-                nbar_sf_shift = nbar_sf_shift_read.get<double>() * nbar_conversion;
+            if (!(nbar_sf_shift_read.is_number()))
+                RHM_ERROR("UI error: Superfluid shift must be provided as a number.");
             else
-                // assume pure core
-                nbar_sf_shift = nbar_low;
+                nbar_sf_shift = nbar_sf_shift_read.get<double>() * nbar_conversion;
         }
 
         // energy density is deduced automatically
