@@ -455,6 +455,235 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
     };
 }
 
+std::function<double(double, double, double)> auxiliaries::phys::thermal_conductivity_Shternin_Yakovlev(const std::function<double(double)> &rho, const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+            const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi)
+{
+    // following Shternin & Yakovlev 2007, lepton carriers dominate thermal conductivity
+    // Two considerations are possible: (1) only electrons, (2) electrons and muons
+
+    // Electrons must be defined in the map
+    if (!k_fermi_of_nbar.count(constants::species::electron))
+    {
+        return [](double, double, double)
+        {
+            return 0.0;
+        };
+    }
+
+    return [=](double r, double t, double T)
+    {    
+        using namespace constants::conversion;
+        using namespace constants::scientific;
+        using namespace constants::species;
+
+        using auxiliaries::phys::Species;
+
+        double nbar_val = nbar_of_r(r);
+        double kf_e = k_fermi_of_nbar.at(electron)(nbar_val);
+        double mst_e = m_stars_of_nbar.at(electron)(nbar_val);
+        double T_loc = T / exp_phi(r);
+        // TEMPORARY CRUST --------
+        double rho_cm3_over_g = rho(nbar_of_r(r)) / g_over_cm3_gev4,
+               T_loc_8 = T / exp_phi(r) * (gev_over_k / 1E8);
+
+        // scales, present in the calculations
+        double rho_scale_cm3_over_g = 2.0E14,
+            T_melt_8 = 2.4E5 * pow(rho_cm3_over_g, 1.0 / 3) * 1E-8;
+        if (rho_scale_cm3_over_g > rho_cm3_over_g)
+        {
+            // units: erg / (cm * s * K) -> GeV^2
+            double erg_over_cm_s_k_gev2 = erg_over_gev * gev_over_k / (gev_s * 1E-5 * km_gev);
+
+            // (2) Liquid metal region
+
+            // usually requires to check if T < T_ep = p_fe = (ne/nsat)^{1/3} 1.7 fm^{-1} =
+            // = [for most EoS Tmelt < T will be under crust, so ne \ge 1E-3 nB] \gapprox
+            // (Ye)^{1/3} 1.68/5 GeV \gapprox 10^{0:2} MeV <- only wrong for extremely small Ye
+            // which may occur at crust/exotic ph. However, my opinion that it's safe to
+            // extend in general.
+
+            // auxiliary variables; setup for taylor expansion
+            double x = 0.08594 * log(rho_cm3_over_g) - 1.7949;
+
+            std::vector<double> a = {-43.8644, -11.6758, 1.2698, 0.2798, 2.5652, -0.3879};
+            double y = 0.0;
+
+            for (size_t index = 0; index < a.size(); ++index)
+            {
+                y += a[index] * pow(x, 1.0 * index);
+            }
+
+            // rho_scale_cm3_over_g > rho_cm3_over_g now holds
+            if (T_melt_8 < T_loc_8)
+            {
+                return 1.0 / (1.0 / (1E14 * pow(rho_cm3_over_g, 1.0 / 3) * T_loc_8) + exp(y) * T_loc_8) * erg_over_cm_s_k_gev2;
+            }
+
+            // (3) Solid region
+
+            // auxiliary variables; setup for taylor expansions
+
+            std::vector<double> b = {-41.1677, -7.8991, 3.4603, -0.8061};
+            double z = 0.0;
+
+            for (size_t index = 0; index < b.size(); ++index)
+            {
+                z += b[index] * pow(x, 1.0 * index);
+            }
+
+            double u = 3.6E-6 * pow(rho_cm3_over_g, 1.0 / 2) / T_loc_8;
+            double s;
+            if (u > 5)
+            {
+                s = Pi * Pi / (6 * u);
+            }
+            else
+            {
+                s = 1.0 - u / 4 + pow(u, 2.0) / 36 - pow(u, 4.0) / 3600 +
+                    pow(u, 6.0) / 211680 - pow(u, 8.0) / 10886400 + pow(u, 10.0) / 526901760;
+            }
+
+            // rho_scale_cm3_over_g > rho_cm3_over_g && T_melt_8 >= T_loc_8 now hold
+            return 1.0 / (exp(z) * s + exp(y) * T_loc_8) * erg_over_cm_s_k_gev2;
+        
+        }
+
+        // ------------------------
+        // if electrons are absent
+        if (kf_e == 0)
+            return 0.0;
+
+        
+
+        // screening wave numbers
+        double screening_pref = 4.0 / (137 * Pi);
+        double q_t2 = 0, q_l2 = 0;
+        for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
+        {
+            auto key = it->first;
+            if (key.qcharge() == 0 || key.classify() == Species::ParticleClassification::kMeson)
+                continue;
+            double kf = k_fermi_of_nbar.at(key)(nbar_val);
+            double mst = m_stars_of_nbar.at(key)(nbar_val);
+            q_t2 += screening_pref * kf * kf;
+            q_l2 += screening_pref * kf * mst;
+        }
+
+        // way to calculate perpendicular frequencies
+        auto perp_freq = [&](const Species& carrier, const Species& scatterer)
+        {
+            if (!k_fermi_of_nbar.count(carrier) || !k_fermi_of_nbar.count(scatterer))
+                return 0.0;
+            double kf_c = k_fermi_of_nbar.at(carrier)(nbar_val);
+            double mst_c = m_stars_of_nbar.at(carrier)(nbar_val);
+            double kf_s = k_fermi_of_nbar.at(scatterer)(nbar_val);
+            double mst_s = m_stars_of_nbar.at(scatterer)(nbar_val);
+            if (kf_c == 0 || kf_s == 0)
+                return 0.0;
+            return 24.0 * 1.202 / (137 * 137 * Pi * Pi * Pi) * 
+                    T_loc * pow(kf_s, 2.0) * kf_c / (mst_c * q_t2);
+        };
+
+        // way to calculate parallel frequencies
+        auto paral_freq = [&](const Species& carrier, const Species& scatterer)
+        {
+            if (!k_fermi_of_nbar.count(carrier) || !k_fermi_of_nbar.count(scatterer))
+                return 0.0;
+            double kf_c = k_fermi_of_nbar.at(carrier)(nbar_val);
+            double mst_c = m_stars_of_nbar.at(carrier)(nbar_val);
+            double kf_s = k_fermi_of_nbar.at(scatterer)(nbar_val);
+            double mst_s = m_stars_of_nbar.at(scatterer)(nbar_val);
+            if (kf_c == 0 || kf_s == 0)
+                return 0.0;
+            return 4.0 * Pi * Pi / (137 * 137 * 5) * 
+                    pow(T_loc, 2) * pow(mst_s, 2.0) * mst_c / (kf_c * pow(q_l2, 1.5));
+        };
+
+        // way to calculate prime frequencies
+        auto prime_freq = [&](const Species& carrier, const Species& scatterer)
+        {
+            if (!k_fermi_of_nbar.count(carrier) || !k_fermi_of_nbar.count(scatterer))
+                return 0.0;
+            double kf_c = k_fermi_of_nbar.at(carrier)(nbar_val);
+            double mst_c = m_stars_of_nbar.at(carrier)(nbar_val);
+            double kf_s = k_fermi_of_nbar.at(scatterer)(nbar_val);
+            double mst_s = m_stars_of_nbar.at(scatterer)(nbar_val);
+            if (kf_c == 0 || kf_s == 0)
+                return 0.0;
+            return 12.0 * 18.52 / (137 * 137 * Pi * Pi * Pi) * 
+                    pow(T_loc, 5.0 / 3) * pow(kf_s, 2.0) * mst_c / (pow(q_t2, 1.0 / 3) * kf_c * q_l2);
+        };
+
+        // get to calculating frequencies of collisions
+        
+        // frequencies where muons are absent
+        // electron-electron collisions
+        double nu_ee_perp = perp_freq(electron, electron),
+                nu_ee_paral = paral_freq(electron, electron);
+        // electron-proton collisions
+        double nu_ep_perp = perp_freq(electron, proton),
+                nu_ep_paral = paral_freq(electron, proton);
+        // if muons are absent, this is all. So far this same calculation will undergo for quark core
+        if (!k_fermi_of_nbar.count(muon) || k_fermi_of_nbar.at(muon)(nbar_val) == 0)
+        {   
+            // superfluidity must be calculated here
+            // ...
+            double nu_ee = nu_ee_perp + nu_ee_paral,
+                    nu_ep = nu_ep_perp + nu_ep_paral;
+
+            double nu_e = nu_ee + nu_ep;
+
+            return pow(kf_e, 3.0) * T_loc / (9 * mst_e * nu_e);
+        }
+
+        // in what follows both electrons and muons are present, as electrons always preceed muons
+        double kf_mu = k_fermi_of_nbar.at(muon)(nbar_val);
+        double mst_mu = m_stars_of_nbar.at(muon)(nbar_val);
+
+        // now muons are present
+
+        // electron-electron collisions are calculated above
+        // electron-muon collisions
+        double nu_em_perp = perp_freq(electron, muon),
+                nu_em_paral = paral_freq(electron, muon),
+                nu_em_prime = prime_freq(electron, muon);
+        // electron-proton collisions are calculated above
+
+        // muon-muon collisions
+        double nu_mm_perp = perp_freq(muon, muon),
+                nu_mm_paral = paral_freq(muon, muon);
+        // muon-electron collisions
+        double nu_me_perp = perp_freq(muon, electron),
+                nu_me_paral = paral_freq(muon, electron),
+                nu_me_prime = prime_freq(muon, electron);
+        // muon-proton collisions
+        double nu_mp_perp = perp_freq(muon, proton),
+                nu_mp_paral = paral_freq(muon, proton);
+
+        // superfluidity must be calculated here
+        // ...
+
+        //double nu_ee_prime = prime_freq(electron, electron),
+        //        nu_mm_prime = prime_freq(muon, muon);
+
+        double nu_ee = nu_ee_perp + nu_ee_paral,
+                nu_em = nu_em_perp + nu_em_paral,
+                nu_ep = nu_ep_perp + nu_ep_paral,
+                nu_mm = nu_mm_perp + nu_mm_paral,
+                nu_me = nu_me_perp + nu_me_paral,
+                nu_mp = nu_mp_perp + nu_mp_paral;
+        
+        double nu_e = nu_ee + nu_em + nu_ep, // + nu_ee_prime,
+               nu_m = nu_mm + nu_me + nu_mp; // + nu_mm_prime;
+        
+        // relaxation times
+        double tau_e = (nu_m - nu_em_prime) / (nu_e * nu_m - nu_em_prime * nu_me_prime),
+               tau_m = (nu_e - nu_me_prime) / (nu_e * nu_m - nu_em_prime * nu_me_prime);
+
+        return T_loc / 9 * (pow(kf_e, 3.0) * tau_e / mst_e + pow(kf_mu, 3.0) * tau_m / mst_mu);
+    };
+}
+
 double auxiliaries::phys::te_tb_relation(double Tb, double R, double M, double eta)
 {
     using namespace constants::scientific;
