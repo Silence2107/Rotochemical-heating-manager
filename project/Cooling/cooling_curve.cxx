@@ -148,7 +148,7 @@ int main(int argc, char **argv)
     auto fermi_specific_heat_dens = auxiliaries::phys::fermi_specific_heat_density(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_sf_shift, exp_phi, superfluid_p_temp, superfluid_n_temp, superconduct_q_gap);
 
-    auto thermal_conductivity = auxiliaries::phys::thermal_conductivity_Shternin_Yakovlev(energy_density_of_nbar, k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi);
+    auto thermal_conductivity = auxiliaries::phys::thermal_conductivity_Shternin_Yakovlev(energy_density_of_nbar, k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superfluid_p_temp);
 
     // equilibrium cooling settings
 

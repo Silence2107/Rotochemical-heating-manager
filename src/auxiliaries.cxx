@@ -554,6 +554,15 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
         if (kf_e == 0)
             return 0.0;
 
+        // decide if muons are present
+        double kf_mu = 0;
+        double mst_mu = muon.mass();
+        if (k_fermi_of_nbar.count(muon))
+        {
+            kf_mu = k_fermi_of_nbar.at(muon)(nbar_val);
+            mst_mu = m_stars_of_nbar.at(muon)(nbar_val);
+        }
+
         // screening wave numbers
         double screening_pref = 4.0 / (137 * Pi);
         double q_t2 = 0, q_l2 = 0;
@@ -639,64 +648,16 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
 
         // get to calculating frequencies of collisions
 
-        // frequencies where muons are absent
         // electron-electron collisions
         double nu_ee_perp = perp_freq(electron, electron),
                nu_ee_paral = paral_freq(electron, electron);
-        // electron-proton collisions
-        double nu_ep_perp = perp_freq(electron, proton),
-               nu_ep_paral = paral_freq(electron, proton);
-        // if muons are absent, this is all.
-        // We will so far also assume that in quark matter we too go this route
-        if (!k_fermi_of_nbar.count(muon) || k_fermi_of_nbar.at(muon)(nbar_val) == 0 ||
-            (k_fermi_of_nbar.count(uquark) && k_fermi_of_nbar.at(uquark)(nbar_val) != 0))
-        {
-            // resolve superfluidity
-            // Without muons, only 2 factors are relevant
-            double r_perp_total = 1,
-                   r_paral_ep = 1;
-            double tau_p_inv = superfluid_p_temp(nbar_val) / T_loc;
-            if (tau_p_inv > 1)
-            {
-                double proton_gap_scaled = superfluid_gap_1s0(1 / tau_p_inv);
-
-                // pfp2 / pfe2. Needs extra care in quark matter, as can zero out
-                double proton_ratio_inv = 0;
-                double kf_p = 0;
-                if (k_fermi_of_nbar.count(proton) && k_fermi_of_nbar.at(proton)(nbar_val) != 0)
-                {
-                    kf_p = k_fermi_of_nbar.at(proton)(nbar_val);
-                    proton_ratio_inv = pow(kf_p / kf_e, 2.0);
-                }
-
-                // If protons are absent, leave unmodified
-                if (proton_ratio_inv != 0)
-                {
-                    // if proton ratio is anomalously low (mixed phase?), r_perp_total grows linearly. We restrict this growth
-                    r_perp_total = std::min(R_perp(proton_gap_scaled, 1.0 / proton_ratio_inv), 1.0);
-                    r_paral_ep = R_paral_ep(proton_gap_scaled);
-                }
-            }
-            double nu_ee = nu_ee_perp * r_perp_total + nu_ee_paral,
-                   nu_ep = nu_ep_perp * r_paral_ep + nu_ep_paral * r_paral_ep;
-
-            double nu_e = nu_ee + nu_ep;
-
-            return pow(kf_e, 3.0) * T_loc / (9 * mst_e * nu_e);
-        }
-
-        // in what follows both electrons and muons are present, as electrons always preceed muons
-        double kf_mu = k_fermi_of_nbar.at(muon)(nbar_val);
-        double mst_mu = m_stars_of_nbar.at(muon)(nbar_val);
-
-        // now muons are present
-
-        // electron-electron collisions are calculated above
         // electron-muon collisions
         double nu_em_perp = perp_freq(electron, muon),
                nu_em_paral = paral_freq(electron, muon),
                nu_em_prime = prime_freq(electron, muon);
-        // electron-proton collisions are calculated above
+        // electron-proton collisions
+        double nu_ep_perp = perp_freq(electron, proton),
+               nu_ep_paral = paral_freq(electron, proton);
 
         // muon-muon collisions
         double nu_mm_perp = perp_freq(muon, muon),
@@ -725,10 +686,10 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
                 kf_p = k_fermi_of_nbar.at(proton)(nbar_val);
                 proton_ratio_inv = pow(kf_p, 2.0) / (pow(kf_e, 2.0) + pow(kf_mu, 2.0));
             }
-            // If protons are absent, leave unmodified
+            // If protons are absent (e.g. in quark matter), leave unmodified
             if (proton_ratio_inv != 0)
             {
-                // if proton_ratio_inv is anomalously low (mixed phase?), r_perp_total grows linearly. We restrict this growth
+                // if proton_ratio_inv is anomalously low (e.g.mixed phase?), r_perp_total grows linearly. We restrict this growth
                 r_perp_total = std::min(R_perp(proton_gap_scaled, 1.0 / proton_ratio_inv), 1.0);
                 // r_prime is restricted already even for low proton_ratio_inv
                 r_prime = R_prime(proton_gap_scaled, 1.0 / proton_ratio_inv);
@@ -738,7 +699,7 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
 
         double nu_ee = nu_ee_perp * r_perp_total + nu_ee_paral,
                nu_em = nu_em_perp * r_perp_total + nu_em_paral,
-               nu_ep = nu_ep_perp * r_perp_total + nu_ep_paral,
+               nu_ep = nu_ep_perp * r_perp_total + nu_ep_paral * r_paral_ep,
                nu_mm = nu_mm_perp * r_perp_total + nu_mm_paral,
                nu_me = nu_me_perp * r_perp_total + nu_me_paral,
                nu_mp = nu_mp_perp * r_perp_total + nu_mp_paral;
@@ -749,9 +710,14 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
         double nu_e = nu_ee + nu_em + nu_ep,
                nu_m = nu_mm + nu_me + nu_mp;
 
-        // relaxation times
-        double tau_e = (nu_m - nu_em_prime) / (nu_e * nu_m - nu_em_prime * nu_me_prime),
-               tau_m = (nu_e - nu_me_prime) / (nu_e * nu_m - nu_em_prime * nu_me_prime);
+        // resolve relaxation times
+        double tau_e = 1 / nu_e, tau_m = 0;
+        double freq_denominator = nu_e * nu_m - nu_em_prime * nu_me_prime;
+        if (kf_mu != 0 && freq_denominator != 0)
+        {
+            tau_e = (nu_m - nu_em_prime) / freq_denominator;
+            tau_m = (nu_e - nu_me_prime) / freq_denominator;
+        }
 
         return T_loc / 9 * (pow(kf_e, 3.0) * tau_e / mst_e + pow(kf_mu, 3.0) * tau_m / mst_mu);
     };
