@@ -32,7 +32,7 @@ Be adviced that for each particle there is an expected mandatory list of propert
         - `"Column"` (uint, [<span style="color:red">TOV, COOL, RH</span>]) **:** Column number with baryonic density, counting from 0th.
         - `"Low"` (double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Smallest $n_b$, available for access. If not supplied, the minimum value within the datafile is substituted.
         - `"Upp"` (double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Biggest $n_b$, available for access. If not supplied, the maximum value within the datafile is substituted.
-        - `"SuperfluidShift"` (double, [<span style="color:red">COOL, RH</span>]) **:** $n_b$ upon entering core. Is used to separate the neutron 1S0/3P2 superfluidity regions. Defaults to pure 3P2.
+        - `"SuperfluidShift"` (double, [<span style="color:red">COOL, RH</span>]) **:** $n_b$ upon entering core. Is used to tell crust apart from core where necessary, mostly to separate the neutron 1S0/3P2 superfluidity regions. 
     - `"EnergyDensity"` **:** Total energy density at the point.
         - `"Units"` (string/double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev4", "MevFm-3", "GCm-3"], or specify an actual multiplier.
         - `"Column"` (uint, [<span style="color:red">TOV, COOL, RH</span>]) **:** Column number with energy density, counting from 0th.
@@ -86,4 +86,6 @@ Be adviced that for each particle there is an expected mandatory list of propert
     ```{note}
     There is an interplay, if one enables both 1S0 and 3P2 superfluidity for neutrons. In this case, the critical temperature will be imposed as 3P2 above SF shift and 1S0 beyond it.
     ```
+    - `"CrustThermalConductivity"` (string, [<span style="color:red">COOL, RH</span>]) **:** Thermal conductivity model selection for NS crust. The only choice currently is ["FlowersItoh" {cite}`Flowers1981`], which is also the default.
+    - `"CoreThermalConductivity"` (string, [<span style="color:red">COOL, RH</span>]) **:** Thermal conductivity model selection for NS core. Select from ["FlowersItoh" {cite}`Flowers1981`, "ShterninYakovlev" {cite}`Shternin_2007`], with "ShterninYakovlev" being default.
 

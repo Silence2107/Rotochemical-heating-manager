@@ -38,19 +38,18 @@ namespace instantiator
     std::function<double(double)> pressure_of_nbar;
 
     /// @brief baryonic density limits in natural units. _low and _upp represent limits of EoS itself
-    /// while _core_limit, _crust_limit represent phase transition boundaries
+    /// while _sf_shift is core limit
     double nbar_low,
         nbar_upp,
         nbar_sf_shift;
-    /// @brief energy density limits in natural units. _low and _upp represent limits of EoS itself <para></para>
-    /// while _core_limit represents phase transition boundary
+    /// @brief energy density limits in natural units. _low and _upp represent limits of EoS itself
     double edensity_low,
         edensity_upp;
     /// @brief pressure limits in natural units. _low and _upp represent limits of EoS itself
     double pressure_low,
         pressure_upp;
 
-    // baryonic density fraction functions of baryonic density (natural units)
+    // number density functions of baryonic density (natural units)
     std::map<auxiliaries::phys::Species, std::function<double(double)>> number_densities_of_nbar;
 
     // fermi momentum functions of baryonic density (natural units)
@@ -101,12 +100,15 @@ namespace instantiator
     // desirable relative accuracy of the cooling solvers per time step
     double cooling_max_diff_per_t_step;
 
-    // Cooling settings
+    // Miscellaneous cooling settings
     double crust_eta;
 
     std::function<double(double)> superfluid_p_temp;
     std::function<double(double)> superfluid_n_temp;
     std::function<double(double)> superconduct_q_gap;
+
+    auxiliaries::phys::CrustThermalConductivity crust_thermal_conductivity_model;
+    auxiliaries::phys::CoreThermalConductivity core_thermal_conductivity_model;
 
     // Evolution settings
     double t_init,
@@ -458,11 +460,10 @@ namespace instantiator
         }
         if (modules_has("COOL"))
         {
-            if (nbar_sf_shift_read.is_number())
-                nbar_sf_shift = nbar_sf_shift_read.get<double>() * nbar_conversion;
+            if (!(nbar_sf_shift_read.is_number()))
+                RHM_ERROR("UI error: Superfluid shift must be provided as a number.");
             else
-                // assume pure core
-                nbar_sf_shift = nbar_low;
+                nbar_sf_shift = nbar_sf_shift_read.get<double>() * nbar_conversion;
         }
 
         // energy density is deduced automatically
@@ -1167,6 +1168,39 @@ namespace instantiator
             RHM_ERROR("UI error: Light element share (crustal #eta) must be provided as a number.");
         else
             crust_eta = crust_eta_read.get<double>();
+         
+        // Thermal conductivity settings
+        // Setting in crust
+        auto thermal_conductivity_crust_read = j["EoSSetup"]["Misc"]["CrustThermalConductivity"];
+        if (thermal_conductivity_crust_read.is_null())
+            crust_thermal_conductivity_model = auxiliaries::phys::CrustThermalConductivity::kFlowers_Itoh;
+        else if (!thermal_conductivity_crust_read.is_string())
+            RHM_ERROR("UI error: Crust thermal conductivity model may only be provided as a string (model name).");
+        else
+        {
+            if (thermal_conductivity_crust_read == "FlowersItoh")
+                crust_thermal_conductivity_model = auxiliaries::phys::CrustThermalConductivity::kFlowers_Itoh;
+            else
+                RHM_ERROR("UI error: " + thermal_conductivity_crust_read.get<std::string>() + " is not a supported crust thermal conductivity model. The only choice available yet is \"FlowersItoh\".");
+        }
+        
+        // Setting in core
+        auto thermal_conductivity_core_read = j["EoSSetup"]["Misc"]["CoreThermalConductivity"];
+        if (thermal_conductivity_core_read.is_null())
+            core_thermal_conductivity_model = auxiliaries::phys::CoreThermalConductivity::kShternin_Yakovlev;
+        else if (!thermal_conductivity_core_read.is_string())
+            RHM_ERROR("UI error: Core thermal conductivity model may only be provided as a string (model name).");
+        else
+        {
+            if (thermal_conductivity_core_read == "ShterninYakovlev")
+                core_thermal_conductivity_model = auxiliaries::phys::CoreThermalConductivity::kShternin_Yakovlev;
+            else if (thermal_conductivity_core_read == "FlowersItoh")
+                core_thermal_conductivity_model = auxiliaries::phys::CoreThermalConductivity::kFlowers_Itoh;
+            else
+                RHM_ERROR("UI error: " + thermal_conductivity_core_read.get<std::string>() + " is not a supported core thermal conductivity model. Select from \"FlowersItoh\" or \"ShterninYakovlev\".");
+        }
+
+            
 
         // Critical phenomena settings
         auto superfluid_p_1s0_read = j["EoSSetup"]["Misc"]["ProtonSuperfluidity1S0"];
