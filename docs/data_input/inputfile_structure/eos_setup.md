@@ -54,16 +54,6 @@ Be adviced that for each particle there is an expected mandatory list of propert
             - `"ProvidedAs"` (string, [<span style="color:red">COOL, RH</span>]) **:** The way the effective mass is provided. Choose from ["FermiEnergy", "EffectiveMass"]. "FermiEnergy" mode incurs the effective mass via relativistic formula with Fermi momentum (occasionally applicable for light particles) and "EffectiveMass" mode expects actual effective mass. If "FermiEnergy" mode is chosen, the "Column" and "Units" entries are ignored.
             - `"Units"` (string/double, [<span style="color:red">COOL, RH</span>]) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev", "MeV", "NucleonMass"], or specify an actual multiplier. If "FermiEnergy" mode is chosen, "Units" are disregarded.
             
-    - `"IonVolumeFraction"` : Ion volume fraction in the crust at the point. Affects neutrino bremsstrahlung in the crust.
-        - `"Column"` (uint, [<span style="color:red">COOL, RH</span>]) **:** Column number with ion volume fraction, counting from 0th.
-        - `"ProvidedAs"` (string, [<span style="color:red">COOL, RH</span>]) **:** The way the ion volume fraction is provided. Choose from ["IonVolumeFraction", "Absent", "ExcludedVolume"]. "IonVolumeFraction" mode expects actual ion volume fraction, "Absent" mode renders the ratio zero and "ExcludedVolume" mode performs calculation in the crustal region
-        $\eta = \dfrac{4}{3}\pi (1.1 \text{fm})^3 \dfrac{\rho_E}{m_{\text{nucleon}}}$. Defaults to "Absent". "Column" entry is only used in "IonVolumeFraction" mode.
-        ```{note}
-        Units are dimensionless for all modes.
-        ```
-        ```{admonition} devnote
-        This quantity could use some citation and explanation. 
-        ```
     - `"QuarkSuperconductingGap"` : Superconductive gap for quarks at the point. Noticeably affects all quark cooling channels as $\sim \exp{\left[-\frac{\Delta}{T}\right]}$, with $\Delta$ being the gap and $T$ being local temperature. Assumed to be zero, if not specified.
         - `"Column"` (uint, [<span style="color:red">COOL, RH</span>]) **:** Column number with quark superconducting gap, counting from 0th. If not specified, the gap is assumed to be absent for all quarks.
         - `"Units"` (string/double, [<span style="color:red">COOL, RH</span>]) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev", "MeV", "Fm-1"], or specify an actual multiplier. 
@@ -86,6 +76,6 @@ Be adviced that for each particle there is an expected mandatory list of propert
     ```{note}
     There is an interplay, if one enables both 1S0 and 3P2 superfluidity for neutrons. In this case, the critical temperature will be imposed as 3P2 above SF shift and 1S0 beyond it.
     ```
-    - `"CrustThermalConductivity"` (string, [<span style="color:red">COOL, RH</span>]) **:** Thermal conductivity model selection for NS crust. The only choice currently is ["FlowersItoh" {cite}`Flowers1981`], which is also the default.
+    - `"CrustThermalConductivity"` (string, [<span style="color:red">COOL, RH</span>]) **:** Thermal conductivity model selection for NS crust. The only choice currently is ["FlowersItoh" {cite}`Flowers1981`, "ShterninYakovlev"], which is also the default.
     - `"CoreThermalConductivity"` (string, [<span style="color:red">COOL, RH</span>]) **:** Thermal conductivity model selection for NS core. Select from ["FlowersItoh" {cite}`Flowers1981`, "ShterninYakovlev" {cite}`Shternin_2007`], with "ShterninYakovlev" being default.
 

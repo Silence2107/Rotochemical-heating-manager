@@ -547,8 +547,8 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
 
 std::function<double(double, double, double)> cooling::predefined::neutrinic::hadron_bremsstrahlung_emissivity(
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
-    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r,
-    const std::function<double(double)> &ion_volume_frac, double nbar_sf_shift, const std::function<double(double)> &exp_phi,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, 
+    const std::function<double(double)> &nbar_of_r, double nbar_sf_shift, const std::function<double(double)> &exp_phi,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
     // h + h <-> h + h + nu_l + bar_nu_l
@@ -587,9 +587,6 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
                dens_np = 1.5E20 * pow(mst_p / proton.mass(), 2) * pow(mst_n / neutron.mass(), 2) * (pf_p / k0) * n_flavours *
                          pow(T_loc * gev_over_k / 1.0E9, 8) * alpha_np * beta_np *
                          erg_over_cm3_s_gev5;
-
-        // Suppression due to ion excluded volume (account same as in NSCool)
-        double eta_ion = ion_volume_frac(nbar_val);
 
         // Superfluid factors
         double r_nn_n = 1.0, r_nn_p = 1.0,
@@ -638,7 +635,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
                r_np = std::min(r_np_n, r_np_p),
                r_pp = std::min(r_pp_n, r_pp_p);
 
-        return dens_nn * r_nn * (1 - eta_ion) + dens_np * r_np + dens_pp * r_pp;
+        return dens_nn * r_nn + dens_np * r_np + dens_pp * r_pp;
     };
 }
 

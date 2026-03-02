@@ -58,8 +58,6 @@ namespace instantiator
     // effective mass functions of baryonic density (natural units)
     std::map<auxiliaries::phys::Species, std::function<double(double)>> m_stars_of_nbar;
 
-    std::function<double(double)> ion_volume_fr;
-
     // (2) TOV solver setup
 
     // Cached EoS interpolator. Only use it if you want to erase cache
@@ -841,37 +839,37 @@ namespace instantiator
                 RHM_ERROR("UI error: Particle effective mass may only be provided in \"FermiEnergy\" or \"EffectiveMass\" modes.");
         }
 
-        // ion volume fraction function of baryonic density (natural units)
+        // ion volume fractions function of baryonic density (natural units)
 
-        auto ion_volume_fr_read = j["EoSSetup"]["Quantities"]["IonVolumeFraction"];
+        // auto ion_volume_fr_read = j["EoSSetup"]["Quantities"]["IonVolumeFractions"];
 
-        auto ion_volume_provided_as_read = ion_volume_fr_read["ProvidedAs"];
-        if (ion_volume_provided_as_read.is_null() || ion_volume_provided_as_read == "Absent")
-            ion_volume_fr = [](double nbar)
-            {
-                (void)nbar;
-                return 0.0;
-            };
-        else if (ion_volume_provided_as_read == "ExcludedVolume")
-            ion_volume_fr = [](double nbar)
-            {
-                using namespace constants::conversion;
-                using namespace constants::scientific;
-                auto eta_ion = 4.0 / 3 * Pi * pow(1.1, 3.0) * fm3_gev3 * energy_density_of_nbar(nbar) / constants::species::neutron.mass();
-                return eta_ion > 1.0 ? 0.0 : eta_ion;
-            };
-        else if (ion_volume_provided_as_read == "IonVolumeFraction")
-        {
-            auto ion_volume_column_read = ion_volume_fr_read["Column"];
-            if (!(ion_volume_column_read.is_number_integer()))
-                RHM_ERROR("UI error: Ion volume fraction column number must be provided as an integer.");
-            ion_volume_fr = [ion_volume_column_read](double nbar)
-            {
-                return data_reader({nbar}, ion_volume_column_read);
-            };
-        }
-        else
-            RHM_ERROR("UI error: Ion volume fraction may only be provided in \"Absent\", \"ExcludedVolume\" or \"IonVolumeFraction\" modes.");
+        // auto ion_volume_provided_as_read = ion_volume_fr_read["ProvidedAs"];
+        // if (ion_volume_provided_as_read.is_null() || ion_volume_provided_as_read == "Absent")
+        //     ion_volume_fr = [](double nbar)
+        //     {
+        //         (void)nbar;
+        //         return 0.0;
+        //     };
+        // else if (ion_volume_provided_as_read == "ExcludedVolume")
+        //     ion_volume_fr = [](double nbar)
+        //     {
+        //         using namespace constants::conversion;
+        //         using namespace constants::scientific;
+        //         auto eta_ion = 4.0 / 3 * Pi * pow(1.1, 3.0) * fm3_gev3 * energy_density_of_nbar(nbar) / constants::species::neutron.mass();
+        //         return eta_ion > 1.0 ? 0.0 : eta_ion;
+        //     };
+        // else if (ion_volume_provided_as_read == "IonVolumeFraction")
+        // {
+        //     auto ion_volume_column_read = ion_volume_fr_read["Column"];
+        //     if (!(ion_volume_column_read.is_number_integer()))
+        //         RHM_ERROR("UI error: Ion volume fraction column number must be provided as an integer.");
+        //     ion_volume_fr = [ion_volume_column_read](double nbar)
+        //     {
+        //         return data_reader({nbar}, ion_volume_column_read);
+        //     };
+        // }
+        // else
+        //     RHM_ERROR("UI error: Ion volume fraction may only be provided in \"Absent\", \"ExcludedVolume\" or \"IonVolumeFraction\" modes.");
 
         // (3) Cooling solver
 

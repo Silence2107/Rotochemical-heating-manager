@@ -80,9 +80,8 @@
                     "ProvidedAs" : "EffectiveMass" 
                 }
             },
-            "IonVolumeFraction" :
+            "#IonVolumeFractions" :
             {
-                "ProvidedAs" : "ExcludedVolume"
             }
         },
         "Misc" :
