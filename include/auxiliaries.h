@@ -86,6 +86,7 @@ namespace auxiliaries
                 /// @brief Monotonic cubic interpolation; requires at least two points to interpolate
                 kCubic
             };
+
         private:
             /// @brief Interpolation mode
             InterpolationMode m_mode;
@@ -450,7 +451,9 @@ namespace auxiliaries
         enum class CrustThermalConductivity
         {
             /// @brief According to Flowers, Itoh, 1982
-            kFlowers_Itoh
+            kFlowers_Itoh,
+            /// @brief According to Shternin, Yakovlev, 2006
+            kShternin_Yakovlev
         };
 
         /// @brief kFlowers_Itoh model of thermal conductivity of crust
@@ -460,6 +463,14 @@ namespace auxiliaries
         /// @return thermal conductivity as a function of radius, time and T^inf [natural units]
         /// @cite Base value - Flowers, Itoh, 1982
         std::function<double(double, double, double)> thermal_conductivity_crust_Flowers_Itoh(const std::function<double(double)> &rho, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi);
+
+        /// @brief kShternin_Yakovlev model of thermal conductivity of crust
+        /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^3]
+        /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
+        /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
+        /// @return thermal conductivity as a function of radius, time and T^inf [natural units]
+        /// @cite Base value - Shternin, Yakovlev, 2006
+        std::function<double(double, double, double)> thermal_conductivity_crust_Shternin_Yakovlev(const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi);
 
         /// @brief Selection of core thermal conductivity models
         enum class CoreThermalConductivity
@@ -487,8 +498,8 @@ namespace auxiliaries
         /// @return thermal conductivity as a function of radius, time and T^inf [natural units]
         /// @cite Expression in hadronic matter - Shternin, Yakovlev, 2007
         std::function<double(double, double, double)> thermal_conductivity_core_Shternin_Yakovlev(const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
-            const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi,
-            const std::function<double(double)> &superfluid_p_temp);
+                                                                                                  const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi,
+                                                                                                  const std::function<double(double)> &superfluid_p_temp);
 
         /// @brief Te-Tb relation
         /// @param Tb internal temperature [GeV], measured by distant observer (inf)

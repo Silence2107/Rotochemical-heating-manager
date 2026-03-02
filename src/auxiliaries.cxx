@@ -438,6 +438,67 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
     };
 }
 
+std::function<double(double, double, double)> auxiliaries::phys::thermal_conductivity_crust_Shternin_Yakovlev(
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
+    const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi)
+{
+    
+    using namespace constants::conversion;
+    using namespace constants::scientific;
+    using namespace constants::species;
+
+    if (!k_fermi_of_nbar.count(electron))
+        return [](double, double, double) 
+        {
+            return 0.0;
+        };
+     
+    return [=](double r, double t, double T)
+    {
+        double nbar_val = nbar_of_r(r);
+        double kf_e = k_fermi_of_nbar.at(electron)(nbar_val);
+        double T_loc = T / exp_phi(r);
+
+        // if electrons are absent
+        if (kf_e == 0)
+            kf_e = pow(3 * Pi * Pi * nbar_val * 0.3, 1.0 / 3);
+            
+        // I would pull it from m_stars_of_nbar, but I'm not yet sure they are properly defined in crust
+        double mst_e = sqrt(electron.mass() * electron.mass() + kf_e * kf_e);
+        double alpha = 1.0 / 137;
+        double T_pe = 4.0 * Pi * sqrt(nbar_val * alpha / mst_e);
+
+        // temperature relation theta
+        double th = sqrt(3.0) * T_pe / T_loc;
+        // Fermi velocity
+        double u = kf_e / mst_e;
+
+        // I_l
+        double I_l = (0.1587 - 0.02538 / (1.0 + 0.0435 * th)) *
+                     log(1.0 + 128.56 / (37.1 * th + 10.83 * pow(th, 2) + pow(th, 3))) / u;
+
+        // I_t
+        double A_t = 20.0 + 450.0 * pow(u, 3);
+        double C1_t = 0.05067 + 0.03216 * pow(u, 2);
+        double C2_t = 0.0254 + 0.04127 * pow(u, 4);
+        double C_t = A_t * exp(C1_t / C2_t);
+        double I_t = pow(u, 3) * (2.404 / C_t + (C2_t - 2.404 / C_t) / (1.0 + 0.1 * th * u)) *
+                     log(1.0 + C_t / (A_t * th * u + pow(th, 2) * pow(u, 2)));
+
+        // I_lt
+        double A_lt = 12.2 + 25.2 * pow(u, 3);
+        double B_lt = 1.0 - 0.75 * u;
+        double C1_lt = 0.123636 + 0.016234 * pow(u, 2);
+        double C2_lt = 0.0762 + 0.05714 * pow(u, 4);
+        double C_lt = A_lt * exp(C1_lt / C2_lt);
+        double I_lt = u * (18.52 * pow(u, 2) / C_lt + (C2_lt - 18.52 * pow(u, 2) / C_lt) / (1.0 + 0.1558 * pow(th, B_lt))) *
+                      log(1.0 + C_lt / (A_lt * th + 10.83 * pow(th, 2) * pow(u, 2) + pow(th * u, 8.0 / 3)));
+        double lambda = pow(Pi, 3) * pow(T_loc, 2) /
+                        (108.0 * pow(alpha, 2) * (I_l + I_t + I_lt));
+        return lambda;
+    };
+}
+
 std::function<double(double, double, double)> auxiliaries::phys::thermal_conductivity_core_Flowers_Itoh(const std::function<double(double)> &rho, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi)
 {
     return [=](double r, double t, double T)
