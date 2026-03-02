@@ -85,6 +85,11 @@ namespace instantiator
     // TOV solver center pressure in GeV^4
     double center_pressure;
 
+    // Crustal functions
+    std::function<double(double)> crustal_Aion;
+    std::function<double(double)> crustal_Zion;
+    std::function<double(double)> crustal_Acell;
+
     // (3) Cooling solver
 
     // Cooling solver setup
@@ -660,6 +665,43 @@ namespace instantiator
                 RHM_ERROR("UI error: Particle type must be provided as a string.");
         }
 
+        
+        // Crustal functions
+
+        bool crustal_functions_provided = false;
+
+        auto aion_read = j["EoSSetup"]["Quantities"]["AIon"];
+        auto acell_read = j["EoSSetup"]["Quantities"]["ACell"];
+        auto zion_read = j["EoSSetup"]["Quantities"]["ZIon"];
+        if (aion_read.is_null() && acell_read.is_null() && zion_read.is_null())
+        {
+            // no ion info provided, assume no ions
+            crustal_Aion = [](double) { return 0.0; };
+            crustal_Acell = [](double) { return 0.0; };
+            crustal_Zion = [](double) { return 0.0; };
+        }
+        else if (aion_read.is_null() || acell_read.is_null() || zion_read.is_null())
+            RHM_ERROR("UI error: Ion numbers ACell, AIon, ZIon must be all provided together.");
+        else
+        {
+            crustal_functions_provided = true;
+            auto aion_column_read = aion_read["Column"];
+            if (!(aion_column_read.is_number_integer()))
+                RHM_ERROR("UI error: Ion number AIon column number must be provided as an integer.");
+            auto acell_column_read = acell_read["Column"];
+            if (!(acell_column_read.is_number_integer()))
+                RHM_ERROR("UI error: Ion number ACell column number must be provided as an integer.");
+            auto zion_column_read = zion_read["Column"];
+            if (!(zion_column_read.is_number_integer()))
+                RHM_ERROR("UI error: Ion number ZIon column number must be provided as an integer.");
+            crustal_Aion = [aion_column_read](double nbar)
+            {return data_reader({nbar}, aion_column_read); };
+            crustal_Acell = [acell_column_read](double nbar)
+            {return data_reader({nbar}, acell_column_read); };
+            crustal_Zion = [zion_column_read](double nbar)
+            {return data_reader({nbar}, zion_column_read); };
+        }
+
         // number density functions of baryonic density (natural units) &&
         // fermi momentum functions of baryonic density (natural units)
 
@@ -720,20 +762,40 @@ namespace instantiator
             if (particle_density_provided_as_read.is_null())
                 particle_density_provided_as_read = "Density";
 
+            auto number_density_in_crust = [=](double nbar)
+            {
+                using namespace constants::species;
+                if (particle == electron)
+                    return crustal_Zion(nbar) / crustal_Acell(nbar) * nbar;
+                else if (particle == neutron)
+                    return std::max(crustal_Acell(nbar) - crustal_Aion(nbar), 0.0) / crustal_Acell(nbar) * nbar;
+                else
+                    RHM_ERROR("UI error: Only neutron and electron receive modification in the crust.");
+            };
             if (particle_density_provided_as_read == "Density")
             {
                 number_densities_of_nbar.insert(
-                    {particle, [particle_density_column_read, particle_density_conversion](double nbar)
+                    {particle, [=](double nbar)
                      {
-                         return data_reader({nbar}, particle_density_column_read) * particle_density_conversion;
+                         using namespace constants::species;
+                         if ((crustal_functions_provided && crustal_Acell(nbar) != 0) && 
+                                (particle == electron || particle == neutron))
+                            return number_density_in_crust(nbar);
+                         else
+                            return data_reader({nbar}, particle_density_column_read) * particle_density_conversion;
                      }});
             }
             else if (particle_density_provided_as_read == "DensityFraction")
             {
                 number_densities_of_nbar.insert(
-                    {particle, [particle_density_column_read, particle_density_conversion](double nbar)
+                    {particle, [=](double nbar)
                      {
-                         return data_reader({nbar}, particle_density_column_read) * particle_density_conversion * nbar;
+                         using namespace constants::species;
+                         if ((crustal_functions_provided && crustal_Acell(nbar) != 0) && 
+                                (particle == electron || particle == neutron))
+                            return number_density_in_crust(nbar);
+                         else
+                            return data_reader({nbar}, particle_density_column_read) * particle_density_conversion * nbar;
                      }});
             }
             else if (particle_density_provided_as_read == "KFermi")
@@ -743,10 +805,15 @@ namespace instantiator
                 if (particle.classify() == auxiliaries::phys::Species::ParticleClassification::kQuark)
                     degeneracy *= 3.0; // include color degeneracy for quarks
                 number_densities_of_nbar.insert(
-                    {particle, [particle_density_column_read, particle_density_conversion, degeneracy](double nbar)
+                    {particle, [=](double nbar)
                      {
                          using constants::scientific::Pi;
-                         return pow(data_reader({nbar}, particle_density_column_read) * particle_density_conversion, 3.0) * degeneracy / (3.0 * Pi * Pi);
+                         using namespace constants::species;
+                         if ((crustal_functions_provided && crustal_Acell(nbar) != 0) && 
+                                (particle == electron || particle == neutron))
+                            return number_density_in_crust(nbar);
+                         else
+                            return pow(data_reader({nbar}, particle_density_column_read) * particle_density_conversion, 3.0) * degeneracy / (3.0 * Pi * Pi);
                      }});
             }
             else
@@ -838,38 +905,6 @@ namespace instantiator
             else
                 RHM_ERROR("UI error: Particle effective mass may only be provided in \"FermiEnergy\" or \"EffectiveMass\" modes.");
         }
-
-        // ion volume fractions function of baryonic density (natural units)
-
-        // auto ion_volume_fr_read = j["EoSSetup"]["Quantities"]["IonVolumeFractions"];
-
-        // auto ion_volume_provided_as_read = ion_volume_fr_read["ProvidedAs"];
-        // if (ion_volume_provided_as_read.is_null() || ion_volume_provided_as_read == "Absent")
-        //     ion_volume_fr = [](double nbar)
-        //     {
-        //         (void)nbar;
-        //         return 0.0;
-        //     };
-        // else if (ion_volume_provided_as_read == "ExcludedVolume")
-        //     ion_volume_fr = [](double nbar)
-        //     {
-        //         using namespace constants::conversion;
-        //         using namespace constants::scientific;
-        //         auto eta_ion = 4.0 / 3 * Pi * pow(1.1, 3.0) * fm3_gev3 * energy_density_of_nbar(nbar) / constants::species::neutron.mass();
-        //         return eta_ion > 1.0 ? 0.0 : eta_ion;
-        //     };
-        // else if (ion_volume_provided_as_read == "IonVolumeFraction")
-        // {
-        //     auto ion_volume_column_read = ion_volume_fr_read["Column"];
-        //     if (!(ion_volume_column_read.is_number_integer()))
-        //         RHM_ERROR("UI error: Ion volume fraction column number must be provided as an integer.");
-        //     ion_volume_fr = [ion_volume_column_read](double nbar)
-        //     {
-        //         return data_reader({nbar}, ion_volume_column_read);
-        //     };
-        // }
-        // else
-        //     RHM_ERROR("UI error: Ion volume fraction may only be provided in \"Absent\", \"ExcludedVolume\" or \"IonVolumeFraction\" modes.");
 
         // (3) Cooling solver
 

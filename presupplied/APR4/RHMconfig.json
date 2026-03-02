@@ -80,8 +80,17 @@
                     "ProvidedAs" : "EffectiveMass" 
                 }
             },
-            "#IonVolumeFractions" :
+            "AIon" :
             {
+                "Column" : 18
+            },
+            "ACell" :
+            {
+                "Column" : 17
+            },
+            "ZIon" :
+            {
+                "Column" : 19
             }
         },
         "Misc" :
