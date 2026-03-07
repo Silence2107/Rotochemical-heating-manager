@@ -92,6 +92,12 @@ int main(int argc, char **argv)
     auto hadron_PBF_emissivity = cooling::predefined::neutrinic::hadron_pbf_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_sf_shift, exp_phi, superfluid_p_temp, superfluid_n_temp);
 
+    auto crust_plasma_emissivity = cooling::predefined::neutrinic::crust_plasma_emissivity(
+        energy_density_of_nbar, crustal_Acell, crustal_Zion, nbar, nbar_sf_shift, exp_phi);
+
+    auto crust_eion_bremsstrahlung_emissivity = cooling::predefined::neutrinic::crust_eion_bremsstrahlung_emissivity(
+        energy_density_of_nbar, nbar, nbar_sf_shift, exp_phi);
+
     auto quark_ud_durca_emissivity = cooling::predefined::neutrinic::quark_ud_durca_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap);
 
@@ -129,6 +135,8 @@ int main(int argc, char **argv)
             }
         }
         result += hadron_bremsstrahlung_emissivity(r, t, T);
+        result += crust_plasma_emissivity(r, t, T);
+        result += crust_eion_bremsstrahlung_emissivity(r, t, T);
         result += quark_ud_durca_emissivity(r, t, T) + quark_us_durca_emissivity(r, t, T) +
                   quark_ud_murca_emissivity(r, t, T) + quark_us_murca_emissivity(r, t, T) +
                   quark_bremsstrahlung_emissivity(r, t, T);

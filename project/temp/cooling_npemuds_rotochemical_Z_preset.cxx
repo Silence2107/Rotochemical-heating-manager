@@ -143,6 +143,12 @@ int main(int argc, char **argv)
     auto hadron_PBF_emissivity = cooling::predefined::neutrinic::hadron_pbf_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_sf_shift, exp_phi, superfluid_p_temp, superfluid_n_temp);
 
+    auto crust_plasma_emissivity = cooling::predefined::neutrinic::crust_plasma_emissivity(
+        energy_density_of_nbar, crustal_Acell, crustal_Zion, nbar, nbar_sf_shift, exp_phi);
+
+    auto crust_eion_bremsstrahlung_emissivity = cooling::predefined::neutrinic::crust_eion_bremsstrahlung_emissivity(
+        energy_density_of_nbar, nbar, nbar_sf_shift, exp_phi);
+
     auto quark_ud_durca_enhanced_emissivity = cooling::predefined::rotochemical::quark_ud_durca_enhanced_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superconduct_q_gap);
 

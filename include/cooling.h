@@ -138,6 +138,31 @@ namespace cooling
                 double nbar_sf_shift, const std::function<double(double)> &exp_phi,
                 const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp);
 
+            /// @brief Emissivity of plasma neutrinos at low densities
+            /// @param rho energy density [GeV^4] as a function of nbar [GeV^3]
+            /// @param a_cell total baryon number in WS cell as a function of nbar [GeV^3]
+            /// @param z_ion charge of ion as a function of nbar [GeV^3]
+            /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
+            /// @param nbar_crust_core lowest baryon density [GeV^3] of the core 
+            /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
+            /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
+            /// @cite Expression - Itoh, Hayashi, 1996
+            std::function<double(double, double, double)> crust_plasma_emissivity(
+                const std::function<double(double)> &rho, const std::function<double(double)> &a_cell, 
+                const std::function<double(double)> &z_ion, const std::function<double(double)> &nbar_of_r, 
+                double nbar_crust_core, const std::function<double(double)> &exp_phi);
+               
+            /// @brief Emissivity of electron-ion bremsstrahlung
+            /// @param rho energy density [GeV^4] as a function of nbar [GeV^3]
+            /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
+            /// @param nbar_crust_core lowest baryon density [GeV^3] of the core 
+            /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
+            /// @return emissivity [GeV^5] as a function of radius [GeV^{-1}], time [GeV], temperature [GeV]
+            /// @cite Expression - Kaminker, 1999
+            std::function<double(double, double, double)> crust_eion_bremsstrahlung_emissivity(
+                const std::function<double(double)> &rho, const std::function<double(double)> &nbar_of_r, 
+                double nbar_crust_core, const std::function<double(double)> &exp_phi);
+
             /// @brief Emissivity of neutrinos from up-down quark DUrca reactions
             /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^3]
             /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^3]

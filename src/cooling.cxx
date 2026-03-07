@@ -547,7 +547,7 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
 
 std::function<double(double, double, double)> cooling::predefined::neutrinic::hadron_bremsstrahlung_emissivity(
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
-    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, 
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar,
     const std::function<double(double)> &nbar_of_r, double nbar_sf_shift, const std::function<double(double)> &exp_phi,
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
@@ -569,6 +569,8 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
+        if (nbar_val < nbar_sf_shift)
+            return 0.0;
         double pf_n = k_fermi_of_nbar.at(neutron)(nbar_val),
                pf_p = k_fermi_of_nbar.at(proton)(nbar_val),
                mst_n = m_stars_of_nbar.at(neutron)(nbar_val),
@@ -724,6 +726,104 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
             }
         }
         return 0.0;
+    };
+}
+
+std::function<double(double, double, double)> cooling::predefined::neutrinic::crust_plasma_emissivity(
+    const std::function<double(double)> &rho, const std::function<double(double)> &a_cell,
+    const std::function<double(double)> &z_ion, const std::function<double(double)> &nbar_of_r,
+    double nbar_crust_core, const std::function<double(double)> &exp_phi)
+{
+    return [=](double r, double t, double T)
+    {
+        using namespace constants::scientific;
+        using namespace constants::conversion;
+
+        double nbar_val = nbar_of_r(r);
+        double a_cell_val = a_cell(nbar_val), z_ion_val = z_ion(nbar_val);
+
+        // if we're out of crust (or if crust data was not supplied), emissivity is zero
+        if (nbar_val > nbar_crust_core || a_cell_val == 0 || z_ion_val == 0)
+            return 0.0;
+
+        // we assume T << T_F is satisfied
+
+        double T_loc = T / exp_phi(r);
+        double T_loc_K = T_loc * gev_over_k;
+
+        // energy density in the paper is scaled to g/cm3
+        double rho_to_mu = (rho(nbar_val) / g_over_cm3_gev4) * (z_ion_val / a_cell_val);
+        // lambda parameter
+        double lambda = T_loc_K / 5.9302E9;
+        // Effective vector coupling
+        double vect_coupl = 0.928;
+        // gamma parameter
+        double gamma = sqrt(1.1095E11 * rho_to_mu / sqrt(1.0 + pow(1.019E-6 * rho_to_mu, 2.0 / 3))) / T_loc_K;
+
+        // f_T amplitude
+        auto f_T_func = [](double x)
+        {
+            double sqrt_x = sqrt(x);
+            return 2.4 + 0.6 * sqrt_x + 0.51 * x + 1.25 * x * sqrt_x;
+        };
+        double f_T = f_T_func(gamma);
+
+        // f_L amplitude
+        auto f_L_func = [](double x)
+        {
+            return (8.6 * x * x + 1.35 * pow(x, 3.5)) / (225.0 - 17 * x + x * x);
+        };
+        double f_L = f_L_func(gamma);
+
+        // x, y quantities according to the paper
+        double x_var = (17.5 + log10(2 * rho_to_mu / pow(T_loc_K, 3.0))) / 6,
+               y_var = (-24.5 + log10(2 * rho_to_mu * pow(T_loc_K, 3.0))) / 6;
+
+        // f_xy correction
+        double f_xy = 1.0;
+        if (!(std::abs(x_var) > 0.7 || y_var < 0.0))
+        {
+            auto f_xy_func = [](double x, double y)
+            {
+                return 1.05 + (0.39 - 1.25 * x - 0.35 * sin(4.5 * x) -
+                               0.3 * exp(-pow(4.5 * x + 9, 2.0))) *
+                                  exp(-pow(std::min(0.0, y - 1.6 + 1.25 * x) / (0.57 - 0.25 * x), 2.0));
+            };
+            double f_xy = f_xy_func(x_var, y_var);
+        }
+
+        return 3E21 * vect_coupl * pow(lambda, 9.0) * pow(gamma, 6.0) *
+               exp(-gamma) * (f_T + f_L) * f_xy * erg_over_cm3_s_gev5;
+    };
+}
+
+std::function<double(double, double, double)> cooling::predefined::neutrinic::crust_eion_bremsstrahlung_emissivity(
+    const std::function<double(double)> &rho, const std::function<double(double)> &nbar_of_r,
+    double nbar_crust_core, const std::function<double(double)> &exp_phi)
+{
+    return [=](double r, double t, double T)
+    {
+        using namespace constants::scientific;
+        using namespace constants::conversion;
+
+        double nbar_val = nbar_of_r(r);
+
+        // if we're out of crust, emissivity is zero
+        if (nbar_val > nbar_crust_core)
+            return 0.0;
+
+        double rho_val = rho(nbar_val),
+               rho_scale1 = g_over_cm3_gev4 * 1E12,
+               rho_scale2 = g_over_cm3_gev4 * 2.8E14;
+
+        double T_loc = T / exp_phi(r);
+        double tlog = log10(T_loc * gev_over_k / 1E8),
+               rlog = log10(rho_val / rho_scale1);
+
+        double dens_exp = 11.204 + 7.304 * tlog + 0.2976 * rlog - 0.370 * tlog * tlog +
+                          0.188 * tlog * rlog - 0.103 * rlog * rlog + 0.0547 * tlog * tlog * rlog - 
+                          6.77 * log10(1.0 + 0.228 * rho_val / rho_scale2);
+        return pow(10.0, dens_exp) * erg_over_cm3_s_gev5;
     };
 }
 
