@@ -547,8 +547,9 @@ std::function<double(double, const auxiliaries::phys::Species &, double, double)
 
 std::function<double(double, double, double)> cooling::predefined::neutrinic::hadron_bremsstrahlung_emissivity(
     const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
-    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar,
-    const std::function<double(double)> &nbar_of_r, double nbar_sf_shift, const std::function<double(double)> &exp_phi,
+    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &m_stars_of_nbar, 
+    const std::function<double(double)> &a_ion, const std::function<double(double)> &a_cell, 
+    const std::function<double(double)> &nbar_of_r, double nbar_sf_shift, const std::function<double(double)> &exp_phi, 
     const std::function<double(double)> &superfluid_p_temp, const std::function<double(double)> &superfluid_n_temp)
 {
     // h + h <-> h + h + nu_l + bar_nu_l
@@ -569,8 +570,6 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
         using namespace constants::species;
 
         double nbar_val = nbar_of_r(r);
-        if (nbar_val < nbar_sf_shift)
-            return 0.0;
         double pf_n = k_fermi_of_nbar.at(neutron)(nbar_val),
                pf_p = k_fermi_of_nbar.at(proton)(nbar_val),
                mst_n = m_stars_of_nbar.at(neutron)(nbar_val),
@@ -608,7 +607,7 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
         {
             double a = 0.9982 + sqrt(pow(0.0018, 2.0) + pow(0.3815 * v, 2.0)),
                    b = 0.3949 + sqrt(pow(0.6051, 2.0) + pow(0.2666 * v, 2.0));
-            return 1.0 / 2.732 * (a * exp(1.306 - sqrt(pow(1.306, 2.0) + pow(v, 2.0))) + 1.732 * pow(b, 7.0) * exp(3.303 - sqrt(pow(3.303, 2.0) + pow(4 * v, 2.0))));
+            return 1.0 / 2.732 * (a * exp(1.306 - sqrt(pow(1.306, 2.0) + pow(v, 2.0))) + 1.732 * pow(b, 7.0) * exp(3.303 - sqrt(pow(3.303, 2.0) + 4 * pow(v, 2.0))));
         };
         auto r_np_n_1S0 = r_np_p_1S0;
         auto r_np_n_3P2 = r_np_n_1S0;
@@ -636,8 +635,20 @@ std::function<double(double, double, double)> cooling::predefined::neutrinic::ha
         double r_nn = std::min(r_nn_n, r_nn_p),
                r_np = std::min(r_np_n, r_np_p),
                r_pp = std::min(r_pp_n, r_pp_p);
+        
+        // additional suppression in inner crust (in outer crust dens_nn = 0, so it does not matter)
+        double ion_frac = 0.0;
+        if (nbar_val < nbar_sf_shift && a_cell(nbar_val) != 0)
+        {
+            // V_ion * n_sat = A_ion; V_cell * nbar = A_cell
+            // ion fraction = V_ion / V_cell 
+            ion_frac = a_ion(nbar_val) * nbar_val / (a_cell(nbar_val) * N_sat);
+            
+            // do not exceed fraction of 1
+            ion_frac = std::min(ion_frac, 1.0);
+        }
 
-        return dens_nn * r_nn + dens_np * r_np + dens_pp * r_pp;
+        return dens_nn * r_nn * (1 - ion_frac) + dens_np * r_np + dens_pp * r_pp;
     };
 }
 
