@@ -532,9 +532,6 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
      
     return [=](double r, double t, double T)
     {
-        // units: erg / (cm * s * K) -> GeV^2
-        double erg_over_cm_s_k_gev2 = erg_over_gev * gev_over_k / (gev_s * 1E-5 * km_gev);
-        return 1e18 * erg_over_cm_s_k_gev2;
         double nbar_val = nbar_of_r(r);
         double kf_e = k_fermi_of_nbar.at(electron)(nbar_val);
         double T_loc = T / exp_phi(r);
