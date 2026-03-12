@@ -159,7 +159,8 @@ int main(int argc, char **argv)
 
     // macroscopics
     auto fermi_specific_heat_dens = auxiliaries::phys::fermi_specific_heat_density(
-        k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_sf_shift, exp_phi, superfluid_p_temp, superfluid_n_temp, superconduct_q_gap);
+        k_fermi_of_nbar, m_stars_of_nbar, crustal_Aion, crustal_Acell, crustal_Zion, energy_density_of_nbar, 
+        nbar, nbar_sf_shift, exp_phi, superfluid_p_temp, superfluid_n_temp, superconduct_q_gap);
 
     std::function<double(double, double, double)> thermal_conductivity_crust, thermal_conductivity_core;
     switch (crust_thermal_conductivity_model)
