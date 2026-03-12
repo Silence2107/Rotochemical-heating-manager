@@ -204,6 +204,15 @@ int main(int argc, char **argv)
     std::vector<double> radii, profile;
     for (double r = cooling_radius_step / 2.0; r < r_ns; r += cooling_radius_step)
     {
+        // populate core profile
+        if (nbar(r) < nbar_sf_shift)
+            break;
+        radii.push_back(r);
+        profile.push_back(initial_t_profile_inf(r, r_ns, exp_phi, nbar));
+    }
+    for (double r = radii.back() + cooling_radius_step / 10; r < r_ns; r += cooling_radius_step / 10)
+    {
+        // populate crust profile with higher resolution
         radii.push_back(r);
         profile.push_back(initial_t_profile_inf(r, r_ns, exp_phi, nbar));
     }
