@@ -1185,7 +1185,9 @@ namespace instantiator
                     {
                         if (!(cooling_enable_equilibrium_condition2_read.is_number()))
                             RHM_ERROR("UI error: Profile flattening ratio for switching to equilibrium may only be provided as a number.");
-                        else if (std::abs(t_profile.end()[-2] - t_profile.front()) / t_profile.end()[-2] > cooling_enable_equilibrium_condition2_read.get<double>())
+                        double max_temp = *std::max_element(t_profile.begin(), t_profile.end()),
+                               min_temp = *std::min_element(t_profile.begin(), t_profile.end());
+                        if ((max_temp - min_temp) / max_temp > cooling_enable_equilibrium_condition2_read.get<double>())
                             return false;
                     }
                     return true;

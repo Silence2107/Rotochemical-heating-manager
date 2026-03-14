@@ -88,7 +88,7 @@ Actual precision of this estimate is unpredictable (given that our PDE solvers a
     - `"Mode"` (string, [<span style="color:red">COOL, RH</span>]) **:** Choose the way you'd like equilibrium solver to be enabled. Choose from ["Immediately", "Never", "Conditional"], with "Never" being a default. As the names suggest, "Never" mode never enables equilibrium solver, "Immediately" mode enables it immediately after the start of the simulation, and "Conditional" mode relies on external conditions (see below).
     - `"Conditions"` **:** Choice of conditions upon which cooling mode will get switched.
         - `"UponReachingTime"` (double, [<span style="color:red">COOL, RH</span>]) **:** Provide time in "TimeUnits", upon reaching which the equilibrium solver will be enabled. Disabled by default.
-        - `"UponProfileFlattening"` (double, [<span style="color:red">COOL, RH</span>]) **:** Provide desired flattening ratio $\left|\frac{T^{\infty}(R) - T^{\infty}(0)}{T^{\infty}(R)}\right|$ (dimensionless), upon reaching which the equilibrium solver will be enabled. Disabled by default.
+        - `"UponProfileFlattening"` (double, [<span style="color:red">COOL, RH</span>]) **:** Provide desired flattening ratio $\left|\frac{max T^{\infty}(r) - min T^{\infty}(r)}{max T^{\infty}(r)}\right|$ (dimensionless), upon reaching which the equilibrium solver will be enabled. Disabled by default.
         ```{note}
         If none conditions are supplemented, then the equilibrium solver will get invoked immediately.
         ```
