@@ -338,9 +338,9 @@ std::function<double(double, double, double)> auxiliaries::phys::fermi_specific_
                 {"dcv", -0.81487}};
             
             // Coulomb mean ion coupling
-            double gamma = 2.275E5 / T_K * pow(rho_g_over_cm3 / aion, 1.0 / 3) * pow(zion, 2.0);
+            double gamma = 2.275E5 / T_K * pow(rho_g_over_cm3 / acell, 1.0 / 3) * pow(zion, 2.0);
             // ion density in GeV^3, defines a scale for specific heat density
-            double n_ion = rho(nbar_val) / (aion * proton.mass() * 0.993);
+            double n_ion = rho(nbar_val) / (acell * proton.mass() * 0.993);
             // quantum parameter
             double delta = zion / T_K * sqrt(rho_g_over_cm3 / (aion * acell)) * 6.023E23;
             // rescaled cv limits
