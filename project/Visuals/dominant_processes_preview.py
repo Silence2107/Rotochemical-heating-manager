@@ -41,16 +41,17 @@ unique_names = set()
 for s in df['Dominant_processes']:
     names, percentages = extract_names_and_percentages(s)
     unique_names.update(names)
-unique_names = sorted(unique_names)
+unique_names = sorted(unique_names)[::-1] 
 colors = plt.get_cmap('viridis', len(unique_names))
 name_to_color = {name: colors(i) for i, name in enumerate(unique_names)}
-name_to_label = {name: f'{name} ({i + 1})' for i, name in enumerate(unique_names)}
 
 # plot dominant processes
 if not args.plot_luminosity:
     for i in range(len(df) - 1):
         current_time, future_time = df.loc[i, 't[years]'], df.loc[i + 1, 't[years]']
         names, percentages = extract_names_and_percentages(df.loc[i, 'Dominant_processes'])
+        # reorder names and percentages according to the order of unique_names to ensure consistent coloring
+        names, percentages = zip(*sorted(zip(names, percentages), key=lambda x: unique_names.index(x[0])))
         cumulative_percentages = np.cumsum(percentages)
         cumulative_percentages = np.insert(cumulative_percentages, 0, 0) 
         for j in range(len(names)):
@@ -78,7 +79,7 @@ if args.time_range:
 plt.xlabel('t [years]')
 plt.xscale('log')
 # create legend with unique labels and colors
-handles = [plt.Line2D([0], [0], color=name_to_color[name], label=name_to_label[name]) for name in unique_names]
+handles = [plt.Line2D([0], [0], color=name_to_color[name], label=name) for name in unique_names]
 plt.legend(handles=handles, title='Dominant processes')
 
 plt.savefig(args.output)
