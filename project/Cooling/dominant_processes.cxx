@@ -22,6 +22,7 @@ int main(int argc, char **argv)
 
     parser.addArgument({"--inputfile"}, "json input file path (required)");
     parser.addArgument({"--fraction"}, "what fraction of total luminosity is assumed significant (double, defaults to 0.1)");
+    parser.addArgument({"--digits"}, "number of digits to round percentages to (integer, defaults to 3)");
     auto args = parser.parseArgs(argc, argv);
 
     using namespace instantiator;
@@ -30,6 +31,7 @@ int main(int argc, char **argv)
     auxiliaries::io::Logger logger(program_name);
 
     double dominant_fraction = args.safeGet<double>("fraction", 0.1);
+    size_t number_of_digits = args.safeGet<size_t>("digits", 3);
 
     logger.log([]()
                { return true; }, auxiliaries::io::Logger::LogLevel::kInfo,
@@ -395,7 +397,7 @@ int main(int argc, char **argv)
         std::stringstream dominant_processes_ss;
         for (auto it = dominant_processes.begin(); it != dominant_processes.end(); ++it)
         {
-            dominant_processes_ss << std::setprecision(2) << "[" << (100.0 * it->second / neutrino_lum) << "%]" << it->first << ",";
+            dominant_processes_ss << std::setprecision(number_of_digits) << "[" << (100.0 * it->second / neutrino_lum) << "%]" << it->first << ",";
         }
         std::cout << dominant_processes_ss.str().substr(0, dominant_processes_ss.str().size() - 1);
         std::cout << '\n';
