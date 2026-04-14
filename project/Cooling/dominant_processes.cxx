@@ -173,7 +173,7 @@ int main(int argc, char **argv)
         case auxiliaries::phys::CrustThermalConductivity::kFlowers_Itoh:
             thermal_conductivity_crust = auxiliaries::phys::thermal_conductivity_crust_Flowers_Itoh(energy_density_of_nbar, nbar, exp_phi);
             break;
-        case auxiliaries::phys::CrustThermalConductivity::kShternin_Yakovlev:
+        case auxiliaries::phys::CrustThermalConductivity::kGYP:
             thermal_conductivity_crust = auxiliaries::phys::thermal_conductivity_crust_GYP(crustal_Aion,crustal_Acell,crustal_Zion,energy_density_of_nbar,nbar,nbar_sf_shift,exp_phi);
             break;
     }

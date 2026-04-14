@@ -460,11 +460,20 @@ namespace auxiliaries
         {
             /// @brief According to Flowers, Itoh, 1982
             kFlowers_Itoh,
-            /// @brief According to Shternin, Yakovlev, 2006
-            kShternin_Yakovlev
+            /// @brief According to Gnedin, Yakovlev, Potekhin, 2001
+            kGYP
         };
 
-        
+        /// @brief kGYP model of thermal conductivity of crust
+        /// @param a_ion ion mass number as a function of baryon density [GeV^3]
+        /// @param a_cell total baryon number in WS cell as a function of baryon density [GeV^3]
+        /// @param z_ion charge of ion as a function of baryon density [GeV^3]
+        /// @param rho energy density of the substance [GeV^4] as a function of baryon density [GeV^3]
+        /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
+        /// @param nbar_sf_shift lowest baryon density [GeV^3] with triplet pairing
+        /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
+        /// @return thermal conductivity as a function of radius, time and T^inf [natural units]
+        /// @cite Base value - Gnedin, Yakovlev, Potekhin, 2001
         std::function<double(double, double, double)> thermal_conductivity_crust_GYP(
             const std::function<double(double)> &a_ion, const std::function<double(double)> &a_cell, 
             const std::function<double(double)> &z_ion, const std::function<double(double)> &rho, 
@@ -478,7 +487,7 @@ namespace auxiliaries
         /// @cite Base value - Flowers, Itoh, 1982
         std::function<double(double, double, double)> thermal_conductivity_crust_Flowers_Itoh(const std::function<double(double)> &rho, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi);
 
-        /// @brief kShternin_Yakovlev model of thermal conductivity of crust
+        /// @brief kGYP model of thermal conductivity of crust
         /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^3]
         /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
         /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
@@ -503,7 +512,7 @@ namespace auxiliaries
         /// @cite Base value - Flowers, Itoh, 1982
         std::function<double(double, double, double)> thermal_conductivity_core_Flowers_Itoh(const std::function<double(double)> &rho, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi);
 
-        /// @brief kShternin_Yakovlev model of thermal conductivity of core
+        /// @brief kGYP model of thermal conductivity of core
         /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^3]
         /// @param m_stars_of_nbar mass of stars [GeV] of species as a function of baryon density [GeV^3]
         /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
