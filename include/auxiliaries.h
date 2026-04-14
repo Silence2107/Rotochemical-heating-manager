@@ -464,6 +464,12 @@ namespace auxiliaries
             kShternin_Yakovlev
         };
 
+        
+        std::function<double(double, double, double)> thermal_conductivity_crust_GYP(
+            const std::function<double(double)> &a_ion, const std::function<double(double)> &a_cell, 
+            const std::function<double(double)> &z_ion, const std::function<double(double)> &rho, 
+            const std::function<double(double)> &nbar_of_r, double nbar_sf_shift, const std::function<double(double)> &exp_phi);
+
         /// @brief kFlowers_Itoh model of thermal conductivity of crust
         /// @param rho energy density of the substance [GeV^4] as a function of baryon density [GeV^3]
         /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]

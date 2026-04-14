@@ -449,6 +449,193 @@ std::function<double(double, double, double)> auxiliaries::phys::fermi_specific_
     };
 }
 
+std::function<double(double, double, double)> auxiliaries::phys::thermal_conductivity_crust_GYP(
+            const std::function<double(double)> &a_ion, const std::function<double(double)> &a_cell, 
+            const std::function<double(double)> &z_ion, const std::function<double(double)> &rho, 
+            const std::function<double(double)> &nbar_of_r, double nbar_sf_shift, const std::function<double(double)> &exp_phi)
+{
+                
+    using namespace constants::scientific;
+    using namespace constants::conversion;
+    using namespace constants::species;
+
+
+    return [=](double r, double t, double T)
+    {
+        
+        const double alpha_f = 1.0 / 137.0;
+        const double e_sqr = 4 * Pi * alpha_f;
+        const double me = electron.mass();
+        const double mu = 0.993 * proton.mass();
+
+        if (me*alpha_f*e_sqr == 0)
+            return 0.0;
+
+        double nbar_val = nbar_of_r(r);
+           
+
+        double T_loc = T / exp_phi(r);
+
+        // if electrons are absent
+        // if (kf_e == 0)
+        //     kf_e = pow(3 * Pi * Pi * nbar_val * 0.3, 1.0 / 3);
+
+        double aion = a_ion(nbar_val),
+               acell = a_cell(nbar_val),
+               zion = z_ion(nbar_val);
+
+        if (nbar_val > nbar_sf_shift || aion * acell * zion == 0){
+
+            double erg_over_cm_s_k_gev2 = erg_over_gev * gev_over_k / (gev_s * 1E-5 * km_gev);
+            return 1e22 * erg_over_cm_s_k_gev2;
+        }
+                      
+
+        // point-like treatment so far
+        double xnuc = 0,
+               xnuct = 0;
+
+        // electron and ion densities
+        double n_i = rho(nbar_val) / (acell * mu),
+               n_e = zion / acell * nbar_val;  
+                   
+
+        // Fermi quantities
+        double pf = pow(3.0 * Pi * Pi * n_e, 1.0/3.0);
+        double m_st = sqrt(me * me + pf * pf);
+        double vf = pf / m_st;
+        double x_r = pf / me;
+
+
+        // plasma
+        double T_p = sqrt(4 * Pi * e_sqr * zion * zion * n_i / (aion * mu));
+
+        double tp = T_loc / T_p;
+
+        double betaZ = Pi * alpha_f * zion * vf ;
+
+        // ion sphere
+        double ai = pow(3.0 / (4 * Pi * n_i), 1.0 / 3.0);
+        double Gamma = zion * zion * e_sqr / (T_loc * ai);
+
+        // screening
+        double r_D = ai / sqrt(3.0*Gamma);
+        double s_D = 1.0 / pow(2*pf*r_D,2);
+        double s_i = s_D * (1.0 + 0.06*Gamma) * exp(-sqrt(Gamma));
+        double s_e = alpha_f/(Pi*vf);
+        double s = (s_i + s_e) * exp(-betaZ);
+
+        double w = (13.0/s_D) * (1.0 + betaZ/3.0);
+        double w1 = 0.0; // 14.73 * xnuc*xnuc *
+                    //(1.0 + zion*sqrt(xnuc)/13.0) *
+                   // (1.0 + betaZ/3.0);
+         
+
+        // corrections
+        double G_s = 1.0 / sqrt(1.0 + 0.0361/pow(zion,1.0/3.0)*pow(tp,2)) *
+                     (1.0 + 0.122*betaZ*betaZ);
+
+        double G_l = G_s +
+            0.0105*tp/pow(tp*tp + 0.0081,1.5) *
+            (1.0 + pow(vf,3)*betaZ) *
+            (1.0 - 1.0/zion) *
+            (1.0 + xnuct*xnuct*sqrt(2.0*zion));
+
+        if (zion<1.0)
+            G_l=G_s;   
+
+        double D = exp(-0.42 * sqrt(x_r/(aion*zion)) * 3.0 * exp(-9.1*tp));
+
+        // exp_int
+        // Swamee and Ohija approximation 
+        auto e1_int = [](double x)
+        {
+            double a = log((0.56146 / x + 0.65) * (1+x)),
+                        b = pow(x, 4.0) * exp(7.7*x)*pow(2+x, 3.7);
+            return pow(pow(a, -7.7) + b, -0.13);
+        };
+
+        // get_lam
+        auto get_lam = [&](double s, double w)
+        {
+            const double eps = 0.05;
+            double Lam1, Lam2;
+
+            if (w == 0)
+                return std::vector<double>({0.0, 0.0});
+
+            if (s <= eps && s*w <= eps)
+            {   
+                Lam1 = 0.5*(e1_int(w)+log(w)+0.5772156);
+                Lam2 = (exp(-w)-1.0+w)/(2.0*w);
+            }
+            else if (w <= eps)
+            {
+                Lam1 = w*((2*s+1)/(2*s+2) - s*log((s+1)/s));
+                Lam2 = w*((1-3*s-6*s*s)/(4*s+4) + 1.5*log((s+1)/s));
+            }
+            else if (w > 1.0/eps)
+            {
+                Lam1 = 0.5*(log((s+1)/s) - 1.0/(s+1));
+                Lam2 = (2*s+1)/(2*s+2) - s*log((s+1)/s);
+            }
+
+            else
+            {
+                Lam1 = log((s+1)/s)
+                     + s/(s+1)*(1-exp(-w))
+                     - (1+s*w)*exp(s*w)*(e1_int(s*w)-e1_int(s*w+w));
+                Lam1 *= 0.5;
+
+                Lam2 = (exp(-w)-1+w)/w
+                     - s*s/(s+1)*(1-exp(-w))
+                     - 2*s*log((s+1)/s)
+                     + s*(2+s*w)*exp(s*w)*(e1_int(s*w)-e1_int(s*w+w));
+                Lam2 *= 0.5;
+            }
+
+            return std::vector<double>({Lam1, Lam2});
+        };
+
+        auto lamA = get_lam(s, w + w1);
+        // double Lama = Lam1a - pow(vf,2) * Lam2a;
+
+        auto lamB = get_lam(s, w1);
+        // double Lamb = Lam1b - pow(vf,2) * Lam2b;
+
+        double Lam = (lamA[0] - lamB[0]) - pow(vf, 2) * (lamA[1] - lamB[1]);
+
+        // high T
+       // double Lam_s_hT = Lam * G_s * D;
+        double Lam_l_hT = Lam * G_l * D;
+
+        // low T
+        double T_u = T_p * pow(zion,1.0/3.0) * alpha_f / 3.0 / vf;
+        double Lam0 = 50.0 * sqrt(x_r) / (sqrt(aion)*zion);
+
+        //double Lam_s_lT = Lam0 * (4.0/3.0)*alpha_f * 1.0/vf * pow(tp,5);
+        double Lam_l_lT = Lam0 * pow(tp,3);
+
+        double ww = exp(-T_u/T_loc);
+
+       // double Lam_s = ww*Lam_s_hT + (1-ww)*Lam_s_lT;
+        double Lam_l = ww*Lam_l_hT + (1-ww)*Lam_l_lT;
+
+        // collision
+        double nu0 = 4*zion*m_st*alpha_f*alpha_f/(3*Pi);
+
+       // double nu_s = nu0 * Lam_s;
+        double nu_l = nu0 * Lam_l;
+
+        //double sigma = n_e * e_sqr / (m_st * nu_s);
+        double lambda = Pi * Pi * T_loc * n_e / (3 * m_st * nu_l);
+
+
+        return lambda;
+    };
+}
+
+
 std::function<double(double, double, double)> auxiliaries::phys::thermal_conductivity_crust_Flowers_Itoh(const std::function<double(double)> &rho, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi)
 {
     return [=](double r, double t, double T)
