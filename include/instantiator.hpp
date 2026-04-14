@@ -1213,12 +1213,12 @@ namespace instantiator
             RHM_ERROR("UI error: Crust thermal conductivity model may only be provided as a string (model name).");
         else
         {
-            if (thermal_conductivity_crust_read == "GYP")
+            if (thermal_conductivity_crust_read == "GYP" && crustal_functions_provided)
                 crust_thermal_conductivity_model = auxiliaries::phys::CrustThermalConductivity::kGYP;
             else if (thermal_conductivity_crust_read == "FlowersItoh")
                 crust_thermal_conductivity_model = auxiliaries::phys::CrustThermalConductivity::kFlowers_Itoh;
             else
-                RHM_ERROR("UI error: " + thermal_conductivity_crust_read.get<std::string>() + " is not a supported crust thermal conductivity model. Select from \"FlowersItoh\" or \"GYP\".");
+                RHM_ERROR("UI error: " + thermal_conductivity_crust_read.get<std::string>() + " is not a supported crust thermal conductivity model. Select from \"FlowersItoh\" or \"GYP\". GYP can only be provided when crustal functions are provided.");
         }
         
         // Setting in core
