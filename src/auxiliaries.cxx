@@ -476,7 +476,7 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
         if (nbar_val > nbar_sf_shift || aion * acell * zion == 0)
         {
             // plug effectively infinite then
-            return 1e30 * erg_over_cm_s_k_gev2;
+            return auxiliaries::phys::thermal_conductivity_crust_Infinite()(r, t, T);
         }
 
         // point-like treatment so far
@@ -687,31 +687,32 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
 }
 
 std::function<double(double, double, double)> auxiliaries::phys::thermal_conductivity_crust_Shternin_Yakovlev(
-    const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar,
-    const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi)
+    const std::function<double(double)> &a_ion, const std::function<double(double)> &a_cell, 
+    const std::function<double(double)> &z_ion, const std::function<double(double)> &rho, 
+    const std::function<double(double)> &nbar_of_r, double nbar_sf_shift, const std::function<double(double)> &exp_phi)
 {
-
-    using namespace constants::conversion;
-    using namespace constants::scientific;
-    using namespace constants::species;
-
-    if (!k_fermi_of_nbar.count(electron))
-        return [](double, double, double)
-        {
-            return 0.0;
-        };
-
     return [=](double r, double t, double T)
     {
+        using namespace constants::conversion;
+        using namespace constants::scientific;
+        using namespace constants::species;
+
         double nbar_val = nbar_of_r(r);
-        double kf_e = k_fermi_of_nbar.at(electron)(nbar_val);
+
         double T_loc = T / exp_phi(r);
 
-        // if electrons are absent
-        if (kf_e == 0)
-            kf_e = pow(3 * Pi * Pi * nbar_val * 0.3, 1.0 / 3);
+        double aion = a_ion(nbar_val),
+               acell = a_cell(nbar_val),
+               zion = z_ion(nbar_val);
 
-        // I would pull it from m_stars_of_nbar, but I'm not yet sure they are properly defined in crust
+        if (nbar_val > nbar_sf_shift || aion * acell * zion == 0)
+        {
+            // plug effectively infinite then
+            return auxiliaries::phys::thermal_conductivity_crust_Infinite()(r, t, T);
+        }
+
+        double n_e = zion / acell * nbar_val;
+        double kf_e = pow(3.0 * Pi * Pi * n_e, 1.0 / 3.0);
         double mst_e = sqrt(electron.mass() * electron.mass() + kf_e * kf_e);
         double alpha = 1.0 / 137;
         double T_pe = 4.0 * Pi * sqrt(nbar_val * alpha / mst_e);

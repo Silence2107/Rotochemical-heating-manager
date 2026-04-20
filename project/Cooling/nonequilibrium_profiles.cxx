@@ -164,22 +164,31 @@ int main(int argc, char **argv)
 
     std::function<double(double, double, double)> thermal_conductivity_crust, thermal_conductivity_core;
     switch (crust_thermal_conductivity_model)
-    {            
-        case auxiliaries::phys::CrustThermalConductivity::kInfinite:
-            thermal_conductivity_crust = auxiliaries::phys::thermal_conductivity_crust_Infinite();
-            break;
-        case auxiliaries::phys::CrustThermalConductivity::kGYP:
-            thermal_conductivity_crust = auxiliaries::phys::thermal_conductivity_crust_GYP(crustal_Aion,crustal_Acell,crustal_Zion,energy_density_of_nbar,nbar,nbar_sf_shift,exp_phi);
-            break;
+    {
+    case auxiliaries::phys::CrustThermalConductivity::kInfinite:
+        thermal_conductivity_crust = auxiliaries::phys::thermal_conductivity_crust_Infinite();
+        break;
+    case auxiliaries::phys::CrustThermalConductivity::kGYP:
+    {
+        auto thermal_conductivity_crust_GYP = auxiliaries::phys::thermal_conductivity_crust_GYP(crustal_Aion, crustal_Acell, crustal_Zion, energy_density_of_nbar, nbar, nbar_sf_shift, exp_phi);
+        auto thermal_conductivity_crust_ee = auxiliaries::phys::thermal_conductivity_crust_Shternin_Yakovlev(crustal_Aion, crustal_Acell, crustal_Zion, energy_density_of_nbar, nbar, nbar_sf_shift, exp_phi);
+        thermal_conductivity_crust = [=](double r, double t, double T)
+        {
+            double k_ee = thermal_conductivity_crust_ee(r, t, T);
+            double k_GYP = thermal_conductivity_crust_GYP(r, t, T);
+            return 1.0 / (1.0 / k_ee + 1.0 / k_GYP);
+        };
+        break;
+    }
     }
     switch (core_thermal_conductivity_model)
     {
-        case auxiliaries::phys::CoreThermalConductivity::kFlowers_Itoh:
-            thermal_conductivity_core = auxiliaries::phys::thermal_conductivity_core_Flowers_Itoh(energy_density_of_nbar, nbar, exp_phi);
-            break;
-        case auxiliaries::phys::CoreThermalConductivity::kShternin_Yakovlev:
-            thermal_conductivity_core = auxiliaries::phys::thermal_conductivity_core_Shternin_Yakovlev(k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superfluid_p_temp);
-            break;
+    case auxiliaries::phys::CoreThermalConductivity::kFlowers_Itoh:
+        thermal_conductivity_core = auxiliaries::phys::thermal_conductivity_core_Flowers_Itoh(energy_density_of_nbar, nbar, exp_phi);
+        break;
+    case auxiliaries::phys::CoreThermalConductivity::kShternin_Yakovlev:
+        thermal_conductivity_core = auxiliaries::phys::thermal_conductivity_core_Shternin_Yakovlev(k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superfluid_p_temp);
+        break;
     }
     auto thermal_conductivity = [&](double r, double t, double T)
     {

@@ -97,7 +97,6 @@ int main(int argc, char **argv)
     auto hadron_bremsstrahlung_emissivity = cooling::predefined::neutrinic::hadron_bremsstrahlung_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, crustal_Aion, crustal_Acell, nbar, nbar_sf_shift, exp_phi, superfluid_p_temp, superfluid_n_temp);
 
-
     auto hadron_PBF_emissivity = cooling::predefined::neutrinic::hadron_pbf_emissivity(
         k_fermi_of_nbar, m_stars_of_nbar, nbar, nbar_sf_shift, exp_phi, superfluid_p_temp, superfluid_n_temp);
 
@@ -155,27 +154,36 @@ int main(int argc, char **argv)
 
     // microscopics
     auto fermi_specific_heat_dens = auxiliaries::phys::fermi_specific_heat_density(
-        k_fermi_of_nbar, m_stars_of_nbar, crustal_Aion, crustal_Acell, crustal_Zion, energy_density_of_nbar, 
+        k_fermi_of_nbar, m_stars_of_nbar, crustal_Aion, crustal_Acell, crustal_Zion, energy_density_of_nbar,
         nbar, nbar_sf_shift, exp_phi, superfluid_p_temp, superfluid_n_temp, superconduct_q_gap);
 
     std::function<double(double, double, double)> thermal_conductivity_crust, thermal_conductivity_core;
     switch (crust_thermal_conductivity_model)
-    {            
-        case auxiliaries::phys::CrustThermalConductivity::kInfinite:
-            thermal_conductivity_crust = auxiliaries::phys::thermal_conductivity_crust_Infinite();
-            break;
-        case auxiliaries::phys::CrustThermalConductivity::kGYP:
-            thermal_conductivity_crust = auxiliaries::phys::thermal_conductivity_crust_GYP(crustal_Aion,crustal_Acell,crustal_Zion,energy_density_of_nbar,nbar,nbar_sf_shift,exp_phi);
-            break;
+    {
+    case auxiliaries::phys::CrustThermalConductivity::kInfinite:
+        thermal_conductivity_crust = auxiliaries::phys::thermal_conductivity_crust_Infinite();
+        break;
+    case auxiliaries::phys::CrustThermalConductivity::kGYP:
+    {
+        auto thermal_conductivity_crust_GYP = auxiliaries::phys::thermal_conductivity_crust_GYP(crustal_Aion, crustal_Acell, crustal_Zion, energy_density_of_nbar, nbar, nbar_sf_shift, exp_phi);
+        auto thermal_conductivity_crust_ee = auxiliaries::phys::thermal_conductivity_crust_Shternin_Yakovlev(crustal_Aion, crustal_Acell, crustal_Zion, energy_density_of_nbar, nbar, nbar_sf_shift, exp_phi);
+        thermal_conductivity_crust = [=](double r, double t, double T)
+        {
+            double k_ee = thermal_conductivity_crust_ee(r, t, T);
+            double k_GYP = thermal_conductivity_crust_GYP(r, t, T);
+            return 1.0 / (1.0 / k_ee + 1.0 / k_GYP);
+        };
+        break;
+    }
     }
     switch (core_thermal_conductivity_model)
     {
-        case auxiliaries::phys::CoreThermalConductivity::kFlowers_Itoh:
-            thermal_conductivity_core = auxiliaries::phys::thermal_conductivity_core_Flowers_Itoh(energy_density_of_nbar, nbar, exp_phi);
-            break;
-        case auxiliaries::phys::CoreThermalConductivity::kShternin_Yakovlev:
-            thermal_conductivity_core = auxiliaries::phys::thermal_conductivity_core_Shternin_Yakovlev(k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superfluid_p_temp);
-            break;
+    case auxiliaries::phys::CoreThermalConductivity::kFlowers_Itoh:
+        thermal_conductivity_core = auxiliaries::phys::thermal_conductivity_core_Flowers_Itoh(energy_density_of_nbar, nbar, exp_phi);
+        break;
+    case auxiliaries::phys::CoreThermalConductivity::kShternin_Yakovlev:
+        thermal_conductivity_core = auxiliaries::phys::thermal_conductivity_core_Shternin_Yakovlev(k_fermi_of_nbar, m_stars_of_nbar, nbar, exp_phi, superfluid_p_temp);
+        break;
     }
     auto thermal_conductivity = [&](double r, double t, double T)
     {
@@ -310,9 +318,9 @@ int main(int argc, char **argv)
                 neutrino_lum += 4 * constants::scientific::Pi * radii[count] * radii[count] * exp_lambda(radii[count]) * (radii[count + 1] - radii[count]) * Q_nu(radii[count], t_curr + t_step, profile[count]);
             }
             logger.log([&]()
-                { return switch_to_equilibrium(t_curr, profile, last_core_index); }, auxiliaries::io::Logger::LogLevel::kInfo,
-                [&]()
-                { return "Switching to equilibrium cooling at t = " + std::to_string(1.0E6 * t_curr / (constants::conversion::myr_over_s * constants::conversion::gev_s)) + " [yr]"; }, "eq. cooling");
+                       { return switch_to_equilibrium(t_curr, profile, last_core_index); }, auxiliaries::io::Logger::LogLevel::kInfo,
+                       [&]()
+                       { return "Switching to equilibrium cooling at t = " + std::to_string(1.0E6 * t_curr / (constants::conversion::myr_over_s * constants::conversion::gev_s)) + " [yr]"; }, "eq. cooling");
         }
 
         // equilibrium stage

@@ -495,12 +495,19 @@ namespace auxiliaries
         std::function<double(double, double, double)> thermal_conductivity_crust_Flowers_Itoh(const std::function<double(double)> &rho, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi);
 
         /// @brief e-e contribution to thermal conductivity of crust
-        /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^3]
+        /// @param a_ion ion mass number as a function of baryon density [GeV^3]
+        /// @param a_cell total baryon number in WS cell as a function of baryon density [GeV^3]
+        /// @param z_ion charge of ion as a function of baryon density [GeV^3]
+        /// @param rho energy density of the substance [GeV^4] as a function of baryon density [GeV^3]
         /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
+        /// @param nbar_sf_shift lowest baryon density [GeV^3] with triplet pairing
         /// @param exp_phi e^phi metric function of radius [GeV^{-1}]
         /// @return thermal conductivity as a function of radius, time and T^inf [natural units]
         /// @cite Base value - Shternin, Yakovlev, 2006
-        std::function<double(double, double, double)> thermal_conductivity_crust_Shternin_Yakovlev(const std::map<auxiliaries::phys::Species, std::function<double(double)>> &k_fermi_of_nbar, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi);
+        std::function<double(double, double, double)> thermal_conductivity_crust_Shternin_Yakovlev(
+            const std::function<double(double)> &a_ion, const std::function<double(double)> &a_cell, 
+            const std::function<double(double)> &z_ion, const std::function<double(double)> &rho, 
+            const std::function<double(double)> &nbar_of_r, double nbar_sf_shift, const std::function<double(double)> &exp_phi);
 
         /// @brief Selection of core thermal conductivity models
         enum class CoreThermalConductivity
