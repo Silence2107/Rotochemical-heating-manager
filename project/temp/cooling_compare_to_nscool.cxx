@@ -153,8 +153,8 @@ int main(int argc, char **argv)
     std::function<double(double, double, double)> thermal_conductivity_crust, thermal_conductivity_core;
     switch (crust_thermal_conductivity_model)
     {            
-        case auxiliaries::phys::CrustThermalConductivity::kFlowers_Itoh:
-            thermal_conductivity_crust = auxiliaries::phys::thermal_conductivity_crust_Flowers_Itoh(energy_density_of_nbar, nbar, exp_phi);
+        case auxiliaries::phys::CrustThermalConductivity::kInfinite:
+            thermal_conductivity_crust = auxiliaries::phys::thermal_conductivity_crust_Infinite();
             break;
         case auxiliaries::phys::CrustThermalConductivity::kGYP:
             thermal_conductivity_crust = auxiliaries::phys::thermal_conductivity_crust_GYP(crustal_Aion,crustal_Acell,crustal_Zion,energy_density_of_nbar,nbar,nbar_sf_shift,exp_phi);

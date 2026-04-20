@@ -614,6 +614,14 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
     };
 }
 
+std::function<double(double, double, double)> auxiliaries::phys::thermal_conductivity_crust_Infinite()
+{
+    return [](double, double, double)
+    {
+        return 1e30 * constants::conversion::erg_over_cm_s_k_gev2;
+    };
+}
+
 std::function<double(double, double, double)> auxiliaries::phys::thermal_conductivity_crust_Flowers_Itoh(const std::function<double(double)> &rho, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi)
 {
     return [=](double r, double t, double T)

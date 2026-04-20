@@ -459,7 +459,9 @@ namespace auxiliaries
         enum class CrustThermalConductivity
         {
             /// @brief According to Flowers, Itoh, 1982
-            kFlowers_Itoh,
+            // kFlowers_Itoh,
+            /// @brief Infinite thermal conductivity (when crustal functions are not provided)
+            kInfinite,
             /// @brief According to Gnedin, Yakovlev, Potekhin, 2001
             kGYP
         };
@@ -479,6 +481,11 @@ namespace auxiliaries
             const std::function<double(double)> &z_ion, const std::function<double(double)> &rho, 
             const std::function<double(double)> &nbar_of_r, double nbar_sf_shift, const std::function<double(double)> &exp_phi);
 
+        /// @brief kInfinite model of thermal conductivity of crust
+        /// @brief Returns a very high constant value of thermal conductivity, effectively forcing isothermality
+        /// @return thermal conductivity as a function of radius, time and T^inf [natural units]
+        std::function<double(double, double, double)> thermal_conductivity_crust_Infinite();
+        
         /// @brief kFlowers_Itoh model of thermal conductivity of crust
         /// @param rho energy density of the substance [GeV^4] as a function of baryon density [GeV^3]
         /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
@@ -487,7 +494,7 @@ namespace auxiliaries
         /// @cite Base value - Flowers, Itoh, 1982
         std::function<double(double, double, double)> thermal_conductivity_crust_Flowers_Itoh(const std::function<double(double)> &rho, const std::function<double(double)> &nbar_of_r, const std::function<double(double)> &exp_phi);
 
-        /// @brief kGYP model of thermal conductivity of crust
+        /// @brief e-e contribution to thermal conductivity of crust
         /// @param k_fermi_of_nbar fermi momentum [GeV] of species as a function of baryon density [GeV^3]
         /// @param nbar_of_r baryon density [GeV^3] as a function of radius [GeV^{-1}]
         /// @param exp_phi e^phi metric function of radius [GeV^{-1}]

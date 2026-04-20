@@ -53,7 +53,18 @@ Be adviced that for each particle there is an expected mandatory list of propert
             - `"Column"` (uint, [<span style="color:red">COOL, RH</span>]) **:** Column number with effective mass for given particle, counting from 0th.
             - `"ProvidedAs"` (string, [<span style="color:red">COOL, RH</span>]) **:** The way the effective mass is provided. Choose from ["FermiEnergy", "EffectiveMass"]. "FermiEnergy" mode incurs the effective mass via relativistic formula with Fermi momentum (occasionally applicable for light particles) and "EffectiveMass" mode expects actual effective mass. If "FermiEnergy" mode is chosen, the "Column" and "Units" entries are ignored.
             - `"Units"` (string/double, [<span style="color:red">COOL, RH</span>]) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev", "MeV", "NucleonMass"], or specify an actual multiplier. If "FermiEnergy" mode is chosen, "Units" are disregarded.
-            
+    - `"AIon"` **:** Ion mass number at the point.
+        - `"Column"` (uint, [<span style="color:red">COOL, RH</span>]) **:** Column number with AIon, counting from 0th.
+    - `"ZIon"` **:** Ion charge number at the point.
+        - `"Column"` (uint, [<span style="color:red">COOL, RH</span>]) **:** Column number with ZIon, counting from 0th.
+    - `"ACell"` **:** Number of baryons within the Wigner-Seitz cell.
+        - `"Column"` (uint, [<span style="color:red">COOL, RH</span>]) **:** Column number with ACell, counting from 0th.
+    ```{note}
+        All 3 crustal functions are expected to be provided simultaneously, or not provided at all. In case of the latter, crust effects on the cooling either get ignored or severely simplified.
+    ```
+    ```{warning}
+        When providing crustal functions, make sure to populate the respective columns with 0 above crust densities (above "SuperfluidShift").
+    ```
     - `"QuarkSuperconductingGap"` : Superconductive gap for quarks at the point. Noticeably affects all quark cooling channels as $\sim \exp{\left[-\frac{\Delta}{T}\right]}$, with $\Delta$ being the gap and $T$ being local temperature. Assumed to be zero, if not specified.
         - `"Column"` (uint, [<span style="color:red">COOL, RH</span>]) **:** Column number with quark superconducting gap, counting from 0th. If not specified, the gap is assumed to be absent for all quarks.
         - `"Units"` (string/double, [<span style="color:red">COOL, RH</span>]) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev", "MeV", "Fm-1"], or specify an actual multiplier. 
@@ -76,6 +87,6 @@ Be adviced that for each particle there is an expected mandatory list of propert
     ```{note}
     There is an interplay, if one enables both 1S0 and 3P2 superfluidity for neutrons. In this case, the critical temperature will be imposed as 3P2 above SF shift and 1S0 beyond it.
     ```
-    - `"CrustThermalConductivity"` (string, [<span style="color:red">COOL, RH</span>]) **:** Thermal conductivity model selection for NS crust. The only choice currently is ["FlowersItoh" {cite}`Flowers1981`, "GYP" {cite}`Gnedin2001`], which is also the default.
+    - `"CrustThermalConductivity"` (string, [<span style="color:red">COOL, RH</span>]) **:** Thermal conductivity model selection for NS crust. Select from ["Infinite", "GYP" {cite}`Gnedin2001`], with "Infinite" being the default. Note that "GYP" can only be used in conjunction with crustal functions.
     - `"CoreThermalConductivity"` (string, [<span style="color:red">COOL, RH</span>]) **:** Thermal conductivity model selection for NS core. Select from ["FlowersItoh" {cite}`Flowers1981`, "ShterninYakovlev" {cite}`Shternin_2007`], with "ShterninYakovlev" being default.
 
