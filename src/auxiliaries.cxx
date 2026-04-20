@@ -476,7 +476,6 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
         if (nbar_val > nbar_sf_shift || aion * acell * zion == 0)
         {
             // plug effectively infinite then
-            double erg_over_cm_s_k_gev2 = erg_over_gev * gev_over_k / (gev_s * 1E-5 * km_gev);
             return 1e30 * erg_over_cm_s_k_gev2;
         }
 
@@ -627,8 +626,6 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
         // scales, present in the calculations
         double T_melt_8 = 2.4E5 * pow(rho_cm3_over_g, 1.0 / 3) * 1E-8;
 
-        // units: erg / (cm * s * K) -> GeV^2
-        double erg_over_cm_s_k_gev2 = erg_over_gev * gev_over_k / (gev_s * 1E-5 * km_gev);
         // Derivations of F & I, low density regions
 
         // (2) Liquid metal region
@@ -751,8 +748,6 @@ std::function<double(double, double, double)> auxiliaries::phys::thermal_conduct
         double rho_cm3_over_g = rho(nbar_of_r(r)) / g_over_cm3_gev4,
                T_loc_8 = T / exp_phi(r) * (gev_over_k / 1E8);
 
-        // units: erg / (cm * s * K) -> GeV^2
-        double erg_over_cm_s_k_gev2 = erg_over_gev * gev_over_k / (gev_s * 1E-5 * km_gev);
         // Derivations of F & I, high density regions
 
         // (1) Quantum liquid region
