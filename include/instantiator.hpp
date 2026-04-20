@@ -124,7 +124,7 @@ namespace instantiator
     // cooling grid step
     double cooling_radius_step;
     // condition on which to switch to equilibrium cooling
-    std::function<bool(double, const std::vector<double> &)> switch_to_equilibrium;
+    std::function<bool(double, const std::vector<double> &, size_t)> switch_to_equilibrium;
 
     // time step expansion rate (set to 1.0 for constant time step)
     double exp_rate_estim;
@@ -1154,15 +1154,15 @@ namespace instantiator
         // condition on which to switch to equilibrium cooling
         auto cooling_enable_equilibrium_mode_read = j["CoolingSolver"]["EnableEquilibrium"]["Mode"];
         if (!(cooling_enable_equilibrium_mode_read.is_string()))
-            switch_to_equilibrium = [](double, const std::vector<double> &)
+            switch_to_equilibrium = [](double, const std::vector<double> &, size_t)
             { return false; };
         else
         {
             if (cooling_enable_equilibrium_mode_read == "Immediately")
-                switch_to_equilibrium = [](double, const std::vector<double> &)
+                switch_to_equilibrium = [](double, const std::vector<double> &, size_t)
                 { return true; };
             else if (cooling_enable_equilibrium_mode_read == "Never")
-                switch_to_equilibrium = [](double, const std::vector<double> &)
+                switch_to_equilibrium = [](double, const std::vector<double> &, size_t)
                 { return false; };
             else if (cooling_enable_equilibrium_mode_read == "Conditional")
             {
@@ -1172,7 +1172,7 @@ namespace instantiator
                 // let's make it less efficient but more readable
                 switch_to_equilibrium = [cooling_enable_equilibrium_condition1_read,
                                          cooling_enable_equilibrium_condition2_read,
-                                         time_conversion](double t_curr, const std::vector<double> &t_profile)
+                                         time_conversion](double t_curr, const std::vector<double> &t_profile, size_t last_core_index)
                 {
                     if (!cooling_enable_equilibrium_condition1_read.is_null())
                     {
@@ -1185,8 +1185,8 @@ namespace instantiator
                     {
                         if (!(cooling_enable_equilibrium_condition2_read.is_number()))
                             RHM_ERROR("UI error: Profile flattening ratio for switching to equilibrium may only be provided as a number.");
-                        double max_temp = *std::max_element(t_profile.begin(), t_profile.end()),
-                               min_temp = *std::min_element(t_profile.begin(), t_profile.end());
+                        double max_temp = *std::max_element(t_profile.begin(), t_profile.begin() + last_core_index + 1),
+                               min_temp = *std::min_element(t_profile.begin(), t_profile.begin() + last_core_index + 1);
                         if ((max_temp - min_temp) / max_temp > cooling_enable_equilibrium_condition2_read.get<double>())
                             return false;
                     }

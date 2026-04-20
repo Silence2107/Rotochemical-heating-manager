@@ -202,14 +202,20 @@ int main(int argc, char **argv)
 
     // tabulate initial profile and radii
     std::vector<double> radii, profile;
+    size_t last_core_index = 0;
     for (double r = cooling_radius_step / 2.0; r < r_ns; r += cooling_radius_step)
     {
         // populate core profile
-        if (nbar(r) < nbar_sf_shift)
+        if (nbar(r) < nbar_sf_shift && radii.size() > 0)
+        {
+            last_core_index = radii.size() - 1;
             break;
+        }
         radii.push_back(r);
         profile.push_back(initial_t_profile_inf(r, r_ns, exp_phi, nbar));
     }
+    if (last_core_index == 0)
+        last_core_index = radii.size() - 1;
     for (double r = radii.back() + cooling_radius_step / 10; r < r_ns; r += cooling_radius_step / 10)
     {
         // populate crust profile with higher resolution
@@ -247,7 +253,7 @@ int main(int argc, char **argv)
             auto t_l_profiles = cooling::solver::nonequilibrium_cooling(
                 t_curr, t_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
                 exp_lambda, exp_phi, radii, profile, te_tb, cooling_newton_step_eps, cooling_newton_max_iter);
-            next_T = t_l_profiles[0].end()[-2];
+            next_T = t_l_profiles[0].end()[-2];;
             reached_adaption_limit = t_l_profiles[2][0];
             reached_negative_temperature = t_l_profiles[2][1];
             double max_diff = 0;
