@@ -228,20 +228,14 @@ int main(int argc, char **argv)
 
     // tabulate initial profile and radii
     std::vector<double> radii, profile;
-    size_t last_core_index = 0;
     for (double r = cooling_radius_step / 2.0; r < r_ns; r += cooling_radius_step)
     {
         // populate core profile
         if (nbar(r) < nbar_sf_shift && radii.size() > 0)
-        {
-            last_core_index = radii.size() - 1;
             break;
-        }
         radii.push_back(r);
         profile.push_back(initial_t_profile_inf(r, r_ns, exp_phi, nbar));
     }
-    if (last_core_index == 0)
-        last_core_index = radii.size() - 1;
     for (double r = radii.back() + cooling_radius_step / 10; r < r_ns; r += cooling_radius_step / 10)
     {
         // populate crust profile with higher resolution
@@ -287,7 +281,7 @@ int main(int argc, char **argv)
         std::vector<std::pair<std::string, double>> neutrino_luminosities; // placeholder for processes neutrino luminosity estimates
 
         // non-equilibrium stage
-        if (!switch_to_equilibrium(t_curr, profile, last_core_index))
+        if (!switch_to_equilibrium(t_curr, profile))
         {
             auto t_l_profiles = cooling::solver::nonequilibrium_cooling(
                 t_curr, t_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
@@ -334,7 +328,7 @@ int main(int argc, char **argv)
                 neutrino_luminosities.push_back(std::make_pair(it->first, proc_luminosity));
             }
             logger.log([&]()
-                { return switch_to_equilibrium(t_curr, profile, last_core_index); }, auxiliaries::io::Logger::LogLevel::kInfo,
+                { return switch_to_equilibrium(t_curr, profile); }, auxiliaries::io::Logger::LogLevel::kInfo,
                 [&]()
                 { return "Switching to equilibrium cooling at t = " + std::to_string(1.0E6 * t_curr / (constants::conversion::myr_over_s * constants::conversion::gev_s)) + " [yr]"; }, "eq. cooling");
         }
