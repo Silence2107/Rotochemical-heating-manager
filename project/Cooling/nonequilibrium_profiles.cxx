@@ -311,7 +311,7 @@ int main(int argc, char **argv)
 
         if (print_all_time)
         {
-            std::cout << std::left << std::setw(indent) << t_curr * 1E6 / (myr_over_s * gev_s) << std::setw(indent) << te_tb(profile.end()[-2]) * exp_phi_at_R * gev_over_k << std::setw(indent) << profile[0] * gev_over_k << std::setw(indent) << profile.end()[-2] * gev_over_k << '\n';
+            std::cout << std::left << std::setw(indent) << t_curr * 1E6 / (myr_over_s * gev_s) << std::setw(indent) << te_tb(profile.back()) * exp_phi_at_R * gev_over_k << std::setw(indent) << profile[0] * gev_over_k << std::setw(indent) << profile.back() * gev_over_k << '\n';
         }
 
         if (t_curr >= write_time)

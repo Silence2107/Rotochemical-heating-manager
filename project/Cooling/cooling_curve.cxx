@@ -234,7 +234,7 @@ int main(int argc, char **argv)
     }
     double t_step = base_t_step,
            t_curr = t_init,
-           temp_curr = profile.end()[-2];
+           temp_curr = profile.back();
 
     // solution arrays
     std::vector<double> time, surface_temp;
@@ -274,7 +274,7 @@ int main(int argc, char **argv)
             auto t_l_profiles = cooling::solver::nonequilibrium_cooling(
                 t_curr, t_step, Q_nu, fermi_specific_heat_dens, thermal_conductivity,
                 exp_lambda, exp_phi, radii, profile, te_tb, cooling_newton_step_eps, cooling_newton_max_iter);
-            next_T = t_l_profiles[0].end()[-2];
+            next_T = t_l_profiles[0].back();
             reached_adaption_limit = t_l_profiles[2][0];
             reached_negative_temperature = t_l_profiles[2][1];
             double max_diff = 0;

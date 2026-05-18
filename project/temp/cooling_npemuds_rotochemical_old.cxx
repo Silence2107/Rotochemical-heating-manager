@@ -589,7 +589,7 @@ int main(int argc, char **argv)
            t_curr = t_init;
     // instantiate initial values for (T, etas)
     std::vector<double> previous_values(1 + rh_particles.size(), 0);
-    previous_values[0] = profile.end()[-2];
+    previous_values[0] = profile.back();
     // initial chemical imbalances are zero
 
     // solution arrays
