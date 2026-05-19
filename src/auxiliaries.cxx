@@ -329,67 +329,69 @@ std::function<double(double, double, double)> auxiliaries::phys::fermi_specific_
             using namespace constants::conversion;
             // following NSCool
 
-            double T_K = T_loc * gev_over_k,
-                   rho_g_over_cm3 = rho(nbar_val) / g_over_cm3_gev4;
+            // double T_K = T_loc * gev_over_k,
+            //        rho_g_over_cm3 = rho(nbar_val) / g_over_cm3_gev4;
 
-            std::map<std::string, double> factors = {
-                {"bcv", 0.95043},
-                {"ccv", 0.18956},
-                {"dcv", -0.81487}};
+            // std::map<std::string, double> factors = {
+            //     {"bcv", 0.95043},
+            //     {"ccv", 0.18956},
+            //     {"dcv", -0.81487}};
 
-            // Coulomb mean ion coupling
-            double gamma = 2.275E5 / T_K * pow(rho_g_over_cm3 / acell, 1.0 / 3) * pow(zion, 2.0);
-            // ion density in GeV^3, defines a scale for specific heat density
+            // // Coulomb mean ion coupling
+            // double gamma = 2.275E5 / T_K * pow(rho_g_over_cm3 / acell, 1.0 / 3) * pow(zion, 2.0);
+            // // ion density in GeV^3, defines a scale for specific heat density
             double n_ion = rho(nbar_val) / (acell * proton.mass() * 0.993);
-            // quantum parameter
-            double delta = zion / T_K * sqrt(rho_g_over_cm3 / (aion * acell)) * 6.023E23;
-            // rescaled cv limits
-            double cv_weak = 1.5,
-                   cv_liquid = 1.5 + 0.75 * factors["bcv"] * pow(gamma, 0.25) +
-                               1.25 * factors["ccv"] * pow(gamma, -0.25) + factors["dcv"],
-                   cv_crystal = 3.0 + 3.0 * 3225 / (gamma * gamma);
-            if (gamma < 0.1)
-                cv_dens += n_ion * cv_weak;
-            else if (gamma < 0.2)
-                cv_dens += n_ion * (cv_weak + (cv_liquid - cv_weak) * (gamma - 0.1) / (0.2 - 0.1));
-            else if (gamma < 178.0)
-                cv_dens += n_ion * cv_liquid;
-            else
-            {
-                // cv interpolation against delta values
-                std::vector<double> cv_array = {cv_crystal, 2.956, 2.829, 2.633, 2.389, 2.118, 1.840, 1.572,
-                                                1.323, 1.102, 0.909, 0.745, 0.609, 0.496, 0.404};
-                // high density, low temperature regime
-                double delta_scaled = delta * 2E-20;
-                size_t delta_index = floor(delta_scaled);
+            // // quantum parameter
+            // double delta = zion / T_K * sqrt(rho_g_over_cm3 / (aion * acell)) * 6.023E23;
 
-                // cv_interp calculates cv for gamma of 210, for various deltas
-                double cv_interp = cv_array.back();
-                if (delta_index < cv_array.size() - 1)
-                {
-                    // interpolate in scaled delta
-                    cv_interp = cv_array[delta_index] + (cv_array[delta_index + 1] - cv_array[delta_index]) * (delta_scaled - delta_index);
-                }
-                // above gamma of 210, very large delta
-                double cv_debye = 141.7 / pow(delta_scaled / 2.0, 3.0);
+            cv_dens += 0 * n_ion;
+            // // rescaled cv limits
+            // double cv_weak = 1.5,
+            //        cv_liquid = 1.5 + 0.75 * factors["bcv"] * pow(gamma, 0.25) +
+            //                    1.25 * factors["ccv"] * pow(gamma, -0.25) + factors["dcv"],
+            //        cv_crystal = 3.0 + 3.0 * 3225 / (gamma * gamma);
+            // if (gamma < 0.1)
+            //     cv_dens += n_ion * cv_weak;
+            // else if (gamma < 0.2)
+            //     cv_dens += n_ion * (cv_weak + (cv_liquid - cv_weak) * (gamma - 0.1) / (0.2 - 0.1));
+            // else if (gamma < 178.0)
+            //     cv_dens += n_ion * cv_liquid;
+            // else
+            // {
+            //     // cv interpolation against delta values
+            //     std::vector<double> cv_array = {cv_crystal, 2.956, 2.829, 2.633, 2.389, 2.118, 1.840, 1.572,
+            //                                     1.323, 1.102, 0.909, 0.745, 0.609, 0.496, 0.404};
+            //     // high density, low temperature regime
+            //     double delta_scaled = delta * 2E-20;
+            //     size_t delta_index = floor(delta_scaled);
 
-                if (delta < 1E19)
-                    cv_dens += n_ion * cv_crystal;
-                else if (gamma < 210.0)
-                {
-                    // interpolate in gamma
-                    cv_dens += n_ion * (cv_crystal + (cv_interp - cv_crystal) * (gamma - 178.0) / (210.0 - 178.0));
-                }
-                else if (delta < 7E20)
-                {
-                    // above crystal, large delta
-                    cv_dens += n_ion * cv_interp;
-                }
-                else
-                {
-                    cv_dens += n_ion * cv_debye;
-                }
-            }
+            //     // cv_interp calculates cv for gamma of 210, for various deltas
+            //     double cv_interp = cv_array.back();
+            //     if (delta_index < cv_array.size() - 1)
+            //     {
+            //         // interpolate in scaled delta
+            //         cv_interp = cv_array[delta_index] + (cv_array[delta_index + 1] - cv_array[delta_index]) * (delta_scaled - delta_index);
+            //     }
+            //     // above gamma of 210, very large delta
+            //     double cv_debye = 141.7 / pow(delta_scaled / 2.0, 3.0);
+
+            //     if (delta < 1E19)
+            //         cv_dens += n_ion * cv_crystal;
+            //     else if (gamma < 210.0)
+            //     {
+            //         // interpolate in gamma
+            //         cv_dens += n_ion * (cv_crystal + (cv_interp - cv_crystal) * (gamma - 178.0) / (210.0 - 178.0));
+            //     }
+            //     else if (delta < 7E20)
+            //     {
+            //         // above crystal, large delta
+            //         cv_dens += n_ion * cv_interp;
+            //     }
+            //     else
+            //     {
+            //         cv_dens += n_ion * cv_debye;
+            //     }
+            // }
         }
         // other
         for (auto it = m_stars_of_nbar.begin(); it != m_stars_of_nbar.end(); ++it)
