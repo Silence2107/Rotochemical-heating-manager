@@ -218,17 +218,44 @@ int main(int argc, char **argv)
 
     // tabulate initial profile and radii
     std::vector<double> radii, profile;
-    for (double r = cooling_radius_step / 2.0; r < r_ns; r += cooling_radius_step)
+    auto binary_search_radius = [&](const std::function<double(double)>& target_func, double target_val)
     {
-        // populate core profile
-        if (nbar(r) < nbar_sf_shift && radii.size() > 0)
-            break;
+        double r_low = 0, r_upp = r_ns;
+        while (r_upp - r_low > 1e-15 * r_ns)
+        {
+            double r_mid = (r_low + r_upp) / 2;
+            double val = target_func(r_mid);
+            if (val > target_val)
+                r_low = r_mid;
+            else if (val < target_val)
+                r_upp = r_mid;
+            else
+            {
+                r_low = r_mid;
+                r_upp = r_mid;
+            }
+        }
+        return (r_low + r_upp) / 2;
+    };
+    const double edensity_boundary = 1.0E10 * constants::conversion::g_over_cm3_gev4;
+    size_t n_points = 100;
+    size_t n_points_core = 2 * n_points / 3; // integer div
+    double r_sf_shift = binary_search_radius(nbar, nbar_sf_shift);
+    for (size_t pos = 0; pos < n_points_core; ++pos)
+    {
+        // uniform spacing in the core
+        double offs = 0.005 * r_sf_shift; // to offset from zero and from crust-core boundary
+        double r = (r_sf_shift - 2 * offs) * static_cast<double>(pos) / (n_points_core - 1) + offs;
         radii.push_back(r);
         profile.push_back(initial_t_profile_inf(r, r_ns, exp_phi, nbar));
     }
-    for (double r = radii.back() + cooling_radius_step / 10; r < r_ns; r += cooling_radius_step / 10)
+    for (size_t pos = n_points - n_points_core; pos > 0; --pos)
     {
-        // populate crust profile with higher resolution
+        double edensity = edensity_boundary * pow(energy_density_of_nbar(nbar_sf_shift) / edensity_boundary, static_cast<double>(pos - 1) / (n_points - n_points_core));
+        // binary search for radius corresponding to energy density
+        double r = binary_search_radius([&](double r)
+                                { return energy_density_of_nbar(nbar(r)); },
+                                edensity);
         radii.push_back(r);
         profile.push_back(initial_t_profile_inf(r, r_ns, exp_phi, nbar));
     }
