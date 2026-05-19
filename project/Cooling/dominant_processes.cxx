@@ -247,9 +247,8 @@ int main(int argc, char **argv)
         }
         return (r_low + r_upp) / 2;
     };
-    const double edensity_boundary = 1.0E10 * constants::conversion::g_over_cm3_gev4;
-    size_t n_points = 100;
-    size_t n_points_core = 2 * n_points / 3; // integer div
+    
+    size_t n_points_core = 2 * cooling_grid_n_points / 3; // integer div
     double r_sf_shift = binary_search_radius(nbar, nbar_sf_shift);
     for (size_t pos = 0; pos < n_points_core; ++pos)
     {
@@ -259,9 +258,9 @@ int main(int argc, char **argv)
         radii.push_back(r);
         profile.push_back(initial_t_profile_inf(r, r_ns, exp_phi, nbar));
     }
-    for (size_t pos = n_points - n_points_core; pos > 0; --pos)
+    for (size_t pos = cooling_grid_n_points - n_points_core; pos > 0; --pos)
     {
-        double edensity = edensity_boundary * pow(energy_density_of_nbar(nbar_sf_shift) / edensity_boundary, static_cast<double>(pos - 1) / (n_points - n_points_core));
+        double edensity = edensity_radial_limit * pow(energy_density_of_nbar(nbar_sf_shift) / edensity_radial_limit, static_cast<double>(pos - 1) / (cooling_grid_n_points - n_points_core));
         // binary search for radius corresponding to energy density
         double r = binary_search_radius([&](double r)
                                 { return energy_density_of_nbar(nbar(r)); },

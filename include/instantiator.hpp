@@ -121,8 +121,10 @@ namespace instantiator
     size_t cooling_n_points_estimate;
     // initial temperature profile
     std::function<double(double, double, const std::function<double(double)> &, const std::function<double(double)> &)> initial_t_profile_inf;
-    // cooling grid step
-    double cooling_radius_step;
+    // number of points in radial grid in total
+    size_t cooling_grid_n_points = 100;
+    // energy density at which Te(Tb) must be calculated. Defines the limit for cooling radial grid
+    double edensity_radial_limit = 1.0E10 * constants::conversion::g_over_cm3_gev4;
     // condition on which to switch to equilibrium cooling
     std::function<bool(double, const std::vector<double> &)> switch_to_equilibrium;
 
@@ -1116,41 +1118,7 @@ namespace instantiator
             exp_rate_estim = time_step_expansion_factor_read.get<double>();
 
         // cooling grid setup
-        auto cooling_radius_step_read = j["CoolingSolver"]["RadiusStep"];
-        auto cooling_length_conversion_read = j["CoolingSolver"]["LengthUnits"];
-        double cooling_length_conversion;
-        if (cooling_length_conversion_read.is_number())
-            cooling_length_conversion = cooling_length_conversion_read.get<double>();
-        else if (cooling_length_conversion_read.is_string())
-        {
-            if (cooling_length_conversion_read == "Gev-1")
-            {
-                cooling_length_conversion = 1.0;
-            }
-            else if (cooling_length_conversion_read == "Km")
-            {
-                cooling_length_conversion = constants::conversion::km_gev;
-            }
-            else if (cooling_length_conversion_read == "M")
-            {
-                cooling_length_conversion = 1E-3 * constants::conversion::km_gev;
-            }
-            else if (cooling_length_conversion_read == "Cm")
-            {
-                cooling_length_conversion = 1E-5 * constants::conversion::km_gev;
-            }
-            else
-            {
-                RHM_ERROR("UI error: Unexpected conversion unit provided for cooling length.");
-            }
-        }
-        else
-            RHM_ERROR("UI error: Unparsable conversion unit provided for cooling length.");
-        if (!(cooling_radius_step_read.is_number()))
-            RHM_ERROR("UI error: Cooling solver radius step must be provided as a number.");
-        else
-            cooling_radius_step = cooling_radius_step_read.get<double>() * cooling_length_conversion;
-
+        
         // condition on which to switch to equilibrium cooling
         auto cooling_enable_equilibrium_mode_read = j["CoolingSolver"]["EnableEquilibrium"]["Mode"];
         if (!(cooling_enable_equilibrium_mode_read.is_string()))
