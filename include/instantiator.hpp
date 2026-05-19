@@ -122,9 +122,9 @@ namespace instantiator
     // initial temperature profile
     std::function<double(double, double, const std::function<double(double)> &, const std::function<double(double)> &)> initial_t_profile_inf;
     // number of points in radial grid in total
-    size_t cooling_grid_n_points = 100;
+    size_t cooling_grid_n_points;
     // energy density at which Te(Tb) must be calculated. Defines the limit for cooling radial grid
-    double edensity_radial_limit = 1.0E10 * constants::conversion::g_over_cm3_gev4;
+    double edensity_radial_limit;
     // condition on which to switch to equilibrium cooling
     std::function<bool(double, const std::vector<double> &)> switch_to_equilibrium;
 
@@ -463,17 +463,27 @@ namespace instantiator
             else
                 nbar_upp = nbar_upp_read.get<double>() * nbar_conversion;
         }
+
+        // energy density is deduced automatically
+        edensity_low = energy_density_of_nbar(nbar_low);
+        edensity_upp = energy_density_of_nbar(nbar_upp);
+
+        auto edensity_radial_limit_read = j["EoSSetup"]["Quantities"]["EnergyDensity"]["TbBoundary"];
+
         if (modules_has("COOL"))
         {
             if (!(nbar_sf_shift_read.is_number()))
                 RHM_ERROR("UI error: Superfluid shift must be provided as a number.");
             else
                 nbar_sf_shift = nbar_sf_shift_read.get<double>() * nbar_conversion;
-        }
 
-        // energy density is deduced automatically
-        edensity_low = energy_density_of_nbar(nbar_low);
-        edensity_upp = energy_density_of_nbar(nbar_upp);
+            if (edensity_radial_limit_read.is_null())
+                edensity_radial_limit = 1E10 * constants::conversion::g_over_cm3_gev4;
+            else if (!(edensity_radial_limit_read.is_number()))
+                RHM_ERROR("UI error: Density boundary for cooling radial grid may only be provided as a number.");
+            else
+                edensity_radial_limit = edensity_radial_limit_read.get<double>() * energy_density_conversion;
+        }
 
         // pressure is deduced automatically
         pressure_low = pressure_of_nbar(nbar_low);
@@ -588,6 +598,17 @@ namespace instantiator
         else
         {
             RHM_ERROR("UI error: TOV surface pressure may only be provided in \"LinspacedMinToMax\" or \"Same\" modes.");
+        }
+
+        if (modules_has("COOL"))
+        {
+            if (edensity_of_pressure(surface_pressure) > edensity_radial_limit)
+            {
+                logger.log([]() { return true; }, auxiliaries::io::Logger::LogLevel::kInfo, 
+                []() { return "TOV surface pressure corresponds to an energy density above the cooling radial grid limit. Cooling radial grid will be truncated at the surface."; });
+                
+                edensity_radial_limit = edensity_of_pressure(surface_pressure);
+            }
         }
 
         // Only read center pressure, if we simulate COOL or RH
@@ -1118,6 +1139,11 @@ namespace instantiator
             exp_rate_estim = time_step_expansion_factor_read.get<double>();
 
         // cooling grid setup
+        auto cooling_grid_n_points_read = j["CoolingSolver"]["RadialGridDiscretization"];
+        if (cooling_grid_n_points_read.is_number_integer())
+            cooling_grid_n_points = cooling_grid_n_points_read.get<size_t>();
+        else
+            RHM_ERROR("UI error: Radial grid discretization must be provided as a positive integer.");
         
         // condition on which to switch to equilibrium cooling
         auto cooling_enable_equilibrium_mode_read = j["CoolingSolver"]["EnableEquilibrium"]["Mode"];

@@ -36,6 +36,7 @@ Be adviced that for each particle there is an expected mandatory list of propert
     - `"EnergyDensity"` **:** Total energy density at the point.
         - `"Units"` (string/double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev4", "MevFm-3", "GCm-3"], or specify an actual multiplier.
         - `"Column"` (uint, [<span style="color:red">TOV, COOL, RH</span>]) **:** Column number with energy density, counting from 0th.
+        - `"TbBoundary"` (double, [<span style="color:red">COOL, RH</span>]) **:** Value of energy density at which the last radial zone for cooling simulation will be placed. This zone feeds the $T_e(T_b)$ relation. Defaults to $10^{10} \text{g}/\text{cm}^{3}$ as prescribed by {cite}`potekhin1997internal`.
     - `"Pressure"` **:** Total pressure at the point.
         - `"Units"` (string/double, [<span style="color:red">TOV, COOL, RH</span>]) **:** Conversion factor to natural units (GeV powers). Choose from ["Gev4", "MevFm-3", "DyneCm-2"], or specify an actual multiplier.
         - `"Column"` (uint, [<span style="color:red">TOV, COOL, RH</span>]) **:** Column number with pressure, counting from 0th.

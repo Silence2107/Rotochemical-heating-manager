@@ -120,13 +120,12 @@
     },
     "CoolingSolver" :
     {
-        "LengthUnits" : "Km",
+        "RadialGridDiscretization" : 100,
         "TimeUnits" : "Yr",
         "TemperatureUnits" : "K",
         "NewtonTolerance" : 1E-5,
         "NewtonMaxIter" : 10,
         "StepTolerance": 0.05,
-        "RadiusStep" : 0.1,
         "TimeInit" : 0.0,
         "TimeEnd" : 1E+7,
         "TimeBaseStep" : 1.0E-12,

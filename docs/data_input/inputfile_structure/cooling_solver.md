@@ -75,8 +75,7 @@ Actual precision of this estimate is unpredictable (given that our PDE solvers a
     $$
     where $\text{array[2]}$ is automatically converted to $n_b$ units.
     ```
-- `"LengthUnits"` (string/double, [<span style="color:red">COOL, RH</span>]) **:** Conversion factor from length to natural units (GeV powers). It must either be supplied as a choice from ["Gev-1", "Km", "M", "Cm"], or as an actual multiplier. Used for "RadiusStep"
-- `"RadiusStep"` (double, [<span style="color:red">COOL, RH</span>]) **:** Defines radius step for cooling PDE. Units are defined by "LengthUnits" entry.
+- `"RadialGridDiscretization"` (uint, [<span style="color:red">COOL, RH</span>]) **:** Number of radial zones to be used for non-equilibrium cooling. 2/3 of the zones are delegated to core uniformly, while the rest is spanned logarithmically over the crust.
 - `"EnableEquilibrium"` **:** Settings reflecting code's ability to switch to equilibrium solver. 
     ```{note}
     One may want to switch for few reasons:
